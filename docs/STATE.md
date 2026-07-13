@@ -4,23 +4,30 @@
 
 ## Last updated
 
-2026-07-13 by Claude (Fable 5)
+2026-07-13 by Claude (Fable 5) — scaffold session
 
 ## Current phase
 
-scaffold (idea phase completed this session; no code exists yet)
+development (scaffold completed 2026-07-13)
 
 ## Current milestone
 
-None written yet — scaffold first, then milestone planning.
+None active — milestone proposals (M01 walking skeleton, M02 combat, M03 progression/loot) presented to user; write confirmed ones to docs/milestones/ before coding.
 
 ## Last action
 
-Ran the full idea phase for "Maple3D" (working title): 2.5D side-scrolling MapleStory-like on 3D maps, assassin class, grind-level-loot loop, shared world from day one (PartyKit, server-owned mobs, client-owned characters in localStorage). Wrote gameplan.md, tech.md, ADR-0001, backlog.md. Then the user overrode the art style: characters/mobs are fully 3D modeled (chibi low-poly, MapleStory-2 direction) — ADR-0002 written (placeholder rigs during development, Meshy AI GLB generation as a late asset milestone, CharacterView abstraction so the swap is cheap); gameplan/tech/backlog updated. No code written.
+Scaffold phase completed per make-game scaffold.md:
+
+- create-vite 9.1.1 `vanilla` (JS) template; three 0.185.1, vite 8.1.4, @playwright/test 1.61.1 (pinned in tech.md). Gotcha: `npm create vite -- --template X` mangles the flag — use `npx create-vite@latest <dir> -t <template>`.
+- Boot scene (src/render/bootScene.js): side-view camera, grassy ground strip, placeholder capsule with idle bob; src/core/constants.js started.
+- Agent hooks live: `window.render_game_to_text()`, `window.advanceTime(ms)`, `window.__debug` ({renderer, scene, camera}).
+- Smoke test PASSED: console error-free; gl.readPixels confirms sky/ground/capsule pixels; 2 draw calls, 556 tris; advanceTime steps deterministically.
+- AGENTS.md + CLAUDE.md bootstrapped; git repo initialized, initial commit fb0f0a0 (repo-local identity ayyitsdrayy <ayyitsdrayy@gmail.com> — correct if wrong).
+- Launch config: session-level C:\Users\ayyit\.claude\launch.json has `maple3d-dev` (npm run dev --prefix maple3d, port 5173); repo also has its own .claude/launch.json.
 
 ## Next step
 
-Scaffold phase per make-game `phase-pipelines/scaffold.md`: `npm create vite@latest` (vanilla JS template) in this directory, `npm install three`, pin versions in tech.md, boot smoke test (scene renders, console clean), then AGENTS.md/CLAUDE.md via agents-bootstrap. After scaffold: milestone planning (proposed M01 walking skeleton: one field-map blockout, billboarded player sprite, classic Maple controls, side-view camera).
+Write user-confirmed milestones to docs/milestones/ (template shapes drafted in session 2026-07-13), then start M01 (walking skeleton: EventBus/GameState, sim platforming on blocked-out field map, classic Maple controls, CharacterView placeholder, camera follow) via development.md — failing Playwright tests first.
 
 ## Blockers
 
@@ -28,8 +35,8 @@ none
 
 ## Notes for next session
 
-- All idea-phase decisions are in gameplan.md — do not re-ask.
-- Controls are classic Maple: arrows move/climb, Alt jump, Ctrl attack, Z loot.
-- Sim purity rule matters from the first line of code: `src/sim/` never imports Three.js/DOM (mob sim must run inside the PartyKit room later).
-- User also has a paused game project (PARADIS: Breach in C:\Users\ayyit\infinite-world) — same pipeline, its STATE.md says "milestone planning next." Don't confuse the two.
-- User is a trader by background, technical, prefers seeing things work (visual proof) — playable checkpoints early beat long refactors.
+- Browser pane quirks found this session: rAF is throttled in hidden pane tabs (simTime won't advance on its own — always verify via advanceTime), and `computer screenshot` times out in this environment; use gl.readPixels via window.__debug for visual proof. drawImage-based canvas capture reads stale buffers — don't trust it.
+- bootScene.js is throwaway; M01 replaces it with the real map/render split. Keep the syncSize-in-loop pattern (hidden tab loads report 0x0 and fire no resize event).
+- Sim purity rule from the first line of M01: src/sim/ never imports Three.js/DOM.
+- Controls: arrows move/climb, Alt jump, Ctrl attack, Z loot.
+- STATE.md's earlier "billboarded player sprite" idea is obsolete — ADR-0002 made characters fully 3D (primitive chibi placeholders until the Meshy milestone, backlog #10).
