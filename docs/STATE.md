@@ -12,7 +12,7 @@ development (scaffold completed 2026-07-13)
 
 ## Current milestone
 
-None active — milestone proposals (M01 walking skeleton, M02 combat, M03 progression/loot) presented to user; write confirmed ones to docs/milestones/ before coding.
+M01 walking skeleton (docs/milestones/01-walking-skeleton.md, status: planned). User adopted the M01→M02→M03 set 2026-07-13; all three written to docs/milestones/.
 
 ## Last action
 
@@ -27,7 +27,7 @@ Scaffold phase completed per make-game scaffold.md:
 
 ## Next step
 
-Write user-confirmed milestones to docs/milestones/ (template shapes drafted in session 2026-07-13), then start M01 (walking skeleton: EventBus/GameState, sim platforming on blocked-out field map, classic Maple controls, CharacterView placeholder, camera follow) via development.md — failing Playwright tests first.
+Start M01 via development.md: write the failing Playwright specs listed in 01-walking-skeleton.md AC first (movement/camera/sim-purity), confirm they fail for the right reason, then implement EventBus/GameState → src/sim platforming → Field 1 blockout → input → CharacterView/camera.
 
 ## Blockers
 
