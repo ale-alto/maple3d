@@ -12,7 +12,7 @@ development (scaffold completed 2026-07-13)
 
 ## Current milestone
 
-M01 walking skeleton (docs/milestones/01-walking-skeleton.md, status: planned). User adopted the M01→M02→M03 set 2026-07-13; all three written to docs/milestones/.
+M01 walking skeleton (docs/milestones/01-walking-skeleton.md, status: in-progress). All 7 automated AC green; remaining: user playtest of movement feel + exit condition, then flip to done.
 
 ## Last action
 
@@ -27,7 +27,7 @@ Scaffold phase completed per make-game scaffold.md:
 
 ## Next step
 
-Start M01 via development.md: write the failing Playwright specs listed in 01-walking-skeleton.md AC first (movement/camera/sim-purity), confirm they fail for the right reason, then implement EventBus/GameState → src/sim platforming → Field 1 blockout → input → CharacterView/camera.
+User playtests M01 exit condition (run/double-jump/climb across Field 1 at localhost:5173) and judges movement feel; tune constants.js movement values from feedback, then mark M01 done and start M02 (combat) red tests. Physics first pass: RUN_SPEED 6, GRAVITY 30, JUMP_V 11, DOUBLE_JUMP_V 10, CLIMB_SPEED 3.
 
 ## Blockers
 

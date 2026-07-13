@@ -1,0 +1,162 @@
+// Headless player platforming sim. Pure logic on map data — must run
+// identically inside the PartyKit room later (tech.md sim purity rule).
+
+import {
+  RUN_SPEED,
+  RUN_ACCEL,
+  GROUND_FRICTION,
+  GRAVITY,
+  MAX_FALL_SPEED,
+  JUMP_VELOCITY,
+  DOUBLE_JUMP_VELOCITY,
+  CLIMB_SPEED,
+  LADDER_GRAB_RANGE,
+} from '../core/constants.js';
+
+export function createPlayer(map) {
+  return {
+    x: map.spawn.x,
+    y: map.spawn.y,
+    vx: 0,
+    vy: 0,
+    grounded: true,
+    climbing: false,
+    ladder: null,
+    facing: 'right',
+    jumpsLeft: 2,
+  };
+}
+
+function findGrabbableLadder(map, p) {
+  return (
+    map.ladders.find(
+      (l) => Math.abs(p.x - l.x) <= LADDER_GRAB_RANGE && p.y >= l.y1 - 0.1 && p.y <= l.y2,
+    ) || null
+  );
+}
+
+// Land on a surface at `surfY` if the player crossed it falling this step.
+function crossedFromAbove(prevY, newY, surfY) {
+  return prevY >= surfY && newY <= surfY;
+}
+
+// input: { left, right, up, down, jump } — jump is a consumed edge, not held.
+// events: eventBus (or any {emit}) — kept injectable so the sim stays headless.
+export function stepPlayer(p, map, input, dt, events) {
+  // --- Climbing state ---
+  if (p.climbing) {
+    if (input.jump) {
+      p.climbing = false;
+      p.ladder = null;
+      p.vy = 0;
+      p.vx = 0;
+      events?.emit('player:climb-exit', { reason: 'jump' });
+    } else {
+      const dir = (input.up ? 1 : 0) - (input.down ? 1 : 0);
+      p.y += dir * CLIMB_SPEED * dt;
+      if (p.y >= p.ladder.y2) {
+        // Top: pop onto the ledge the ladder leads to.
+        p.y = p.ladder.y2;
+        if (dir > 0) {
+          p.climbing = false;
+          p.ladder = null;
+          p.vy = 0;
+          events?.emit('player:climb-exit', { reason: 'top' });
+        }
+      } else if (p.y <= p.ladder.y1) {
+        p.y = p.ladder.y1;
+        if (dir < 0) {
+          p.climbing = false;
+          p.ladder = null;
+          events?.emit('player:climb-exit', { reason: 'bottom' });
+        }
+      }
+      return;
+    }
+  }
+
+  // --- Grab a ladder ---
+  if (!p.climbing && (input.up || input.down)) {
+    const ladder = findGrabbableLadder(map, p);
+    if (ladder) {
+      p.climbing = true;
+      p.ladder = ladder;
+      p.x = ladder.x;
+      p.vx = 0;
+      p.vy = 0;
+      p.grounded = false;
+      events?.emit('player:climb-start', { ladder });
+      return;
+    }
+  }
+
+  // --- Horizontal run ---
+  const move = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+  if (move !== 0) {
+    p.facing = move > 0 ? 'right' : 'left';
+    p.vx += move * RUN_ACCEL * dt;
+    p.vx = Math.max(-RUN_SPEED, Math.min(RUN_SPEED, p.vx));
+  } else {
+    // Maple-style slight slide: friction, not an instant stop.
+    const decel = GROUND_FRICTION * dt;
+    if (Math.abs(p.vx) <= decel) p.vx = 0;
+    else p.vx -= Math.sign(p.vx) * decel;
+  }
+
+  // --- Jump / double jump ---
+  if (input.jump && p.jumpsLeft > 0) {
+    p.vy = p.grounded || p.jumpsLeft === 2 ? JUMP_VELOCITY : DOUBLE_JUMP_VELOCITY;
+    p.jumpsLeft -= 1;
+    p.grounded = false;
+    events?.emit('player:jumped', { double: p.jumpsLeft === 0 });
+  }
+
+  // --- Gravity + integrate ---
+  const prevY = p.y;
+  if (!p.grounded) {
+    p.vy -= GRAVITY * dt;
+    p.vy = Math.max(-MAX_FALL_SPEED, p.vy);
+  }
+  p.x += p.vx * dt;
+  p.y += p.vy * dt;
+
+  // --- Map bounds ---
+  if (p.x < map.minX) {
+    p.x = map.minX;
+    p.vx = 0;
+  } else if (p.x > map.maxX) {
+    p.x = map.maxX;
+    p.vx = 0;
+  }
+
+  // --- Landing (thin platforms: solid from above only) ---
+  if (p.vy <= 0) {
+    let landedOn = null;
+    if (crossedFromAbove(prevY, p.y, map.groundY)) landedOn = map.groundY;
+    for (const plat of map.platforms) {
+      if (p.x >= plat.x1 && p.x <= plat.x2 && crossedFromAbove(prevY, p.y, plat.y)) {
+        if (landedOn === null || plat.y > landedOn) landedOn = plat.y;
+      }
+    }
+    if (landedOn !== null) {
+      const wasAirborne = !p.grounded;
+      p.y = landedOn;
+      p.vy = 0;
+      p.grounded = true;
+      p.jumpsLeft = 2;
+      if (wasAirborne) events?.emit('player:landed', { y: landedOn });
+    } else if (p.grounded && p.y < prevY) {
+      // Walked off an edge.
+      p.grounded = false;
+    }
+  }
+
+  // Walked off the edge of a platform: no surface directly supports us.
+  if (p.grounded) {
+    const onGround = p.y <= map.groundY + 0.001;
+    const onPlatform = map.platforms.some(
+      (plat) => Math.abs(p.y - plat.y) < 0.001 && p.x >= plat.x1 && p.x <= plat.x2,
+    );
+    if (!onGround && !onPlatform) p.grounded = false;
+  }
+}

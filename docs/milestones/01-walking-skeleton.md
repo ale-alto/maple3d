@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress — all automated AC green 2026-07-13; awaiting user playtest of feel AC + exit condition
 
 ## Objective
 
@@ -34,13 +34,13 @@ Deliver the walking skeleton: the core architecture every later milestone builds
 
 ## Acceptance criteria
 
-- [ ] Left/right arrows run the player along the ground; releasing stops (with Maple-style slight slide) — test: `tests/movement.spec.js::run left and right`
-- [ ] Alt jumps; Alt again mid-air double-jumps; landing resets both — test: `tests/movement.spec.js::jump and double jump`
-- [ ] Player collides with platforms from above (lands) and passes through from below (Maple thin-platform rule) — test: `tests/movement.spec.js::thin platform collision`
-- [ ] Up/down on a ladder/rope enters climb, moves vertically, exits at top/bottom or on jump — test: `tests/movement.spec.js::ladder climb`
-- [ ] Player cannot leave map bounds — test: `tests/movement.spec.js::map bounds`
-- [ ] Camera follows the player and respects map edges — test: `tests/camera.spec.js::camera follow`
-- [ ] `src/sim/` contains no Three.js/DOM imports — test: `tests/sim-purity.spec.js::sim imports are pure`
+- [x] Left/right arrows run the player along the ground; releasing stops (with Maple-style slight slide) — test: `tests/e2e/movement.spec.js::run left and right`
+- [x] Alt jumps; Alt again mid-air double-jumps; landing resets both — test: `tests/e2e/movement.spec.js::jump and double jump`
+- [x] Player collides with platforms from above (lands) and passes through from below (Maple thin-platform rule) — test: `tests/e2e/movement.spec.js::thin platform collision`
+- [x] Up/down on a ladder/rope enters climb, moves vertically, exits at top/bottom or on jump — test: `tests/e2e/movement.spec.js::ladder climb`
+- [x] Player cannot leave map bounds — test: `tests/e2e/movement.spec.js::map bounds`
+- [x] Camera follows the player and respects map edges — test: `tests/e2e/camera.spec.js::camera follow`
+- [x] `src/sim/` contains no Three.js/DOM imports — test: `tests/e2e/sim-purity.spec.js::sim imports are pure`
 - [ ] Movement feels Maple-snappy (accel/decel/jump arc tuning) — verified by user playtest
 
 ## Exit condition
