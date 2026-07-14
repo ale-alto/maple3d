@@ -114,6 +114,7 @@ window.render_game_to_text = () => {
       x: round3(s.x),
       y: round3(s.y),
       vx: round3(s.vx),
+      vy: round3(s.vy),
     })),
     fx: { damageNumbers: fxView.numbersPayload() },
     camera: { x: round3(camera.position.x), y: round3(camera.position.y) },

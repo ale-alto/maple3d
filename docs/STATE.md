@@ -27,7 +27,7 @@ Scaffold phase completed per make-game scaffold.md:
 
 ## Next step
 
-User playtests M02 exit condition (walk to a mob, hold Ctrl → stars/damage numbers/death pop; stand in mob → HP drain → respawn) and judges feel. Known tuning candidates: MOB_MAX_HP 60 feels tanky (8 hits/kill); respawned mobs can camp the player (see 02-combat.md Notes). Then mark M02 done and start M03 (progression) red tests. Note: player HP is only visible via red damage numbers until the M03 HUD.
+User re-playtests M02 with the 2026-07-13 kite fixes (air momentum committed — turning mid-air changes facing only; stars auto-aim vertically to platform mobs, STAR_VERTICAL_RANGE 3.5). Suite is 15/15. Known tuning candidates: MOB_MAX_HP 60 feels tanky (8 hits/kill); respawned mobs can camp the player (see 02-combat.md Notes). Then mark M02 done and start M03 (progression) red tests. Note: player HP is only visible via red damage numbers until the M03 HUD.
 
 ## Blockers
 

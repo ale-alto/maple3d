@@ -38,6 +38,7 @@ export const INVULN_MS = 1000; // i-frames after taking a hit
 export const STAR_DAMAGE = 8;
 export const STAR_SPEED = 14;
 export const STAR_RANGE = 7;
+export const STAR_VERTICAL_RANGE = 3.5; // auto-aim reach above/below (platform mobs)
 export const STAR_THROW_HEIGHT = 1.0; // star spawn height above player feet
 export const ATTACK_COOLDOWN_MS = 350;
 export const MOB_MAX_HP = 60;

@@ -95,16 +95,21 @@ export function stepPlayer(p, map, input, dt, events) {
   }
 
   // --- Horizontal run ---
+  // Air momentum is committed (Maple-authentic, gameplan rule): while
+  // airborne, input changes facing only — no accel, no friction. This is
+  // the assassin kite: jump away, turn, throw backward while drifting.
   const move = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-  if (move !== 0) {
-    p.facing = move > 0 ? 'right' : 'left';
-    p.vx += move * RUN_ACCEL * dt;
-    p.vx = Math.max(-RUN_SPEED, Math.min(RUN_SPEED, p.vx));
-  } else {
-    // Maple-style slight slide: friction, not an instant stop.
-    const decel = GROUND_FRICTION * dt;
-    if (Math.abs(p.vx) <= decel) p.vx = 0;
-    else p.vx -= Math.sign(p.vx) * decel;
+  if (move !== 0) p.facing = move > 0 ? 'right' : 'left';
+  if (p.grounded) {
+    if (move !== 0) {
+      p.vx += move * RUN_ACCEL * dt;
+      p.vx = Math.max(-RUN_SPEED, Math.min(RUN_SPEED, p.vx));
+    } else {
+      // Maple-style slight slide: friction, not an instant stop.
+      const decel = GROUND_FRICTION * dt;
+      if (Math.abs(p.vx) <= decel) p.vx = 0;
+      else p.vx -= Math.sign(p.vx) * decel;
+    }
   }
 
   // --- Jump / double jump ---

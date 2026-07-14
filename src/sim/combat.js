@@ -5,6 +5,7 @@ import {
   STAR_DAMAGE,
   STAR_SPEED,
   STAR_RANGE,
+  STAR_VERTICAL_RANGE,
   STAR_THROW_HEIGHT,
   ATTACK_COOLDOWN_MS,
   INVULN_MS,
@@ -33,21 +34,54 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
   combat.cooldownMs = Math.max(0, combat.cooldownMs - ms);
   if (input.attack && combat.cooldownMs === 0 && !player.climbing) {
     const dir = player.facing === 'right' ? 1 : -1;
+    const throwY = player.y + STAR_THROW_HEIGHT;
+
+    // Vertical auto-aim (gameplan rule): the claw reaches mobs above/below
+    // when they're ahead of us and within star range.
+    let target = null;
+    let bestDist = Infinity;
+    for (const mob of mobsState.mobs) {
+      const dx = mob.x - player.x;
+      const dy = mob.y + MOB_HEIGHT / 2 - throwY;
+      if (dx * dir <= 0) continue; // behind us
+      if (Math.abs(dx) > STAR_RANGE || Math.abs(dy) > STAR_VERTICAL_RANGE) continue;
+      const dist = Math.hypot(dx, dy);
+      if (dist < bestDist) {
+        bestDist = dist;
+        target = mob;
+      }
+    }
+
+    let vx = dir * STAR_SPEED;
+    let vy = 0;
+    if (target) {
+      const dx = target.x - player.x;
+      const dy = target.y + MOB_HEIGHT / 2 - throwY;
+      const dist = Math.hypot(dx, dy) || 1;
+      vx = (dx / dist) * STAR_SPEED;
+      vy = (dy / dist) * STAR_SPEED;
+    }
+
     combat.stars.push({
       id: combat.nextStarId++,
       x: player.x,
-      y: player.y + STAR_THROW_HEIGHT,
-      vx: dir * STAR_SPEED,
+      y: throwY,
+      vx,
+      vy,
       originX: player.x,
+      originY: throwY,
     });
     combat.cooldownMs = ATTACK_COOLDOWN_MS;
     events?.emit('player:attacked', { facing: player.facing });
   }
 
   // --- Fly + hit ---
-  for (const star of combat.stars) star.x += star.vx * dt;
+  for (const star of combat.stars) {
+    star.x += star.vx * dt;
+    star.y += star.vy * dt;
+  }
   combat.stars = combat.stars.filter((star) => {
-    if (Math.abs(star.x - star.originX) >= STAR_RANGE) return false;
+    if (Math.hypot(star.x - star.originX, star.y - star.originY) >= STAR_RANGE) return false;
     if (star.x < map.minX || star.x > map.maxX) return false;
     const hit = mobsState.mobs.find((m) =>
       overlaps(star.x, star.y - 0.2, 0.4, 0.4, m.x, m.y, MOB_WIDTH, MOB_HEIGHT),
