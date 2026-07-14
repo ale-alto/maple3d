@@ -39,7 +39,7 @@ Make the "hunt" and "throw" verbs real: mobs spawn and patrol Field 1, the assas
 - [x] Mob contact damages the player (with brief invulnerability window) — test: `tests/e2e/combat.spec.js::contact damage`
 - [x] Player at 0 HP respawns at map start with full HP — test: `tests/e2e/combat.spec.js::player death respawn`
 - [x] Air momentum is committed (kite): jumping carries run momentum, and turning mid-air changes facing only — no air deceleration/reversal — test: `tests/e2e/movement.spec.js::air momentum kite` *(appended 2026-07-13 from user playtest feedback; revises M01 air physics)*
-- [x] Stars auto-aim vertically: a mob on a platform within star range gets hit from below/above — test: `tests/e2e/combat.spec.js::star reaches platform mob` *(appended 2026-07-13 from user playtest feedback)*
+- ~~Stars auto-aim vertically: a mob on a platform within star range gets hit from below/above~~ *(2026-07-13; superseded 2026-07-14 — user chose full-authentic flat flight)*
 - [x] Firm landing: touching down with no direction held kills momentum on the landing step (no skid); holding a direction carries the run through — test: `tests/e2e/movement.spec.js::firm landing without input` *(appended 2026-07-13 from user playtest feedback)*
 - [x] Subtle air steering (MSW `AirAccelerationX` model): midair input drifts far below run speed; no air drag, momentum stays committed — test: `tests/e2e/movement.spec.js::subtle air steering` *(appended 2026-07-14, grounded in official MSW RigidbodyComponent docs)*
 - [x] Down jump (MSW `DownJump`): Down+Alt on a thin platform drops through it; normal jump on the ground floor — test: `tests/e2e/movement.spec.js::down jump through thin platform` *(appended 2026-07-14, grounded in official MSW RigidbodyComponent docs)*
@@ -49,7 +49,7 @@ Make the "hunt" and "throw" verbs real: mobs spawn and patrol Field 1, the assas
 - [x] Contact knockback (MSW HitEvent FeedbackAction): touched player pops away from the mob — test: `tests/e2e/combat.spec.js::contact knockback`
 - [x] Named state machine (MSW StateComponent): idle/move/crouch/jump/fall/ladder/rope exposed for animation; climbables typed ladder|rope — test: `tests/e2e/movement.spec.js::maple state machine`
 - [x] Ladder ends are stable: climbing off the top pops you onto the ledge standing (no exit→re-grab wiggle); the bottom stands you on ground or drops you off a hanging rope; grabs are direction-aware (Up needs ladder above, Down needs ladder below) — tests: `tests/e2e/movement.spec.js::ladder top and bottom exits are stable`, `::rope bottom drops you off` *(playtest bug 2026-07-14)*
-- [x] Star auto-aim is cone-limited: targets must sit inside the 45° forward cone (|dy| ≤ |dx|), so shots are never near-vertical — a mob almost overhead is not a valid target (MSW attacks are forward rect areas) — test: `tests/e2e/combat.spec.js::stars never fire steeply vertical` *(playtest bug 2026-07-14)*
+- [x] Stars are fully authentic: always flat flight in the facing direction (vy = 0 invariant guarded by `tests/e2e/combat.spec.js::stars never fire steeply vertical`); vertical generosity comes from the tall hit rectangle (STAR_HIT_HEIGHT 2.0, catches same-level and slightly-elevated mobs); platform mobs require level access — test: `tests/e2e/combat.spec.js::platform mobs require level access` *(user decision 2026-07-14, replacing angled auto-aim and its 45° cone)*
 - [ ] Throw/hit/death feel (pacing, numbers legibility) — verified by user playtest
 
 ## Exit condition

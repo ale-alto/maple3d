@@ -27,7 +27,7 @@ Scaffold phase completed per make-game scaffold.md:
 
 ## Next step
 
-User re-playtests M02 movement + combat after the 2026-07-14 MSW parity batch (docs/reference/msw-parity.md maps the full official model): committed air momentum + subtle air steering, firm landing, snappier arc, down jump, crouch/prone, ladder leap-off requires direction, grounded attack lock (stand-and-throw), contact knockback, named state machine (idle/move/crouch/jump/fall/ladder/rope in payload — the animation contract), vertical star auto-aim. Suite is 22/22. Known tuning candidates: MOB_MAX_HP 60 (8 hits/kill); respawn camping (softened by knockback now). Then mark M02 done and start M03 (progression) red tests. Note: player HP still only visible via red damage numbers until the M03 HUD.
+User re-playtests M02 movement + combat after the 2026-07-14 MSW parity batch (docs/reference/msw-parity.md maps the full official model): committed air momentum + subtle air steering, firm landing, snappier arc, down jump, crouch/prone, ladder leap-off requires direction, grounded attack lock (stand-and-throw), contact knockback, named state machine (idle/move/crouch/jump/fall/ladder/rope in payload — the animation contract), fully-authentic flat star flight (tall hit rect, platform mobs need level access — angled auto-aim removed by user decision 2026-07-14). Suite is 25/25. Known tuning candidates: MOB_MAX_HP 60 (8 hits/kill); respawn camping (softened by knockback now). Then mark M02 done and start M03 (progression) red tests. Note: player HP still only visible via red damage numbers until the M03 HUD.
 
 ## Blockers
 
