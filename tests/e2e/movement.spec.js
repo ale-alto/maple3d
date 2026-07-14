@@ -138,6 +138,68 @@ test.describe('M01 movement', () => {
     await gamePage.keyboard.up('ArrowDown');
   });
 
+  test('ladder top and bottom exits are stable', async ({ gamePage }) => {
+    const s = await state(gamePage);
+    const lad = s.map.ladders.find((l) => l.type === 'ladder');
+
+    // Climb to the top while holding Up: pop onto the ledge as standing,
+    // and keep holding Up — no re-grab flicker (the "wiggle").
+    await teleport(gamePage, lad.x, lad.y1);
+    await advance(gamePage, 100);
+    await gamePage.keyboard.down('ArrowUp');
+    await advance(gamePage, 1200);
+    const top = await state(gamePage);
+    expect(top.player.climbing).toBe(false);
+    expect(top.player.grounded).toBe(true);
+    expect(top.player.y).toBeCloseTo(lad.y2, 1);
+    for (let i = 0; i < 5; i++) {
+      await advance(gamePage, 100);
+      const c = await state(gamePage);
+      expect(c.player.climbing).toBe(false);
+      expect(Math.abs(c.player.y - lad.y2)).toBeLessThan(0.05);
+    }
+    await gamePage.keyboard.up('ArrowUp');
+
+    // From the ledge, Down grabs back down onto the ladder…
+    await gamePage.keyboard.down('ArrowDown');
+    await advance(gamePage, 250);
+    expect((await state(gamePage)).player.climbing).toBe(true);
+
+    // …and climbing to the bottom exits to standing on the ground —
+    // stable while Down stays held (crouch, not re-grab).
+    await advance(gamePage, 1200);
+    const bottom = await state(gamePage);
+    expect(bottom.player.climbing).toBe(false);
+    expect(bottom.player.grounded).toBe(true);
+    expect(bottom.player.y).toBeCloseTo(lad.y1, 1);
+    for (let i = 0; i < 5; i++) {
+      await advance(gamePage, 100);
+      expect((await state(gamePage)).player.climbing).toBe(false);
+    }
+    await gamePage.keyboard.up('ArrowDown');
+  });
+
+  test('rope bottom drops you off', async ({ gamePage }) => {
+    // The rope hangs over the gap: climbing down past its bottom end
+    // falls off (no surface at the rope's base).
+    const s = await state(gamePage);
+    const rope = s.map.ladders.find((l) => l.type === 'rope');
+    await teleport(gamePage, rope.x, rope.y2);
+    await advance(gamePage, 200);
+
+    await gamePage.keyboard.down('ArrowDown');
+    await advance(gamePage, 250);
+    expect((await state(gamePage)).player.climbing).toBe(true);
+
+    await advance(gamePage, 1200); // to the bottom and off
+    await gamePage.keyboard.up('ArrowDown');
+    await advance(gamePage, 1500); // fall through the gap
+    const landed = await state(gamePage);
+    expect(landed.player.climbing).toBe(false);
+    expect(landed.player.grounded).toBe(true);
+    expect(landed.player.y).toBeCloseTo(0, 1); // ground below the gap
+  });
+
   test('maple state machine', async ({ gamePage }) => {
     // MSW StateComponent: the sim reports named states for animation.
     expect((await state(gamePage)).player.state).toBe('idle');
