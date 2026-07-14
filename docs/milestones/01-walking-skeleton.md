@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress — all automated AC green 2026-07-13; awaiting user playtest of feel AC + exit condition
+done — all automated AC green 2026-07-13; user accepted feel + exit condition 2026-07-13 (first-pass constants kept; re-tune anytime via constants.js)
 
 ## Objective
 
@@ -41,7 +41,7 @@ Deliver the walking skeleton: the core architecture every later milestone builds
 - [x] Player cannot leave map bounds — test: `tests/e2e/movement.spec.js::map bounds`
 - [x] Camera follows the player and respects map edges — test: `tests/e2e/camera.spec.js::camera follow`
 - [x] `src/sim/` contains no Three.js/DOM imports — test: `tests/e2e/sim-purity.spec.js::sim imports are pure`
-- [ ] Movement feels Maple-snappy (accel/decel/jump arc tuning) — verified by user playtest
+- [x] Movement feels Maple-snappy (accel/decel/jump arc tuning) — verified by user playtest (accepted 2026-07-13; feel tuning stays open as normal playtest feedback)
 
 ## Exit condition
 

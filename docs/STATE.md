@@ -12,7 +12,7 @@ development (scaffold completed 2026-07-13)
 
 ## Current milestone
 
-M01 walking skeleton (docs/milestones/01-walking-skeleton.md, status: in-progress). All 7 automated AC green; remaining: user playtest of movement feel + exit condition, then flip to done.
+M01 done (2026-07-13, user accepted). Next: M02 combat (docs/milestones/02-combat.md, status: planned).
 
 ## Last action
 
@@ -27,7 +27,7 @@ Scaffold phase completed per make-game scaffold.md:
 
 ## Next step
 
-User playtests M01 exit condition (run/double-jump/climb across Field 1 at localhost:5173) and judges movement feel; tune constants.js movement values from feedback, then mark M01 done and start M02 (combat) red tests. Physics first pass: RUN_SPEED 6, GRAVITY 30, JUMP_V 11, DOUBLE_JUMP_V 10, CLIMB_SPEED 3.
+Start M02 (combat) via development.md: red Playwright specs first (tests/e2e/mobs.spec.js, tests/e2e/combat.spec.js per 02-combat.md AC), then implement src/sim/mobs.js + src/sim/combat.js headless, mob CharacterView, damage numbers. Movement feel constants were accepted as-is (RUN_SPEED 6, GRAVITY 30, JUMP_V 11, DOUBLE_JUMP_V 10, CLIMB_SPEED 3) — feel tuning stays open as playtest feedback.
 
 ## Blockers
 
