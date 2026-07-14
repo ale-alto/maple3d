@@ -100,7 +100,14 @@ test.describe('M01 movement', () => {
     await gamePage.keyboard.up('ArrowUp');
 
     // MSW ActionJump(horizontalInput): jump alone does NOT leave the
-    // ladder; jump + direction leaps off sideways.
+    // ladder; jump + direction leaps off sideways. Re-grab at mid-ladder
+    // first so background frames can't have carried us to the top exit.
+    await teleport(gamePage, ladder.x, (ladder.y1 + ladder.y2) / 2);
+    await gamePage.keyboard.down('ArrowUp');
+    await advance(gamePage, 50);
+    await gamePage.keyboard.up('ArrowUp');
+    expect((await state(gamePage)).player.climbing).toBe(true);
+
     await gamePage.keyboard.press('Alt');
     await advance(gamePage, 100);
     expect((await state(gamePage)).player.climbing).toBe(true);

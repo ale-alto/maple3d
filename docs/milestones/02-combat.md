@@ -48,6 +48,7 @@ Make the "hunt" and "throw" verbs real: mobs spawn and patrol Field 1, the assas
 - [x] Grounded attack locks the run (MSW ATTACK state); air throws stay free — test: `tests/e2e/combat.spec.js::grounded attack locks movement`
 - [x] Contact knockback (MSW HitEvent FeedbackAction): touched player pops away from the mob — test: `tests/e2e/combat.spec.js::contact knockback`
 - [x] Named state machine (MSW StateComponent): idle/move/crouch/jump/fall/ladder/rope exposed for animation; climbables typed ladder|rope — test: `tests/e2e/movement.spec.js::maple state machine`
+- [x] Ladder ends are stable: climbing off the top pops you onto the ledge standing (no exit→re-grab wiggle); the bottom stands you on ground or drops you off a hanging rope; grabs are direction-aware (Up needs ladder above, Down needs ladder below) — tests: `tests/e2e/movement.spec.js::ladder top and bottom exits are stable`, `::rope bottom drops you off` *(playtest bug 2026-07-14)*
 - [ ] Throw/hit/death feel (pacing, numbers legibility) — verified by user playtest
 
 ## Exit condition

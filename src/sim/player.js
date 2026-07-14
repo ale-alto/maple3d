@@ -45,12 +45,23 @@ function deriveState(p, input) {
   return Math.abs(p.vx) > 0.1 ? 'move' : 'idle';
 }
 
-function findGrabbableLadder(map, p) {
+// Direction-aware grab (Maple rule): Up only grabs when there is ladder
+// left to climb up; Down only when there is ladder below. This is what
+// prevents the exit→re-grab flicker at the ends.
+function findGrabbableLadder(map, p, wantUp, wantDown) {
   return (
-    map.ladders.find(
-      (l) => Math.abs(p.x - l.x) <= LADDER_GRAB_RANGE && p.y >= l.y1 - 0.1 && p.y <= l.y2,
-    ) || null
+    map.ladders.find((l) => {
+      if (Math.abs(p.x - l.x) > LADDER_GRAB_RANGE) return false;
+      if (p.y < l.y1 - 0.1 || p.y > l.y2 + 0.1) return false;
+      return (wantUp && p.y < l.y2 - 0.01) || (wantDown && p.y > l.y1 + 0.01);
+    }) || null
   );
+}
+
+// Is there something to stand on at exactly this height?
+function surfaceAt(map, x, y) {
+  if (Math.abs(y - map.groundY) < 0.05) return true;
+  return map.platforms.some((pl) => Math.abs(pl.y - y) < 0.05 && x >= pl.x1 && x <= pl.x2);
 }
 
 // Land on a surface at `surfY` if the player crossed it falling this step.
@@ -78,22 +89,31 @@ export function stepPlayer(p, map, input, dt, events) {
     }
     const dir = (input.up ? 1 : 0) - (input.down ? 1 : 0);
     p.y += dir * CLIMB_SPEED * dt;
-    if (p.y >= p.ladder.y2) {
-      // Top: pop onto the ledge the ladder leads to.
+    if (p.y >= p.ladder.y2 && dir > 0) {
+      // Top: pop onto the ledge as standing (no 1-frame fall, no re-grab).
       p.y = p.ladder.y2;
-      if (dir > 0) {
-        p.climbing = false;
-        p.ladder = null;
-        p.vy = 0;
-        events?.emit('player:climb-exit', { reason: 'top' });
+      p.climbing = false;
+      p.ladder = null;
+      p.vy = 0;
+      if (surfaceAt(map, p.x, p.y)) {
+        p.grounded = true;
+        p.jumpsLeft = 2;
       }
-    } else if (p.y <= p.ladder.y1) {
+      events?.emit('player:climb-exit', { reason: 'top' });
+    } else if (p.y <= p.ladder.y1 && dir < 0) {
+      // Bottom: stand if there's a surface at the base; otherwise fall
+      // off (ropes hanging over a gap).
       p.y = p.ladder.y1;
-      if (dir < 0) {
-        p.climbing = false;
-        p.ladder = null;
-        events?.emit('player:climb-exit', { reason: 'bottom' });
+      p.climbing = false;
+      p.ladder = null;
+      p.vy = 0;
+      if (surfaceAt(map, p.x, p.y)) {
+        p.grounded = true;
+        p.jumpsLeft = 2;
       }
+      events?.emit('player:climb-exit', { reason: 'bottom' });
+    } else {
+      p.y = Math.max(p.ladder.y1, Math.min(p.ladder.y2, p.y));
     }
     p.state = deriveState(p, input);
     return;
@@ -101,7 +121,7 @@ export function stepPlayer(p, map, input, dt, events) {
 
   // --- Grab a ladder ---
   if (!p.climbing && (input.up || input.down)) {
-    const ladder = findGrabbableLadder(map, p);
+    const ladder = findGrabbableLadder(map, p, input.up, input.down);
     if (ladder) {
       p.climbing = true;
       p.ladder = ladder;
