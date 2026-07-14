@@ -127,6 +127,28 @@ test.describe('M01 movement', () => {
     await gamePage.keyboard.up('ArrowLeft');
   });
 
+  test('firm landing without input', async ({ gamePage }) => {
+    // Jump out of a run, release everything mid-air: momentum carries the
+    // arc, but touching down with no direction held plants the feet — vx
+    // dies on the landing step, no skid.
+    await gamePage.keyboard.down('ArrowRight');
+    await advance(gamePage, 500);
+    await gamePage.keyboard.press('Alt');
+    await advance(gamePage, 50);
+    await gamePage.keyboard.up('ArrowRight');
+
+    expect((await state(gamePage)).player.grounded).toBe(false);
+
+    let s = null;
+    for (let i = 0; i < 80; i++) {
+      await advance(gamePage, 16.667);
+      s = await state(gamePage);
+      if (s.player.grounded) break;
+    }
+    expect(s.player.grounded).toBe(true);
+    expect(Math.abs(s.player.vx)).toBeLessThan(0.5);
+  });
+
   test('map bounds', async ({ gamePage }) => {
     const s = await state(gamePage);
 
