@@ -52,10 +52,12 @@ export const INVULN_MS = 1000; // i-frames after taking a hit
 export const STAR_DAMAGE = 8;
 export const STAR_SPEED = 14;
 export const STAR_RANGE = 7;
-// Full-authentic Maple (MSW attacks are forward rect areas): stars fly
-// flat; vertical generosity comes from the hit rectangle, not from aiming.
-// Platform mobs require level access (jump/climb to them).
-export const STAR_HIT_HEIGHT = 2.0;
+// Classic MS attack model: the target is LOCKED at press time — nearest
+// mob inside the forward selection rect (STAR_RANGE ahead, limited
+// vertical tolerance). The star visual then homes to the locked mob and
+// cannot miss; a throw with no target in the rect is a whiff that hits
+// nothing. Platform mobs stay out of reach (tolerance << platform height).
+export const STAR_SELECT_HALF_HEIGHT = 1.5;
 export const STAR_THROW_HEIGHT = 1.0; // star spawn height above player feet
 export const ATTACK_COOLDOWN_MS = 350;
 export const MOB_MAX_HP = 60;

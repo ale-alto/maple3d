@@ -14,24 +14,36 @@ test.describe('M02 combat', () => {
     await advance(gamePage, 100);
     await holdKey(gamePage, 'ArrowRight', 30); // face right without moving far
 
-    await gamePage.keyboard.press('Control');
-    await advance(gamePage, 50);
-    const thrown = await state(gamePage);
-    expect(thrown.projectiles.length).toBeGreaterThanOrEqual(1);
-    expect(thrown.projectiles[0].vx).toBeGreaterThan(0);
-    const originX = thrown.player.x;
-
-    // Sample flight: the star never exceeds max range, then despawns.
-    let maxTravel = 0;
-    for (let i = 0; i < 20; i++) {
-      await advance(gamePage, 100);
-      const cur = await state(gamePage);
-      for (const p of cur.projectiles) maxTravel = Math.max(maxTravel, p.x - originX);
-      if (cur.projectiles.length === 0) break;
-    }
-    expect((await state(gamePage)).projectiles.length).toBe(0);
-    expect(maxTravel).toBeLessThanOrEqual(STAR_RANGE + 0.5);
-    expect(maxTravel).toBeGreaterThan(STAR_RANGE / 2);
+    // Fire and sample the whole flight in ONE synchronous in-page block —
+    // background rAF frames can otherwise burn the 0.5s flight between
+    // tool roundtrips.
+    const flight = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const ctrl = (type) =>
+        window.dispatchEvent(new KeyboardEvent(type, { key: 'Control', bubbles: true }));
+      const originX = read().player.x;
+      ctrl('keydown');
+      window.advanceTime(17);
+      ctrl('keyup');
+      let sawStar = false;
+      let firstVx = 0;
+      let maxTravel = 0;
+      for (let i = 0; i < 120; i++) {
+        const cur = read();
+        if (cur.projectiles.length) {
+          if (!sawStar) firstVx = cur.projectiles[0].vx;
+          sawStar = true;
+          for (const p of cur.projectiles) maxTravel = Math.max(maxTravel, Math.abs(p.x - originX));
+        } else if (sawStar) break;
+        window.advanceTime(16.667);
+      }
+      return { sawStar, firstVx, maxTravel, remaining: read().projectiles.length };
+    });
+    expect(flight.sawStar).toBe(true);
+    expect(flight.firstVx).toBeGreaterThan(0);
+    expect(flight.remaining).toBe(0);
+    expect(flight.maxTravel).toBeLessThanOrEqual(STAR_RANGE + 0.5);
+    expect(flight.maxTravel).toBeGreaterThan(STAR_RANGE / 2);
   });
 
   test('star damages mob', async ({ gamePage }) => {
@@ -75,18 +87,29 @@ test.describe('M02 combat', () => {
     const fromGround = (await state(gamePage)).mobs.find((m) => m.spawn === 1);
     expect(fromGround.hp).toBe(fromGround.maxHp);
 
-    // (b) From its own platform: a flat throw connects.
-    await teleport(gamePage, 9.05, spawn1.y);
-    await advance(gamePage, 200);
-    await holdKey(gamePage, 'ArrowRight', 30);
-    await gamePage.keyboard.down('Control');
-    let damaged = false;
-    for (let i = 0; i < 40 && !damaged; i++) {
-      await advance(gamePage, 100);
-      const mob1 = (await state(gamePage)).mobs.find((m) => m.spawn === 1);
-      damaged = !mob1 || mob1.hp < mob1.maxHp; // dead also counts
-    }
-    await gamePage.keyboard.up('Control');
+    // (b) From its own platform a throw connects. Atomic in-page block:
+    // the aggro'd mob can knock us off the ledge during real-time gaps,
+    // so lock the first throw in before any interference.
+    const damaged = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const key = (type, k) =>
+        window.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+      const sp1 = read().map.mobSpawns[1];
+      window.__test.setPlayerPos(9.05, sp1.y);
+      window.advanceTime(50);
+      key('keydown', 'ArrowRight');
+      window.advanceTime(17);
+      key('keyup', 'ArrowRight');
+      key('keydown', 'Control');
+      let hit = false;
+      for (let i = 0; i < 300 && !hit; i++) {
+        window.advanceTime(16.667);
+        const mob1 = read().mobs.find((m) => m.spawn === 1);
+        hit = !mob1 || mob1.hp < mob1.maxHp; // dead also counts
+      }
+      key('keyup', 'Control');
+      return hit;
+    });
     expect(damaged).toBe(true);
   });
 

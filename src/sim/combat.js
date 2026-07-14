@@ -5,7 +5,7 @@ import {
   STAR_DAMAGE,
   STAR_SPEED,
   STAR_RANGE,
-  STAR_HIT_HEIGHT,
+  STAR_SELECT_HALF_HEIGHT,
   STAR_THROW_HEIGHT,
   ATTACK_COOLDOWN_MS,
   ATTACK_LOCK_MS,
@@ -36,17 +36,30 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
   // --- Throw stars (Ctrl; held = auto-attack on cooldown) ---
   combat.cooldownMs = Math.max(0, combat.cooldownMs - ms);
   if (input.attack && combat.cooldownMs === 0 && !player.climbing) {
-    // Full-authentic Maple: stars always fly flat in the facing direction.
-    // The tall hit rectangle (STAR_HIT_HEIGHT) supplies the vertical
-    // generosity — platform mobs need level access, no angled aiming.
+    // Classic MS: lock the nearest mob inside the forward selection rect
+    // at press time. The star homes to the lock; no lock = whiff visual.
     const dir = player.facing === 'right' ? 1 : -1;
+    const throwY = player.y + STAR_THROW_HEIGHT;
+    let target = null;
+    let bestDx = Infinity;
+    for (const mob of mobsState.mobs) {
+      const dx = (mob.x - player.x) * dir;
+      const dy = mob.y + MOB_HEIGHT / 2 - throwY;
+      if (dx <= 0 || dx > STAR_RANGE) continue;
+      if (Math.abs(dy) > STAR_SELECT_HALF_HEIGHT) continue;
+      if (dx < bestDx) {
+        bestDx = dx;
+        target = mob;
+      }
+    }
     combat.stars.push({
       id: combat.nextStarId++,
       x: player.x,
-      y: player.y + STAR_THROW_HEIGHT,
+      y: throwY,
       vx: dir * STAR_SPEED,
       vy: 0,
-      originX: player.x,
+      targetId: target ? target.id : null,
+      traveled: 0,
     });
     combat.cooldownMs = ATTACK_COOLDOWN_MS;
     // MSW ATTACK state: grounded throws are stand-and-throw; air throws
@@ -55,18 +68,28 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
     events?.emit('player:attacked', { facing: player.facing });
   }
 
-  // --- Fly + hit ---
-  for (const star of combat.stars) star.x += star.vx * dt;
+  // --- Fly + hit (locked stars home and land on arrival; whiffs never
+  // hit — classic MS resolves the attack at press time) ---
   combat.stars = combat.stars.filter((star) => {
-    if (Math.abs(star.x - star.originX) >= STAR_RANGE) return false;
-    if (star.x < map.minX || star.x > map.maxX) return false;
-    const hit = mobsState.mobs.find((m) =>
-      overlaps(star.x, star.y - STAR_HIT_HEIGHT / 2, 0.4, STAR_HIT_HEIGHT, m.x, m.y, MOB_WIDTH, MOB_HEIGHT),
-    );
-    if (hit) {
-      damageMob(mobsState, hit, STAR_DAMAGE, events);
-      return false;
+    const step = STAR_SPEED * dt;
+    if (star.targetId !== null) {
+      const target = mobsState.mobs.find((m) => m.id === star.targetId);
+      if (!target) return false; // lock died mid-flight: star fizzles
+      const dx = target.x - star.x;
+      const dy = target.y + MOB_HEIGHT / 2 - star.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist <= Math.max(step, 0.3)) {
+        damageMob(mobsState, target, STAR_DAMAGE, events);
+        return false;
+      }
+      star.vx = (dx / dist) * STAR_SPEED;
+      star.vy = (dy / dist) * STAR_SPEED;
     }
+    star.x += star.vx * dt;
+    star.y += star.vy * dt;
+    star.traveled += step;
+    if (star.traveled >= STAR_RANGE) return false;
+    if (star.x < map.minX || star.x > map.maxX) return false;
     return true;
   });
 

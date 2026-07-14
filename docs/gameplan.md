@@ -25,7 +25,7 @@ Verbs: **hunt, throw, jump, climb, loot, level, equip**.
 - Getting touched by a mob knocks the player back (MSW HitEvent feedback): a small pop away from the mob, plus 1s of i-frames (MSW built-in PlayerHit ImmuneCooldown).
 - The sim exposes a named state machine (MSW StateComponent): idle/move/crouch/jump/fall/ladder/rope — the animation contract for ADR-0002's model sets.
 - Full official-model mapping: docs/reference/msw-parity.md.
-- Star throws are fully authentic: stars always fly flat in the facing direction; the tall hit rectangle catches mobs on your level or slightly above/below. Platform mobs require level access — jump or climb to them, then throw (jump-throws work naturally since the star spawns at your height).
+- Star throws use the classic MS target-lock model: pressing attack locks the nearest mob inside the forward selection rect (star range ahead, ±1.5 vertical); the star visual homes to the locked mob and cannot miss; if the lock dies mid-flight the star fizzles; a throw with no target in the rect is a whiff that hits nothing (even mobs that walk into its path). Platform mobs sit outside the rect — jump or climb to their level, then throw.
 - Mobs have simple patrol/aggro AI, HP bars, floating damage numbers, death pop + drop spill.
 - Player HP/MP; mob contact damage; death = respawn in town with small XP penalty (Maple-honest but forgiving; exact % tuned in playtests).
 - XP curve levels 1–~15 in v1; stats grow per level; damage scales with level + equipped weapon tier.

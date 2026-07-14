@@ -29,7 +29,7 @@
 | ClimbableComponent.SpeedFactor | Climb speed multiplier | CLIMB_SPEED ✓ |
 | PlayerHit ImmuneCooldown = 1 (built-in script) | 1s invulnerability after a hit | INVULN_MS = 1000 ✓ exact match |
 | Attack → HitComponent.OnHit pipeline | Attack shape query → per-target OnHit → HitEvent (damage numbers, crit hook) | stars → damageMob → `mob:hit` ✓; CalcCritical hook = M03+ candidate |
-| Attack areas are forward rects (`Attack(size, offset)`, offset anchored by LookDirectionX) | Attacks never aim at arbitrary angles; reach comes from the area | 1:1 as of 2026-07-14: stars fly flat, tall hit rect (STAR_HIT_HEIGHT) supplies vertical reach, platform mobs need level access. (Angled auto-aim and its 45° cone existed 2026-07-13→14, removed by user decision.) |
+| Attack areas are forward rects (`Attack(size, offset)`, offset anchored by LookDirectionX); classic MS resolves the attack at press time (target-lock) and the projectile visual homes to the lock | Selection is rect-based, never angle-based; the star can't miss its lock; whiffs hit nothing | 1:1 as of 2026-07-14: lock nearest mob in forward rect (STAR_RANGE × ±STAR_SELECT_HALF_HEIGHT), star homes to lock, damage on arrival, fizzle if lock dies; whiffs are pure visuals. (History: free-aim 45° cone → flat-flight, both superseded same day.) |
 | IsAttackTarget excludes DEAD | Dead entities can't be hit | dead mobs leave the list ✓ |
 
 ## Deliberately not adopted (yet)
