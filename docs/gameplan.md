@@ -19,7 +19,12 @@ Verbs: **hunt, throw, jump, climb, loot, level, equip**.
 - Side-view 2.5D: movement is on a 2D plane (left/right, jump, ladders/ropes) laid through 3D map geometry; the camera swings/pans at map transitions and points of interest.
 - Assassin v1 kit: basic star throw (fast, short-mid range), double jump. (Flash jump, skills/skill tree = backlog.)
 - Air momentum is committed (per the official MSW RigidbodyComponent model): jumps carry run momentum with no air drag; midair input gives only subtle steering (AIR_ACCEL, far below ground accel) and flips facing instantly — this is the assassin kite (jump away, throw backward at the chaser). Landing plants the feet: no direction held → momentum dies on touchdown; direction held → the run carries through.
-- Down jump (MSW DownJump): Down+Alt on a thin platform drops through it to whatever is below. On the ground floor it's a normal jump.
+- Down jump (MSW DownJump): Down+Alt on a thin platform drops through it to whatever is below. Down on the ground is crouch/prone (movement blocked; jump does nothing while prone on the floor).
+- Ladders/ropes (MSW ActionClimb/ActionJump): jump alone stays on the climbable; jump + a held direction leaps off sideways. Climbables are typed ladder|rope for animation.
+- Attacking while grounded is stand-and-throw (MSW ATTACK state): the run is locked for the attack interval; air throws stay free (the kite).
+- Getting touched by a mob knocks the player back (MSW HitEvent feedback): a small pop away from the mob, plus 1s of i-frames (MSW built-in PlayerHit ImmuneCooldown).
+- The sim exposes a named state machine (MSW StateComponent): idle/move/crouch/jump/fall/ladder/rope — the animation contract for ADR-0002's model sets.
+- Full official-model mapping: docs/reference/msw-parity.md.
 - Star throws auto-aim vertically: the claw reaches mobs above/below (platforms) when they're within star range in the facing direction.
 - Mobs have simple patrol/aggro AI, HP bars, floating damage numbers, death pop + drop spill.
 - Player HP/MP; mob contact damage; death = respawn in town with small XP penalty (Maple-honest but forgiving; exact % tuned in playtests).

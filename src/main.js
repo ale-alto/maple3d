@@ -96,6 +96,8 @@ window.render_game_to_text = () => {
       climbing: p.climbing,
       facing: p.facing,
       jumpsLeft: p.jumpsLeft,
+      state: p.state,
+      attackLockMs: Math.round(p.attackLockMs),
       hp: p.hp,
       maxHp: p.maxHp,
       invulnMs: Math.round(p.invulnMs),

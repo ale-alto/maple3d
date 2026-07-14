@@ -35,6 +35,14 @@ export const JUMP_VELOCITY = 13.5;
 export const DOUBLE_JUMP_VELOCITY = 12;
 export const CLIMB_SPEED = 3;
 export const LADDER_GRAB_RANGE = 0.5; // horizontal reach to grab a ladder
+// MSW ActionJump(horizontalInput) off a climbable: modest sideways leap.
+export const LADDER_JUMP_VX = 4;
+export const LADDER_JUMP_VY = 6;
+// MSW ATTACK state: grounded attacks lock the run for the attack window.
+export const ATTACK_LOCK_MS = 350;
+// MSW HitEvent FeedbackAction: pop away from the mob on contact.
+export const KNOCKBACK_VX = 5;
+export const KNOCKBACK_VY = 4;
 
 // --- Combat (M02 first pass; tune in playtests) ---
 export const PLAYER_MAX_HP = 50;

@@ -43,6 +43,11 @@ Make the "hunt" and "throw" verbs real: mobs spawn and patrol Field 1, the assas
 - [x] Firm landing: touching down with no direction held kills momentum on the landing step (no skid); holding a direction carries the run through — test: `tests/e2e/movement.spec.js::firm landing without input` *(appended 2026-07-13 from user playtest feedback)*
 - [x] Subtle air steering (MSW `AirAccelerationX` model): midair input drifts far below run speed; no air drag, momentum stays committed — test: `tests/e2e/movement.spec.js::subtle air steering` *(appended 2026-07-14, grounded in official MSW RigidbodyComponent docs)*
 - [x] Down jump (MSW `DownJump`): Down+Alt on a thin platform drops through it; normal jump on the ground floor — test: `tests/e2e/movement.spec.js::down jump through thin platform` *(appended 2026-07-14, grounded in official MSW RigidbodyComponent docs)*
+- [x] Ladder jump-off requires a direction (MSW `ActionJump(horizontalInput)`); jump alone stays on — test: `tests/e2e/movement.spec.js::ladder climb` *(parity batch 2026-07-14; revises the M01 exit rule)*
+- [x] Crouch/prone (MSW `ActionCrouch`): Down on ground stops movement; crouch+jump on ground floor does nothing — test: `tests/e2e/movement.spec.js::crouch stops movement`
+- [x] Grounded attack locks the run (MSW ATTACK state); air throws stay free — test: `tests/e2e/combat.spec.js::grounded attack locks movement`
+- [x] Contact knockback (MSW HitEvent FeedbackAction): touched player pops away from the mob — test: `tests/e2e/combat.spec.js::contact knockback`
+- [x] Named state machine (MSW StateComponent): idle/move/crouch/jump/fall/ladder/rope exposed for animation; climbables typed ladder|rope — test: `tests/e2e/movement.spec.js::maple state machine`
 - [ ] Throw/hit/death feel (pacing, numbers legibility) — verified by user playtest
 
 ## Exit condition

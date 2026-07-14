@@ -27,7 +27,7 @@ Scaffold phase completed per make-game scaffold.md:
 
 ## Next step
 
-User re-playtests M02 movement + combat. Movement is now grounded in the official MSW RigidbodyComponent model (see gameplan References): committed air momentum + subtle AIR_ACCEL steering, firm landing, snappier arc (GRAVITY 45), down jump (Down+Alt through thin platforms), vertical star auto-aim. Suite is 18/18. Known tuning candidates: MOB_MAX_HP 60 feels tanky (8 hits/kill); respawned mobs can camp the player (see 02-combat.md Notes). Then mark M02 done and start M03 (progression) red tests. Note: player HP is only visible via red damage numbers until the M03 HUD.
+User re-playtests M02 movement + combat after the 2026-07-14 MSW parity batch (docs/reference/msw-parity.md maps the full official model): committed air momentum + subtle air steering, firm landing, snappier arc, down jump, crouch/prone, ladder leap-off requires direction, grounded attack lock (stand-and-throw), contact knockback, named state machine (idle/move/crouch/jump/fall/ladder/rope in payload — the animation contract), vertical star auto-aim. Suite is 22/22. Known tuning candidates: MOB_MAX_HP 60 (8 hits/kill); respawn camping (softened by knockback now). Then mark M02 done and start M03 (progression) red tests. Note: player HP still only visible via red damage numbers until the M03 HUD.
 
 ## Blockers
 

@@ -12,6 +12,8 @@ import {
   DOUBLE_JUMP_VELOCITY,
   CLIMB_SPEED,
   LADDER_GRAB_RANGE,
+  LADDER_JUMP_VX,
+  LADDER_JUMP_VY,
   PLAYER_MAX_HP,
 } from '../core/constants.js';
 
@@ -30,7 +32,17 @@ export function createPlayer(map) {
     hp: PLAYER_MAX_HP,
     maxHp: PLAYER_MAX_HP,
     invulnMs: 0,
+    attackLockMs: 0, // MSW ATTACK state: grounded stand-and-throw interval
+    state: 'idle', // MSW StateComponent-style named state, for animation
   };
+}
+
+// Derived MSW-style state (idle/move/crouch/jump/fall/ladder/rope).
+function deriveState(p, input) {
+  if (p.climbing) return p.ladder?.type === 'rope' ? 'rope' : 'ladder';
+  if (!p.grounded) return p.vy > 0 ? 'jump' : 'fall';
+  if (input.down) return 'crouch';
+  return Math.abs(p.vx) > 0.1 ? 'move' : 'idle';
 }
 
 function findGrabbableLadder(map, p) {
@@ -51,34 +63,40 @@ function crossedFromAbove(prevY, newY, surfY) {
 export function stepPlayer(p, map, input, dt, events) {
   // --- Climbing state ---
   if (p.climbing) {
-    if (input.jump) {
+    // MSW ActionJump(horizontalInput): jump alone stays on the climbable;
+    // jump + held direction leaps off sideways.
+    const leapDir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+    if (input.jump && leapDir !== 0) {
       p.climbing = false;
       p.ladder = null;
-      p.vy = 0;
-      p.vx = 0;
+      p.vx = leapDir * LADDER_JUMP_VX;
+      p.vy = LADDER_JUMP_VY;
+      p.facing = leapDir > 0 ? 'right' : 'left';
       events?.emit('player:climb-exit', { reason: 'jump' });
-    } else {
-      const dir = (input.up ? 1 : 0) - (input.down ? 1 : 0);
-      p.y += dir * CLIMB_SPEED * dt;
-      if (p.y >= p.ladder.y2) {
-        // Top: pop onto the ledge the ladder leads to.
-        p.y = p.ladder.y2;
-        if (dir > 0) {
-          p.climbing = false;
-          p.ladder = null;
-          p.vy = 0;
-          events?.emit('player:climb-exit', { reason: 'top' });
-        }
-      } else if (p.y <= p.ladder.y1) {
-        p.y = p.ladder.y1;
-        if (dir < 0) {
-          p.climbing = false;
-          p.ladder = null;
-          events?.emit('player:climb-exit', { reason: 'bottom' });
-        }
-      }
+      p.state = deriveState(p, input);
       return;
     }
+    const dir = (input.up ? 1 : 0) - (input.down ? 1 : 0);
+    p.y += dir * CLIMB_SPEED * dt;
+    if (p.y >= p.ladder.y2) {
+      // Top: pop onto the ledge the ladder leads to.
+      p.y = p.ladder.y2;
+      if (dir > 0) {
+        p.climbing = false;
+        p.ladder = null;
+        p.vy = 0;
+        events?.emit('player:climb-exit', { reason: 'top' });
+      }
+    } else if (p.y <= p.ladder.y1) {
+      p.y = p.ladder.y1;
+      if (dir < 0) {
+        p.climbing = false;
+        p.ladder = null;
+        events?.emit('player:climb-exit', { reason: 'bottom' });
+      }
+    }
+    p.state = deriveState(p, input);
+    return;
   }
 
   // --- Grab a ladder ---
@@ -92,6 +110,7 @@ export function stepPlayer(p, map, input, dt, events) {
       p.vy = 0;
       p.grounded = false;
       events?.emit('player:climb-start', { ladder });
+      p.state = deriveState(p, input);
       return;
     }
   }
@@ -103,12 +122,17 @@ export function stepPlayer(p, map, input, dt, events) {
   // (facing flips instantly), throw backward while drifting.
   const move = (input.right ? 1 : 0) - (input.left ? 1 : 0);
   if (move !== 0) p.facing = move > 0 ? 'right' : 'left';
+  p.attackLockMs = Math.max(0, p.attackLockMs - dt * 1000);
   if (p.grounded) {
-    if (move !== 0) {
+    if (input.down) {
+      // MSW ActionCrouch: crouch/prone stops instantly and blocks the run.
+      p.vx = 0;
+    } else if (move !== 0 && p.attackLockMs === 0) {
       p.vx += move * RUN_ACCEL * dt;
       p.vx = Math.max(-RUN_SPEED, Math.min(RUN_SPEED, p.vx));
     } else {
-      // Maple-style slight slide: friction, not an instant stop.
+      // No input — or stand-and-throw (MSW ATTACK state locks the run
+      // while grounded). Maple-style slight slide: friction, not a stop.
       const decel = GROUND_FRICTION * dt;
       if (Math.abs(p.vx) <= decel) p.vx = 0;
       else p.vx -= Math.sign(p.vx) * decel;
@@ -119,9 +143,11 @@ export function stepPlayer(p, map, input, dt, events) {
   }
 
   // --- Down jump (MSW DownJump): Down+jump on a thin platform drops
-  // through it; on the ground floor it falls back to a normal jump. ---
-  let didDownJump = false;
+  // through it; crouched on the ground floor, jump does nothing (Maple
+  // prone). ---
+  let jumpConsumed = false;
   if (input.jump && input.down && p.grounded) {
+    jumpConsumed = true;
     const plat = map.platforms.find(
       (pl) => Math.abs(p.y - pl.y) < 0.001 && p.x >= pl.x1 && p.x <= pl.x2,
     );
@@ -129,13 +155,12 @@ export function stepPlayer(p, map, input, dt, events) {
       p.grounded = false;
       p.vy = 0;
       p.dropThrough = plat; // ignored by landing until we're clearly below
-      didDownJump = true;
       events?.emit('player:downjump', {});
     }
   }
 
   // --- Jump / double jump ---
-  if (!didDownJump && input.jump && p.jumpsLeft > 0) {
+  if (!jumpConsumed && input.jump && p.jumpsLeft > 0) {
     p.vy = p.grounded || p.jumpsLeft === 2 ? JUMP_VELOCITY : DOUBLE_JUMP_VELOCITY;
     p.jumpsLeft -= 1;
     p.grounded = false;
@@ -198,4 +223,6 @@ export function stepPlayer(p, map, input, dt, events) {
     );
     if (!onGround && !onPlatform) p.grounded = false;
   }
+
+  p.state = deriveState(p, input);
 }

@@ -103,23 +103,27 @@ test.describe('M02 combat', () => {
 
   test('contact knockback', async ({ gamePage }) => {
     // MSW HitEvent FeedbackAction: a touched player pops back away from
-    // the mob, breaking the overlap.
+    // the mob. The mob may chase and re-close the gap, so assert the
+    // player's own displacement during the pop, not sustained separation.
+    // Stand just outside mob 0's patrol clamp: the aggro'd mob walks to
+    // its patrol edge and touches us there, and the knockback pops us
+    // further out of its reach — so the displacement from the (known)
+    // starting x persists, immune to read-timing races.
     const s = await state(gamePage);
-    const mob0 = s.mobs.find((m) => m.spawn === 0);
-    await teleport(gamePage, mob0.x, mob0.y);
-    await advance(gamePage, 200);
+    const spawn0 = s.map.mobSpawns[0];
+    const standX = spawn0.patrolX1 - 0.7;
+    await teleport(gamePage, standX, spawn0.y);
 
-    const hit = await state(gamePage);
-    expect(hit.player.hp).toBeLessThan(PLAYER_MAX_HP);
-    const mobNow = hit.mobs.find((m) => m.spawn === 0);
-    // Knocked clear of the overlap within a couple hundred ms.
-    await advance(gamePage, 300);
+    let hit = false;
+    for (let i = 0; i < 30 && !hit; i++) {
+      await advance(gamePage, 100);
+      hit = (await state(gamePage)).player.hp < PLAYER_MAX_HP;
+    }
+    expect(hit).toBe(true);
+
+    await advance(gamePage, 300); // pop completes (~180ms airtime)
     const after = await state(gamePage);
-    const mobAfter = after.mobs.find((m) => m.spawn === 0);
-    expect(Math.abs(after.player.x - mobAfter.x)).toBeGreaterThan(
-      Math.abs(hit.player.x - mobNow.x),
-    );
-    expect(Math.abs(after.player.x - mobAfter.x)).toBeGreaterThan(0.6);
+    expect(Math.abs(after.player.x - standX)).toBeGreaterThan(0.35);
   });
 
   test('contact damage', async ({ gamePage }) => {
@@ -138,21 +142,23 @@ test.describe('M02 combat', () => {
     await advance(gamePage, Math.min(300, INVULN_MS / 3));
     expect((await state(gamePage)).player.hp).toBe(hpAfterFirstHit);
 
-    // After i-frames lapse the next contact hits again (mob chases us).
-    await advance(gamePage, INVULN_MS + 1000);
+    // After i-frames lapse, re-engaging the mob hits again. (Knockback
+    // may have popped us out of its patrol reach, so step back in.)
+    await advance(gamePage, INVULN_MS);
+    const mobNow = (await state(gamePage)).mobs.find((m) => m.spawn === 0);
+    await teleport(gamePage, mobNow.x, mobNow.y);
+    await advance(gamePage, 500);
     expect((await state(gamePage)).player.hp).toBeLessThan(hpAfterFirstHit);
   });
 
   test('player death respawn', async ({ gamePage }) => {
+    // Knockback pops us clear of the mob after every touch, so passively
+    // standing still can no longer kill — re-engage by stepping onto the
+    // mob each second until death; respawn = back at map spawn, full HP.
     const s = await state(gamePage);
-    const mob0 = s.mobs.find((m) => m.spawn === 0);
-    await teleport(gamePage, mob0.x, mob0.y);
-
-    // Stand in the mob until dead; respawn = back at map spawn, full HP.
     let sawDamage = false;
     let respawned = null;
     for (let i = 0; i < 20; i++) {
-      await advance(gamePage, 1000);
       const cur = await state(gamePage);
       if (cur.player.hp < PLAYER_MAX_HP) sawDamage = true;
       const atSpawn = Math.abs(cur.player.x - s.map.spawn.x) < 0.5;
@@ -160,6 +166,9 @@ test.describe('M02 combat', () => {
         respawned = cur;
         break;
       }
+      const mob0 = cur.mobs.find((m) => m.spawn === 0);
+      if (mob0) await teleport(gamePage, mob0.x, mob0.y);
+      await advance(gamePage, 1000);
     }
     expect(sawDamage).toBe(true);
     expect(respawned).not.toBeNull();

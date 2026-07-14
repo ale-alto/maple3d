@@ -8,7 +8,10 @@ import {
   STAR_VERTICAL_RANGE,
   STAR_THROW_HEIGHT,
   ATTACK_COOLDOWN_MS,
+  ATTACK_LOCK_MS,
   INVULN_MS,
+  KNOCKBACK_VX,
+  KNOCKBACK_VY,
   MOB_CONTACT_DAMAGE,
   MOB_WIDTH,
   MOB_HEIGHT,
@@ -72,6 +75,9 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
       originY: throwY,
     });
     combat.cooldownMs = ATTACK_COOLDOWN_MS;
+    // MSW ATTACK state: grounded throws are stand-and-throw; air throws
+    // stay free (that's the kite).
+    if (player.grounded) player.attackLockMs = ATTACK_LOCK_MS;
     events?.emit('player:attacked', { facing: player.facing });
   }
 
@@ -102,6 +108,11 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
     if (touching) {
       player.hp -= MOB_CONTACT_DAMAGE;
       player.invulnMs = INVULN_MS;
+      // MSW HitEvent FeedbackAction: pop back away from the mob.
+      const kbDir = Math.sign(player.x - touching.x) || (player.facing === 'right' ? -1 : 1);
+      player.vx = kbDir * KNOCKBACK_VX;
+      player.vy = KNOCKBACK_VY;
+      player.grounded = false;
       events?.emit('player:hit', { amount: MOB_CONTACT_DAMAGE, x: player.x, y: player.y });
       if (player.hp <= 0) {
         events?.emit('player:died', {});
