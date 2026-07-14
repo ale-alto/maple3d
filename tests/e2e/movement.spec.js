@@ -149,6 +149,47 @@ test.describe('M01 movement', () => {
     expect(Math.abs(s.player.vx)).toBeLessThan(0.5);
   });
 
+  test('subtle air steering', async ({ gamePage }) => {
+    // MSW RigidbodyComponent model (AirAccelerationX): midair input steers
+    // far more weakly than ground accel — a standing jump can drift, but
+    // nowhere near run speed.
+    await gamePage.keyboard.press('Alt');
+    await advance(gamePage, 50);
+    expect((await state(gamePage)).player.grounded).toBe(false);
+
+    await gamePage.keyboard.down('ArrowRight');
+    await advance(gamePage, 150);
+    const drifting = await state(gamePage);
+    await gamePage.keyboard.up('ArrowRight');
+    expect(drifting.player.vx).toBeGreaterThan(0.4); // steering exists
+    expect(drifting.player.vx).toBeLessThan(2.5); // but is subtle
+  });
+
+  test('down jump through thin platform', async ({ gamePage }) => {
+    // MSW RigidbodyComponent model (DownJump): Down+Alt on a thin platform
+    // drops through it; landing resumes on whatever is below.
+    const s = await state(gamePage);
+    const plat = s.map.platforms[0];
+    const midX = (plat.x1 + plat.x2) / 2;
+    await teleport(gamePage, midX, plat.y + 0.1);
+    await advance(gamePage, 300);
+    const standing = await state(gamePage);
+    expect(standing.player.grounded).toBe(true);
+    expect(standing.player.y).toBeCloseTo(plat.y, 1);
+
+    await gamePage.keyboard.down('ArrowDown');
+    await gamePage.keyboard.press('Alt');
+    await advance(gamePage, 250);
+    await gamePage.keyboard.up('ArrowDown');
+    const dropping = await state(gamePage);
+    expect(dropping.player.y).toBeLessThan(plat.y - 0.3); // passed through
+
+    await advance(gamePage, 2000);
+    const landed = await state(gamePage);
+    expect(landed.player.grounded).toBe(true);
+    expect(landed.player.y).toBeCloseTo(0, 1); // on the ground below
+  });
+
   test('map bounds', async ({ gamePage }) => {
     const s = await state(gamePage);
 
