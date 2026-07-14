@@ -5,6 +5,8 @@
 
 const held = { left: false, right: false, up: false, down: false };
 let jumpQueue = 0;
+let attackHeld = false;
+let attackQueue = 0;
 
 const KEYS = {
   ArrowLeft: 'left',
@@ -21,8 +23,13 @@ export function initKeyboard(target) {
     } else if (e.key === 'Alt') {
       if (!e.repeat) jumpQueue += 1;
       e.preventDefault();
-    } else if (e.key === 'Control' || e.key === 'z' || e.key === 'Z') {
-      e.preventDefault(); // reserved: attack (M02), loot (M03)
+    } else if (e.key === 'Control') {
+      // Attack: held = auto-attack, edge-queued so taps between steps land.
+      if (!e.repeat) attackQueue += 1;
+      attackHeld = true;
+      e.preventDefault();
+    } else if (e.key === 'z' || e.key === 'Z') {
+      e.preventDefault(); // reserved: loot (M03)
     }
   });
 
@@ -32,6 +39,9 @@ export function initKeyboard(target) {
       e.preventDefault();
     } else if (e.key === 'Alt') {
       e.preventDefault();
+    } else if (e.key === 'Control') {
+      attackHeld = false;
+      e.preventDefault();
     }
   });
 
@@ -39,12 +49,16 @@ export function initKeyboard(target) {
   target.addEventListener('blur', () => {
     held.left = held.right = held.up = held.down = false;
     jumpQueue = 0;
+    attackHeld = false;
+    attackQueue = 0;
   });
 }
 
-// One sim step's input; consumes at most one queued jump edge.
+// One sim step's input; consumes at most one queued jump/attack edge.
 export function readInput() {
   const jump = jumpQueue > 0;
   if (jump) jumpQueue -= 1;
-  return { ...held, jump };
+  const attack = attackHeld || attackQueue > 0;
+  if (attackQueue > 0) attackQueue -= 1;
+  return { ...held, jump, attack };
 }

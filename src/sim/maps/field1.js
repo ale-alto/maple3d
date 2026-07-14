@@ -18,4 +18,8 @@ export const field1 = {
     { x: 4.5, y1: 0, y2: 2.2 },
     { x: 0.5, y1: 2.2, y2: 4.4 },
   ],
+  mobSpawns: [
+    { x: 5, y: 0, patrolX1: 2, patrolX2: 8 },
+    { x: 11.5, y: 3.0, patrolX1: 9.5, patrolX2: 13.5 },
+  ],
 };

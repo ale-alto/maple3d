@@ -11,6 +11,7 @@ import {
   DOUBLE_JUMP_VELOCITY,
   CLIMB_SPEED,
   LADDER_GRAB_RANGE,
+  PLAYER_MAX_HP,
 } from '../core/constants.js';
 
 export function createPlayer(map) {
@@ -24,6 +25,9 @@ export function createPlayer(map) {
     ladder: null,
     facing: 'right',
     jumpsLeft: 2,
+    hp: PLAYER_MAX_HP,
+    maxHp: PLAYER_MAX_HP,
+    invulnMs: 0,
   };
 }
 

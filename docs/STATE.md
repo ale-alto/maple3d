@@ -12,7 +12,7 @@ development (scaffold completed 2026-07-13)
 
 ## Current milestone
 
-M01 done (2026-07-13, user accepted). Next: M02 combat (docs/milestones/02-combat.md, status: planned).
+M02 combat (docs/milestones/02-combat.md, status: in-progress). All 6 automated AC green (13/13 suite); remaining: user playtest of combat feel + exit condition.
 
 ## Last action
 
@@ -27,7 +27,7 @@ Scaffold phase completed per make-game scaffold.md:
 
 ## Next step
 
-Start M02 (combat) via development.md: red Playwright specs first (tests/e2e/mobs.spec.js, tests/e2e/combat.spec.js per 02-combat.md AC), then implement src/sim/mobs.js + src/sim/combat.js headless, mob CharacterView, damage numbers. Movement feel constants were accepted as-is (RUN_SPEED 6, GRAVITY 30, JUMP_V 11, DOUBLE_JUMP_V 10, CLIMB_SPEED 3) — feel tuning stays open as playtest feedback.
+User playtests M02 exit condition (walk to a mob, hold Ctrl → stars/damage numbers/death pop; stand in mob → HP drain → respawn) and judges feel. Known tuning candidates: MOB_MAX_HP 60 feels tanky (8 hits/kill); respawned mobs can camp the player (see 02-combat.md Notes). Then mark M02 done and start M03 (progression) red tests. Note: player HP is only visible via red damage numbers until the M03 HUD.
 
 ## Blockers
 

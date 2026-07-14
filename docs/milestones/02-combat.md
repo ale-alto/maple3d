@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress — all automated AC green 2026-07-13; awaiting user playtest of combat feel + exit condition
 
 ## Objective
 
@@ -32,12 +32,12 @@ Make the "hunt" and "throw" verbs real: mobs spawn and patrol Field 1, the assas
 
 ## Acceptance criteria
 
-- [ ] Mobs spawn at field spawn points and patrol without falling off platforms — test: `tests/mobs.spec.js::patrol stays on platform`
-- [ ] Ctrl throws a star in the facing direction; it despawns at max range — test: `tests/combat.spec.js::star throw and range`
-- [ ] Star hit reduces mob HP and fires `mob:hit`; damage number appears — test: `tests/combat.spec.js::star damages mob`
-- [ ] Mob at 0 HP dies (`mob:died`), disappears with death pop, respawns after timer — test: `tests/mobs.spec.js::death and respawn`
-- [ ] Mob contact damages the player (with brief invulnerability window) — test: `tests/combat.spec.js::contact damage`
-- [ ] Player at 0 HP respawns at map start with full HP — test: `tests/combat.spec.js::player death respawn`
+- [x] Mobs spawn at field spawn points and patrol without falling off platforms — test: `tests/e2e/mobs.spec.js::patrol stays on platform`
+- [x] Ctrl throws a star in the facing direction; it despawns at max range — test: `tests/e2e/combat.spec.js::star throw and range`
+- [x] Star hit reduces mob HP and fires `mob:hit`; damage number appears — test: `tests/e2e/combat.spec.js::star damages mob`
+- [x] Mob at 0 HP dies (`mob:died`), disappears with death pop, respawns after timer — test: `tests/e2e/mobs.spec.js::death and respawn`
+- [x] Mob contact damages the player (with brief invulnerability window) — test: `tests/e2e/combat.spec.js::contact damage`
+- [x] Player at 0 HP respawns at map start with full HP — test: `tests/e2e/combat.spec.js::player death respawn`
 - [ ] Throw/hit/death feel (pacing, numbers legibility) — verified by user playtest
 
 ## Exit condition
@@ -52,3 +52,5 @@ Red-then-green Playwright specs above driven via `advanceTime` + `render_game_to
 
 - Keep all combat numbers (star damage, mob HP, patrol speed, aggro radius, contact damage, i-frames, respawn timer) in constants.js — M03 progression scaling will touch them.
 - One mob type only ("green blob tier"); the 3-type roster arrives with Field 2 content later.
+- 2026-07-13 implementation: MOB_MAX_HP set to 60 (≈8 star hits) partly for spec timing margin — feels tanky; playtest-tune STAR_DAMAGE/MOB_MAX_HP.
+- Playtest observation: a respawned mob can re-aggro and camp the player standing at its patrol edge (repeat AFK deaths). Maple-ish, but consider respawn placement or a spawn-protection tweak if it annoys — backlog if so.
