@@ -84,6 +84,27 @@ test.describe('M02 combat', () => {
     expect(mob1.hp).toBeLessThan(mob1.maxHp);
   });
 
+  test('stars never fire steeply vertical', async ({ gamePage }) => {
+    // MSW AttackComponent defines attacks as forward rectangular areas —
+    // vertical reach comes from the area, not from steep homing. Standing
+    // almost under a platform mob must NOT produce a near-vertical shot:
+    // every star stays inside the 45° forward cone (|vy| <= |vx|).
+    const s = await state(gamePage);
+    const mob1 = s.mobs.find((m) => m.spawn === 1);
+    await teleport(gamePage, mob1.x - 0.3, 0);
+    await advance(gamePage, 100);
+    await holdKey(gamePage, 'ArrowRight', 30);
+
+    await gamePage.keyboard.down('Control');
+    for (let i = 0; i < 20; i++) {
+      await advance(gamePage, 50);
+      for (const p of (await state(gamePage)).projectiles) {
+        expect(Math.abs(p.vy)).toBeLessThanOrEqual(Math.abs(p.vx) + 0.01);
+      }
+    }
+    await gamePage.keyboard.up('Control');
+  });
+
   test('grounded attack locks movement', async ({ gamePage }) => {
     // MSW ATTACK state: attacking while grounded is stand-and-throw — the
     // run input is ignored during the attack window. (Air throws stay
