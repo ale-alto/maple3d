@@ -23,6 +23,10 @@ export const FIXED_STEP_MS = 1000 / 60;
 export const RUN_SPEED = 6;
 export const RUN_ACCEL = 40;
 export const GROUND_FRICTION = 25; // decel when no input -> slight slide
+// MSW RigidbodyComponent model: AirAccelerationX (subtle midair steering,
+// far weaker than ground accel) with AirDecelerationX = 0 (momentum is
+// never dragged down in air — the kite stays committed).
+export const AIR_ACCEL = 6;
 // Tuned 2026-07-13 (playtest: "too floaty"): higher gravity with jump
 // velocity scaled to keep apex ≈ 2.0u — same reach, ~0.6s airtime vs 0.73s.
 export const GRAVITY = 45;

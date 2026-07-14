@@ -5,6 +5,7 @@ import {
   RUN_SPEED,
   RUN_ACCEL,
   GROUND_FRICTION,
+  AIR_ACCEL,
   GRAVITY,
   MAX_FALL_SPEED,
   JUMP_VELOCITY,
@@ -25,6 +26,7 @@ export function createPlayer(map) {
     ladder: null,
     facing: 'right',
     jumpsLeft: 2,
+    dropThrough: null,
     hp: PLAYER_MAX_HP,
     maxHp: PLAYER_MAX_HP,
     invulnMs: 0,
@@ -95,9 +97,10 @@ export function stepPlayer(p, map, input, dt, events) {
   }
 
   // --- Horizontal run ---
-  // Air momentum is committed (Maple-authentic, gameplan rule): while
-  // airborne, input changes facing only — no accel, no friction. This is
-  // the assassin kite: jump away, turn, throw backward while drifting.
+  // MSW RigidbodyComponent model: strong accel + drag on the ground; in
+  // the air only AIR_ACCEL (subtle steering) applies and there is no drag,
+  // so jump momentum stays committed — the assassin kite: jump away, turn
+  // (facing flips instantly), throw backward while drifting.
   const move = (input.right ? 1 : 0) - (input.left ? 1 : 0);
   if (move !== 0) p.facing = move > 0 ? 'right' : 'left';
   if (p.grounded) {
@@ -110,10 +113,29 @@ export function stepPlayer(p, map, input, dt, events) {
       if (Math.abs(p.vx) <= decel) p.vx = 0;
       else p.vx -= Math.sign(p.vx) * decel;
     }
+  } else if (move !== 0) {
+    p.vx += move * AIR_ACCEL * dt;
+    p.vx = Math.max(-RUN_SPEED, Math.min(RUN_SPEED, p.vx));
+  }
+
+  // --- Down jump (MSW DownJump): Down+jump on a thin platform drops
+  // through it; on the ground floor it falls back to a normal jump. ---
+  let didDownJump = false;
+  if (input.jump && input.down && p.grounded) {
+    const plat = map.platforms.find(
+      (pl) => Math.abs(p.y - pl.y) < 0.001 && p.x >= pl.x1 && p.x <= pl.x2,
+    );
+    if (plat) {
+      p.grounded = false;
+      p.vy = 0;
+      p.dropThrough = plat; // ignored by landing until we're clearly below
+      didDownJump = true;
+      events?.emit('player:downjump', {});
+    }
   }
 
   // --- Jump / double jump ---
-  if (input.jump && p.jumpsLeft > 0) {
+  if (!didDownJump && input.jump && p.jumpsLeft > 0) {
     p.vy = p.grounded || p.jumpsLeft === 2 ? JUMP_VELOCITY : DOUBLE_JUMP_VELOCITY;
     p.jumpsLeft -= 1;
     p.grounded = false;
@@ -138,11 +160,15 @@ export function stepPlayer(p, map, input, dt, events) {
     p.vx = 0;
   }
 
+  // Drop-through expires once we're clearly below the platform.
+  if (p.dropThrough && p.y < p.dropThrough.y - 0.6) p.dropThrough = null;
+
   // --- Landing (thin platforms: solid from above only) ---
   if (p.vy <= 0) {
     let landedOn = null;
     if (crossedFromAbove(prevY, p.y, map.groundY)) landedOn = map.groundY;
     for (const plat of map.platforms) {
+      if (plat === p.dropThrough) continue;
       if (p.x >= plat.x1 && p.x <= plat.x2 && crossedFromAbove(prevY, p.y, plat.y)) {
         if (landedOn === null || plat.y > landedOn) landedOn = plat.y;
       }

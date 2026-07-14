@@ -33,8 +33,10 @@ test.describe('M01 movement', () => {
     expect(rising.player.y).toBeGreaterThan(ground.player.y);
     expect(rising.player.jumpsLeft).toBe(1);
 
-    // Wait past apex, then double jump gives a second upward impulse.
-    await advance(gamePage, 400);
+    // Wait past apex (0.3s at current arc), then double jump gives a second
+    // upward impulse. Keep the wait well short of the ~583ms airtime so
+    // background rAF frames can't land us before the second Alt.
+    await advance(gamePage, 250);
     const preDouble = await state(gamePage);
     await gamePage.keyboard.press('Alt');
     await advance(gamePage, 50);

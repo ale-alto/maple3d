@@ -18,7 +18,8 @@ Verbs: **hunt, throw, jump, climb, loot, level, equip**.
 
 - Side-view 2.5D: movement is on a 2D plane (left/right, jump, ladders/ropes) laid through 3D map geometry; the camera swings/pans at map transitions and points of interest.
 - Assassin v1 kit: basic star throw (fast, short-mid range), double jump. (Flash jump, skills/skill tree = backlog.)
-- Air momentum is committed (Maple-authentic, no air control): jumps carry run momentum; turning mid-air changes facing only — this is the assassin kite (jump away, throw backward at the chaser). Landing plants the feet: no direction held → momentum dies on touchdown; direction held → the run carries through.
+- Air momentum is committed (per the official MSW RigidbodyComponent model): jumps carry run momentum with no air drag; midair input gives only subtle steering (AIR_ACCEL, far below ground accel) and flips facing instantly — this is the assassin kite (jump away, throw backward at the chaser). Landing plants the feet: no direction held → momentum dies on touchdown; direction held → the run carries through.
+- Down jump (MSW DownJump): Down+Alt on a thin platform drops through it to whatever is below. On the ground floor it's a normal jump.
 - Star throws auto-aim vertically: the claw reaches mobs above/below (platforms) when they're within star range in the facing direction.
 - Mobs have simple patrol/aggro AI, HP bars, floating damage numbers, death pop + drop spill.
 - Player HP/MP; mob contact damage; death = respawn in town with small XP penalty (Maple-honest but forgiving; exact % tuned in playtests).
@@ -56,6 +57,7 @@ One hub town (shop NPC for potions/stars, spawn point) + two connected hunting f
 
 ## References
 
+- **Official MapleStory Worlds movement docs** — movement model source of truth: [Understanding MapleStory Movement Concepts](https://maplestoryworlds-creators.nexon.com/en/docs?postId=750) (foothold rules) and [RigidbodyComponent API](https://maplestoryworlds-creators.nexon.com/en/apiReference?postId=378) (WalkAcceleration/WalkDrag/AirAccelerationX/AirDecelerationX/JumpBias/DownJump/FallSpeedMax). Our constants map onto these knobs.
 - *MapleStory* (the loop, the feel, the level-up moment, control scheme)
 - *MapleStory 2* (the chibi-3D look; also a cautionary reference — keep the 2D gameplay, take only the art direction)
 - *Klonoa / Kirby's Return to Dream Land* (2.5D done right: 3D characters, strictly side-view play)

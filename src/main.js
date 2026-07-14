@@ -138,6 +138,7 @@ window.__test = {
     p.vy = 0;
     p.climbing = false;
     p.ladder = null;
+    p.dropThrough = null;
     p.grounded = false; // physics settles it on the next step
     cameraRig.snap(p);
   },
