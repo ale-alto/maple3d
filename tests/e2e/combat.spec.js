@@ -1,5 +1,5 @@
 import { test, expect, state, advance, teleport, holdKey } from '../fixtures/game-test.js';
-import { STAR_RANGE, PLAYER_MAX_HP, INVULN_MS } from '../../src/core/constants.js';
+import { STAR_RANGE, PLAYER_MAX_HP } from '../../src/core/constants.js';
 
 // M02 contract additions:
 //   player.hp / player.maxHp / player.invulnMs
@@ -62,12 +62,12 @@ test.describe('M02 combat', () => {
     await advance(gamePage, 100);
     await holdKey(gamePage, 'ArrowRight', 30);
 
-    // Poll while attacking: stars auto-throw every cooldown, so an angled
-    // (vy > 0.5) star must be observable in flight at some sample even with
-    // background rAF frames racing the reads.
+    // Poll while attacking across a full patrol cycle: the mob is only a
+    // valid target while inside the 45° forward aim cone, so depending on
+    // patrol phase the angled shot can take several seconds to line up.
     await gamePage.keyboard.down('Control');
     let sawAngledStar = false;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 160; i++) {
       await advance(gamePage, 50);
       const cur = await state(gamePage);
       if (cur.projectiles.some((p) => p.vy > 0.5)) {
@@ -148,28 +148,40 @@ test.describe('M02 combat', () => {
   });
 
   test('contact damage', async ({ gamePage }) => {
-    const s = await state(gamePage);
-    const mob0 = s.mobs.find((m) => m.spawn === 0);
+    // Background rAF frames keep simulating between tool calls, so the
+    // i-frame window check runs as ONE synchronous in-page block —
+    // nothing can interleave inside a single JS task.
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      // Provoke a fresh hit (step onto the mob until i-frames are fresh).
+      let s = read();
+      for (let i = 0; i < 200 && !(s.player.invulnMs > 600); i++) {
+        const mob = s.mobs.find((m) => m.spawn === 0);
+        if (mob) window.__test.setPlayerPos(mob.x, mob.y);
+        window.advanceTime(50);
+        s = read();
+      }
+      if (!(s.player.invulnMs > 600)) return { ok: false };
+      const hp0 = s.player.hp;
+      window.advanceTime(300); // well inside the 1s i-frame window
+      return { ok: true, hp0, hp1: read().player.hp };
+    });
+    expect(result.ok).toBe(true);
+    expect(result.hp1).toBe(result.hp0); // i-frames held
 
-    // Stand inside the mob.
-    await teleport(gamePage, mob0.x, mob0.y);
-    await advance(gamePage, 300);
-    const hit = await state(gamePage);
-    expect(hit.player.hp).toBeLessThan(PLAYER_MAX_HP);
-    expect(hit.player.invulnMs).toBeGreaterThan(0);
-
-    // I-frames: no further damage while invulnerable.
-    const hpAfterFirstHit = hit.player.hp;
-    await advance(gamePage, Math.min(300, INVULN_MS / 3));
-    expect((await state(gamePage)).player.hp).toBe(hpAfterFirstHit);
-
-    // After i-frames lapse, re-engaging the mob hits again. (Knockback
-    // may have popped us out of its patrol reach, so step back in.)
-    await advance(gamePage, INVULN_MS);
-    const mobNow = (await state(gamePage)).mobs.find((m) => m.spawn === 0);
-    await teleport(gamePage, mobNow.x, mobNow.y);
-    await advance(gamePage, 500);
-    expect((await state(gamePage)).player.hp).toBeLessThan(hpAfterFirstHit);
+    // After i-frames lapse, re-engaging hits again (atomic for the same
+    // reason; teleports re-engage because knockback breaks contact).
+    const again = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const hpStart = read().player.hp;
+      for (let i = 0; i < 100 && read().player.hp >= hpStart; i++) {
+        const mob = read().mobs.find((m) => m.spawn === 0);
+        if (mob) window.__test.setPlayerPos(mob.x, mob.y);
+        window.advanceTime(100);
+      }
+      return { hpStart, hpEnd: read().player.hp };
+    });
+    expect(again.hpEnd).toBeLessThan(again.hpStart);
   });
 
   test('player death respawn', async ({ gamePage }) => {

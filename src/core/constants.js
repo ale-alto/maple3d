@@ -53,6 +53,9 @@ export const STAR_DAMAGE = 8;
 export const STAR_SPEED = 14;
 export const STAR_RANGE = 7;
 export const STAR_VERTICAL_RANGE = 3.5; // auto-aim reach above/below (platform mobs)
+// MSW attacks are forward rect areas, never steep homing: targets must sit
+// inside the forward aim cone, |dy| <= |dx| * STAR_MAX_SLOPE (1 = 45°).
+export const STAR_MAX_SLOPE = 1;
 export const STAR_THROW_HEIGHT = 1.0; // star spawn height above player feet
 export const ATTACK_COOLDOWN_MS = 350;
 export const MOB_MAX_HP = 60;

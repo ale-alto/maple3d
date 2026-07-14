@@ -6,6 +6,7 @@ import {
   STAR_SPEED,
   STAR_RANGE,
   STAR_VERTICAL_RANGE,
+  STAR_MAX_SLOPE,
   STAR_THROW_HEIGHT,
   ATTACK_COOLDOWN_MS,
   ATTACK_LOCK_MS,
@@ -48,6 +49,9 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
       const dy = mob.y + MOB_HEIGHT / 2 - throwY;
       if (dx * dir <= 0) continue; // behind us
       if (Math.abs(dx) > STAR_RANGE || Math.abs(dy) > STAR_VERTICAL_RANGE) continue;
+      // Forward aim cone (MSW forward rect area): a mob nearly overhead
+      // is not a valid target — you can't claw straight up in Maple.
+      if (Math.abs(dy) > Math.abs(dx) * STAR_MAX_SLOPE) continue;
       const dist = Math.hypot(dx, dy);
       if (dist < bestDist) {
         bestDist = dist;
