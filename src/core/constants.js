@@ -29,3 +29,27 @@ export const JUMP_VELOCITY = 11;
 export const DOUBLE_JUMP_VELOCITY = 10;
 export const CLIMB_SPEED = 3;
 export const LADDER_GRAB_RANGE = 0.5; // horizontal reach to grab a ladder
+
+// --- Combat (M02 first pass; tune in playtests) ---
+export const PLAYER_MAX_HP = 50;
+export const PLAYER_WIDTH = 0.7; // AABB for contact damage
+export const PLAYER_HEIGHT = 1.5;
+export const INVULN_MS = 1000; // i-frames after taking a hit
+export const STAR_DAMAGE = 8;
+export const STAR_SPEED = 14;
+export const STAR_RANGE = 7;
+export const STAR_THROW_HEIGHT = 1.0; // star spawn height above player feet
+export const ATTACK_COOLDOWN_MS = 350;
+export const MOB_MAX_HP = 20;
+export const MOB_SPEED = 1.2;
+export const MOB_AGGRO_SPEED = 2.2;
+export const MOB_AGGRO_RADIUS = 4;
+export const MOB_CONTACT_DAMAGE = 10;
+export const MOB_WIDTH = 0.9;
+export const MOB_HEIGHT = 0.9;
+export const MOB_RESPAWN_MS = 5000;
+
+// --- Colors (M02) ---
+export const MOB_COLOR = 0x8fd14f; // green blob tier
+export const STAR_COLOR = 0xd8dee6;
+export const DAMAGE_NUMBER_MS = 800; // damage number lifetime
