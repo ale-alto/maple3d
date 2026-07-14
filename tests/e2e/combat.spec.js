@@ -90,6 +90,32 @@ test.describe('M02 combat', () => {
     expect(damaged).toBe(true);
   });
 
+  test('star homes to its locked target', async ({ gamePage }) => {
+    // Classic MS attack model: the target is locked at press time (nearest
+    // mob in the forward rect), and the star visual homes to it. Homing to
+    // a ground mob from standing height means the star dips toward the
+    // mob's center — vy goes negative, which flat flight can never do.
+    const s = await state(gamePage);
+    const spawn0 = s.map.mobSpawns[0];
+    await teleport(gamePage, spawn0.patrolX1 - 0.5, spawn0.y);
+    await advance(gamePage, 100);
+    await holdKey(gamePage, 'ArrowRight', 30);
+
+    await gamePage.keyboard.down('Control');
+    let sawHomingDip = false;
+    for (let i = 0; i < 40 && !sawHomingDip; i++) {
+      await advance(gamePage, 50);
+      const cur = await state(gamePage);
+      if (cur.projectiles.some((p) => p.vy < -0.2)) sawHomingDip = true;
+    }
+    await gamePage.keyboard.up('Control');
+    expect(sawHomingDip).toBe(true);
+
+    // And the locked throws connect.
+    const mob0 = (await state(gamePage)).mobs.find((m) => m.spawn === 0);
+    expect(!mob0 || mob0.hp < mob0.maxHp).toBe(true);
+  });
+
   test('stars never fire steeply vertical', async ({ gamePage }) => {
     // MSW AttackComponent defines attacks as forward rectangular areas —
     // vertical reach comes from the area, not from steep homing. Standing
