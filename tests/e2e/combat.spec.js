@@ -62,13 +62,23 @@ test.describe('M02 combat', () => {
     await advance(gamePage, 100);
     await holdKey(gamePage, 'ArrowRight', 30);
 
+    // Poll while attacking: stars auto-throw every cooldown, so an angled
+    // (vy > 0.5) star must be observable in flight at some sample even with
+    // background rAF frames racing the reads.
     await gamePage.keyboard.down('Control');
-    await advance(gamePage, 120);
-    const thrown = await state(gamePage);
-    expect(thrown.projectiles.some((p) => p.vy > 0.5)).toBe(true); // angled up
-
-    await advance(gamePage, 1400);
+    let sawAngledStar = false;
+    for (let i = 0; i < 30; i++) {
+      await advance(gamePage, 50);
+      const cur = await state(gamePage);
+      if (cur.projectiles.some((p) => p.vy > 0.5)) {
+        sawAngledStar = true;
+        break;
+      }
+    }
+    await advance(gamePage, 200); // let the last star land
     await gamePage.keyboard.up('Control');
+    expect(sawAngledStar).toBe(true);
+
     const after = await state(gamePage);
     const mob1 = after.mobs.find((m) => m.spawn === 1);
     expect(mob1.hp).toBeLessThan(mob1.maxHp);

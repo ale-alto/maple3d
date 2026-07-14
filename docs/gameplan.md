@@ -18,7 +18,7 @@ Verbs: **hunt, throw, jump, climb, loot, level, equip**.
 
 - Side-view 2.5D: movement is on a 2D plane (left/right, jump, ladders/ropes) laid through 3D map geometry; the camera swings/pans at map transitions and points of interest.
 - Assassin v1 kit: basic star throw (fast, short-mid range), double jump. (Flash jump, skills/skill tree = backlog.)
-- Air momentum is committed (Maple-authentic, no air control): jumps carry run momentum; turning mid-air changes facing only — this is the assassin kite (jump away, throw backward at the chaser).
+- Air momentum is committed (Maple-authentic, no air control): jumps carry run momentum; turning mid-air changes facing only — this is the assassin kite (jump away, throw backward at the chaser). Landing plants the feet: no direction held → momentum dies on touchdown; direction held → the run carries through.
 - Star throws auto-aim vertically: the claw reaches mobs above/below (platforms) when they're within star range in the facing direction.
 - Mobs have simple patrol/aggro AI, HP bars, floating damage numbers, death pop + drop spill.
 - Player HP/MP; mob contact damage; death = respawn in town with small XP penalty (Maple-honest but forgiving; exact % tuned in playtests).

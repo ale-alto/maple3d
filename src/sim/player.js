@@ -153,6 +153,10 @@ export function stepPlayer(p, map, input, dt, events) {
       p.vy = 0;
       p.grounded = true;
       p.jumpsLeft = 2;
+      // Firm landing (Maple-authentic): momentum is committed in the air,
+      // but touchdown with no direction held plants the feet — no skid.
+      // Holding a direction carries the run through the landing seamlessly.
+      if (wasAirborne && move === 0) p.vx = 0;
       if (wasAirborne) events?.emit('player:landed', { y: landedOn });
     } else if (p.grounded && p.y < prevY) {
       // Walked off an edge.
