@@ -103,6 +103,30 @@ test.describe('M01 movement', () => {
     expect((await state(gamePage)).player.climbing).toBe(false);
   });
 
+  test('air momentum kite', async ({ gamePage }) => {
+    // Run right to full speed and jump while still holding right.
+    await gamePage.keyboard.down('ArrowRight');
+    await advance(gamePage, 500);
+    await gamePage.keyboard.press('Alt');
+    await advance(gamePage, 50);
+    await gamePage.keyboard.up('ArrowRight');
+
+    // Turn around mid-air: facing flips, momentum does not.
+    await gamePage.keyboard.down('ArrowLeft');
+    await advance(gamePage, 200);
+    const kiting = await state(gamePage);
+    expect(kiting.player.grounded).toBe(false);
+    expect(kiting.player.facing).toBe('left');
+    expect(kiting.player.vx).toBeGreaterThan(4); // still flying right
+
+    // Ground control resumes on landing: keep holding left, we turn around.
+    await advance(gamePage, 2000);
+    const grounded = await state(gamePage);
+    expect(grounded.player.grounded).toBe(true);
+    expect(grounded.player.vx).toBeLessThan(0);
+    await gamePage.keyboard.up('ArrowLeft');
+  });
+
   test('map bounds', async ({ gamePage }) => {
     const s = await state(gamePage);
 

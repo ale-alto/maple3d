@@ -51,6 +51,29 @@ test.describe('M02 combat', () => {
     expect(after.fx.damageNumbers.length).toBeGreaterThan(0);
   });
 
+  test('star reaches platform mob', async ({ gamePage }) => {
+    const s = await state(gamePage);
+    // mobSpawns[1] lives on the high-right platform (y=3); stand on the
+    // ground just left of its patrol range, in horizontal star range.
+    const spawn1 = s.map.mobSpawns[1];
+    expect(spawn1.y).toBeGreaterThan(1);
+
+    await teleport(gamePage, spawn1.patrolX1 - 1, 0);
+    await advance(gamePage, 100);
+    await holdKey(gamePage, 'ArrowRight', 30);
+
+    await gamePage.keyboard.down('Control');
+    await advance(gamePage, 120);
+    const thrown = await state(gamePage);
+    expect(thrown.projectiles.some((p) => p.vy > 0.5)).toBe(true); // angled up
+
+    await advance(gamePage, 1400);
+    await gamePage.keyboard.up('Control');
+    const after = await state(gamePage);
+    const mob1 = after.mobs.find((m) => m.spawn === 1);
+    expect(mob1.hp).toBeLessThan(mob1.maxHp);
+  });
+
   test('contact damage', async ({ gamePage }) => {
     const s = await state(gamePage);
     const mob0 = s.mobs.find((m) => m.spawn === 0);

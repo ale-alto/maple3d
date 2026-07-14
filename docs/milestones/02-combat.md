@@ -38,6 +38,8 @@ Make the "hunt" and "throw" verbs real: mobs spawn and patrol Field 1, the assas
 - [x] Mob at 0 HP dies (`mob:died`), disappears with death pop, respawns after timer — test: `tests/e2e/mobs.spec.js::death and respawn`
 - [x] Mob contact damages the player (with brief invulnerability window) — test: `tests/e2e/combat.spec.js::contact damage`
 - [x] Player at 0 HP respawns at map start with full HP — test: `tests/e2e/combat.spec.js::player death respawn`
+- [ ] Air momentum is committed (kite): jumping carries run momentum, and turning mid-air changes facing only — no air deceleration/reversal — test: `tests/e2e/movement.spec.js::air momentum kite` *(appended 2026-07-13 from user playtest feedback; revises M01 air physics)*
+- [ ] Stars auto-aim vertically: a mob on a platform within star range gets hit from below/above — test: `tests/e2e/combat.spec.js::star reaches platform mob` *(appended 2026-07-13 from user playtest feedback)*
 - [ ] Throw/hit/death feel (pacing, numbers legibility) — verified by user playtest
 
 ## Exit condition
