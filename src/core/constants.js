@@ -23,10 +23,12 @@ export const FIXED_STEP_MS = 1000 / 60;
 export const RUN_SPEED = 6;
 export const RUN_ACCEL = 40;
 export const GROUND_FRICTION = 25; // decel when no input -> slight slide
-export const GRAVITY = 30;
-export const MAX_FALL_SPEED = 18;
-export const JUMP_VELOCITY = 11;
-export const DOUBLE_JUMP_VELOCITY = 10;
+// Tuned 2026-07-13 (playtest: "too floaty"): higher gravity with jump
+// velocity scaled to keep apex ≈ 2.0u — same reach, ~0.6s airtime vs 0.73s.
+export const GRAVITY = 45;
+export const MAX_FALL_SPEED = 20;
+export const JUMP_VELOCITY = 13.5;
+export const DOUBLE_JUMP_VELOCITY = 12;
 export const CLIMB_SPEED = 3;
 export const LADDER_GRAB_RANGE = 0.5; // horizontal reach to grab a ladder
 
