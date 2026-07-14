@@ -84,6 +84,44 @@ test.describe('M02 combat', () => {
     expect(mob1.hp).toBeLessThan(mob1.maxHp);
   });
 
+  test('grounded attack locks movement', async ({ gamePage }) => {
+    // MSW ATTACK state: attacking while grounded is stand-and-throw — the
+    // run input is ignored during the attack window. (Air throws stay
+    // free; that's the kite, covered by the air momentum spec.)
+    await gamePage.keyboard.down('Control');
+    await gamePage.keyboard.down('ArrowRight');
+    await advance(gamePage, 600);
+    const locked = await state(gamePage);
+    expect(Math.abs(locked.player.x - (await state(gamePage)).map.spawn.x)).toBeLessThan(0.6);
+
+    await gamePage.keyboard.up('Control');
+    await advance(gamePage, 800);
+    const freed = await state(gamePage);
+    await gamePage.keyboard.up('ArrowRight');
+    expect(freed.player.x - locked.player.x).toBeGreaterThan(1.5); // running again
+  });
+
+  test('contact knockback', async ({ gamePage }) => {
+    // MSW HitEvent FeedbackAction: a touched player pops back away from
+    // the mob, breaking the overlap.
+    const s = await state(gamePage);
+    const mob0 = s.mobs.find((m) => m.spawn === 0);
+    await teleport(gamePage, mob0.x, mob0.y);
+    await advance(gamePage, 200);
+
+    const hit = await state(gamePage);
+    expect(hit.player.hp).toBeLessThan(PLAYER_MAX_HP);
+    const mobNow = hit.mobs.find((m) => m.spawn === 0);
+    // Knocked clear of the overlap within a couple hundred ms.
+    await advance(gamePage, 300);
+    const after = await state(gamePage);
+    const mobAfter = after.mobs.find((m) => m.spawn === 0);
+    expect(Math.abs(after.player.x - mobAfter.x)).toBeGreaterThan(
+      Math.abs(hit.player.x - mobNow.x),
+    );
+    expect(Math.abs(after.player.x - mobAfter.x)).toBeGreaterThan(0.6);
+  });
+
   test('contact damage', async ({ gamePage }) => {
     const s = await state(gamePage);
     const mob0 = s.mobs.find((m) => m.spawn === 0);

@@ -99,10 +99,72 @@ test.describe('M01 movement', () => {
     expect(higher.player.x).toBeCloseTo(ladder.x, 1);
     await gamePage.keyboard.up('ArrowUp');
 
-    // Jumping off the ladder exits climb.
+    // MSW ActionJump(horizontalInput): jump alone does NOT leave the
+    // ladder; jump + direction leaps off sideways.
     await gamePage.keyboard.press('Alt');
     await advance(gamePage, 100);
-    expect((await state(gamePage)).player.climbing).toBe(false);
+    expect((await state(gamePage)).player.climbing).toBe(true);
+
+    await gamePage.keyboard.down('ArrowLeft');
+    await gamePage.keyboard.press('Alt');
+    await advance(gamePage, 100);
+    const leapt = await state(gamePage);
+    await gamePage.keyboard.up('ArrowLeft');
+    expect(leapt.player.climbing).toBe(false);
+    expect(leapt.player.vx).toBeLessThan(0); // leapt leftward
+  });
+
+  test('crouch stops movement', async ({ gamePage }) => {
+    // MSW ActionCrouch: Down on the ground is crouch/prone — movement is
+    // blocked even while holding a direction, and crouch+jump on the
+    // ground floor does nothing (down-jump is platform-only).
+    await gamePage.keyboard.down('ArrowDown');
+    await advance(gamePage, 100);
+    const crouched = await state(gamePage);
+    expect(crouched.player.state).toBe('crouch');
+
+    const x0 = crouched.player.x;
+    await gamePage.keyboard.down('ArrowRight');
+    await advance(gamePage, 400);
+    const held = await state(gamePage);
+    expect(held.player.state).toBe('crouch');
+    expect(Math.abs(held.player.x - x0)).toBeLessThan(0.05);
+
+    await gamePage.keyboard.press('Alt');
+    await advance(gamePage, 150);
+    const jumped = await state(gamePage);
+    expect(jumped.player.grounded).toBe(true); // no jump from ground crouch
+    await gamePage.keyboard.up('ArrowRight');
+    await gamePage.keyboard.up('ArrowDown');
+  });
+
+  test('maple state machine', async ({ gamePage }) => {
+    // MSW StateComponent: the sim reports named states for animation.
+    expect((await state(gamePage)).player.state).toBe('idle');
+
+    await gamePage.keyboard.down('ArrowRight');
+    await advance(gamePage, 200);
+    expect((await state(gamePage)).player.state).toBe('move');
+
+    await gamePage.keyboard.press('Alt');
+    await advance(gamePage, 100);
+    expect((await state(gamePage)).player.state).toBe('jump'); // ascending
+    await advance(gamePage, 350);
+    expect((await state(gamePage)).player.state).toBe('fall'); // descending
+    await gamePage.keyboard.up('ArrowRight');
+    await advance(gamePage, 1500);
+
+    // Climbables are typed (ClimbableAnimationType): ladders[0] is the
+    // ladder, ladders[1] is the rope; the state reports which kind.
+    const s = await state(gamePage);
+    const ladder = s.map.ladders.find((l) => l.type === 'ladder');
+    expect(ladder).toBeTruthy();
+    await teleport(gamePage, ladder.x, ladder.y1);
+    await advance(gamePage, 100);
+    await gamePage.keyboard.down('ArrowUp');
+    await advance(gamePage, 150);
+    expect((await state(gamePage)).player.state).toBe('ladder');
+    await gamePage.keyboard.up('ArrowUp');
   });
 
   test('air momentum kite', async ({ gamePage }) => {
