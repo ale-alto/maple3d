@@ -51,37 +51,43 @@ test.describe('M02 combat', () => {
     expect(after.fx.damageNumbers.length).toBeGreaterThan(0);
   });
 
-  test('star reaches platform mob', async ({ gamePage }) => {
+  test('platform mobs require level access', async ({ gamePage }) => {
+    // Full-authentic Maple (user decision 2026-07-14): stars fly flat;
+    // vertical generosity comes from the hit rectangle, never from aiming.
+    // A mob on a high platform is unhittable from the ground — you get on
+    // its level (jump/climb) and throw flat, like real Maple.
     const s = await state(gamePage);
-    // mobSpawns[1] lives on the high-right platform (y=3); stand on the
-    // ground just left of its patrol range, in horizontal star range.
     const spawn1 = s.map.mobSpawns[1];
     expect(spawn1.y).toBeGreaterThan(1);
 
+    // (a) From the ground below: hold Ctrl across a full patrol cycle —
+    // every star flies flat and the platform mob takes nothing.
     await teleport(gamePage, spawn1.patrolX1 - 1, 0);
     await advance(gamePage, 100);
     await holdKey(gamePage, 'ArrowRight', 30);
-
-    // Poll while attacking across a full patrol cycle: the mob is only a
-    // valid target while inside the 45° forward aim cone, so depending on
-    // patrol phase the angled shot can take several seconds to line up.
     await gamePage.keyboard.down('Control');
-    let sawAngledStar = false;
-    for (let i = 0; i < 160; i++) {
-      await advance(gamePage, 50);
+    for (let i = 0; i < 60; i++) {
+      await advance(gamePage, 100);
       const cur = await state(gamePage);
-      if (cur.projectiles.some((p) => p.vy > 0.5)) {
-        sawAngledStar = true;
-        break;
-      }
+      for (const p of cur.projectiles) expect(p.vy).toBe(0);
     }
-    await advance(gamePage, 200); // let the last star land
     await gamePage.keyboard.up('Control');
-    expect(sawAngledStar).toBe(true);
+    const fromGround = (await state(gamePage)).mobs.find((m) => m.spawn === 1);
+    expect(fromGround.hp).toBe(fromGround.maxHp);
 
-    const after = await state(gamePage);
-    const mob1 = after.mobs.find((m) => m.spawn === 1);
-    expect(mob1.hp).toBeLessThan(mob1.maxHp);
+    // (b) From its own platform: a flat throw connects.
+    await teleport(gamePage, 9.05, spawn1.y);
+    await advance(gamePage, 200);
+    await holdKey(gamePage, 'ArrowRight', 30);
+    await gamePage.keyboard.down('Control');
+    let damaged = false;
+    for (let i = 0; i < 40 && !damaged; i++) {
+      await advance(gamePage, 100);
+      const mob1 = (await state(gamePage)).mobs.find((m) => m.spawn === 1);
+      damaged = !mob1 || mob1.hp < mob1.maxHp; // dead also counts
+    }
+    await gamePage.keyboard.up('Control');
+    expect(damaged).toBe(true);
   });
 
   test('stars never fire steeply vertical', async ({ gamePage }) => {
