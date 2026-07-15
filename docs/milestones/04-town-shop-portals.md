@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress — all 6 automated AC green 2026-07-14 (41/41 suite); awaiting user playtest of transition feel + exit condition
+done — 2026-07-14. All 6 automated AC green (41/41 suite); user playtested and approved transitions/shop/death-to-town same day.
 
 ## Objective
 
@@ -40,7 +40,7 @@ Build the multi-map architecture (map registry, portal transitions, per-map spaw
 - [x] Death respawns in town at full HP (not field start) — test: `tests/e2e/maps.spec.js::death respawns in town`
 - [x] Shop: near the NPC, interact opens the panel; buying a potion decrements mesos and increments potions; insufficient mesos refuses — test: `tests/e2e/shop.spec.js::buy potion`, `::insufficient mesos`
 - [x] Save/load round-trips mapId (v2 schema migrates v1 saves) — test: `tests/e2e/save.spec.js::map persistence`, `::v1 save migrates`
-- [ ] Transition feel (swing timing, portal placement) — verified by user playtest
+- [x] Transition feel (swing timing, portal placement) — verified by user playtest (approved 2026-07-14)
 
 ## Exit condition
 
