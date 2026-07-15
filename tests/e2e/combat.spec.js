@@ -262,25 +262,25 @@ test.describe('M02 combat', () => {
   });
 
   test('player death respawn', async ({ gamePage }) => {
-    // Knockback pops us clear of the mob after every touch, so passively
-    // standing still can no longer kill — re-engage by stepping onto the
-    // mob each second until death; respawn = back at map spawn, full HP.
-    const s = await state(gamePage);
-    let sawDamage = false;
-    let respawned = null;
-    for (let i = 0; i < 20; i++) {
-      const cur = await state(gamePage);
-      if (cur.player.hp < PLAYER_MAX_HP) sawDamage = true;
-      const atSpawn = Math.abs(cur.player.x - s.map.spawn.x) < 0.5;
-      if (sawDamage && atSpawn && cur.player.hp === PLAYER_MAX_HP) {
-        respawned = cur;
-        break;
+    // M04 rule (rewritten with that milestone): death returns you to TOWN
+    // at full HP, not the field start. Re-engage by stepping onto the mob
+    // (knockback breaks passive contact) until death.
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      let sawDamage = false;
+      for (let i = 0; i < 400; i++) {
+        const cur = read();
+        if (cur.player.hp < cur.player.maxHp) sawDamage = true;
+        if (sawDamage && cur.mapId === 'town' && cur.player.hp === cur.player.maxHp) {
+          return { ok: true, x: cur.player.x, spawnX: cur.map.spawn.x };
+        }
+        const mob = cur.mobs.find((m) => m.spawn === 0);
+        if (mob) window.__test.setPlayerPos(mob.x, mob.y);
+        window.advanceTime(100);
       }
-      const mob0 = cur.mobs.find((m) => m.spawn === 0);
-      if (mob0) await teleport(gamePage, mob0.x, mob0.y);
-      await advance(gamePage, 1000);
-    }
-    expect(sawDamage).toBe(true);
-    expect(respawned).not.toBeNull();
+      return { ok: false };
+    });
+    expect(result.ok).toBe(true);
+    expect(Math.abs(result.x - result.spawnX)).toBeLessThan(0.5);
   });
 });

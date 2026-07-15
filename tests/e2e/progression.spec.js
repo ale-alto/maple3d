@@ -63,13 +63,13 @@ test.describe('M03 progression', () => {
 
   test('death penalty', async ({ gamePage }) => {
     // Death costs a small slice of xpToNext, but never dips below 0.
+    // (Detection updated with M04: death sends you to town.)
     const died = await gamePage.evaluate((startXp) => {
       const read = () => JSON.parse(window.render_game_to_text());
       window.__test.setXp(1, startXp);
-      const spawnX = read().map.spawn.x;
       for (let i = 0; i < 400; i++) {
         const cur = read();
-        if (cur.player.xp < startXp && Math.abs(cur.player.x - spawnX) < 0.5) break;
+        if (cur.player.xp < startXp) break; // penalty applied at death
         const mob = cur.mobs.find((m) => m.spawn === 0);
         if (mob) window.__test.setPlayerPos(mob.x, mob.y);
         window.advanceTime(100);
@@ -80,19 +80,20 @@ test.describe('M03 progression', () => {
 
     const floored = await gamePage.evaluate(() => {
       const read = () => JSON.parse(window.render_game_to_text());
+      window.__test.gotoMap('field1');
+      window.advanceTime(100);
       window.__test.setXp(1, 0);
-      const spawnX = read().map.spawn.x;
       let sawDeath = false;
       for (let i = 0; i < 400 && !sawDeath; i++) {
         const cur = read();
         const mob = cur.mobs.find((m) => m.spawn === 0);
         if (mob) window.__test.setPlayerPos(mob.x, mob.y);
         window.advanceTime(100);
-        const now = read();
-        sawDeath = Math.abs(now.player.x - spawnX) < 0.5 && now.player.hp === now.player.maxHp;
+        sawDeath = read().mapId === 'town';
       }
-      return read().player.xp;
+      return { xp: read().player.xp, sawDeath };
     });
-    expect(floored).toBe(0);
+    expect(floored.sawDeath).toBe(true);
+    expect(floored.xp).toBe(0);
   });
 });

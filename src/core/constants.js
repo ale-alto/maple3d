@@ -86,6 +86,16 @@ export const POTION_HEAL = 20;
 export const POTION_KEY = 'c';
 export const STARTING_POTIONS = 3; // new-character kit
 
+// --- Maps / town / shop (M04) ---
+export const PORTAL_RANGE = 0.9; // Up within this of a portal transitions
+export const NPC_RANGE = 1.1; // Up within this of an NPC interacts
+export const CAMERA_SWING_MS = 500; // eased settle on map entry
+export const CAMERA_SWING_ZOOM = 6; // extra camera Z at swing start
+export const POTION_PRICE = 30;
+export const STARPACK_PRICE = 50;
+export const PORTAL_COLOR = 0x66c6ff;
+export const NPC_COLOR = 0xc98a4b;
+
 // --- Loot (M03) ---
 export const DROP_DESPAWN_MS = 15000;
 export const PICKUP_RANGE = 0.9;
