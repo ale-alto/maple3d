@@ -86,6 +86,53 @@ export const POTION_HEAL = 20;
 export const POTION_KEY = 'c';
 export const STARTING_POTIONS = 3; // new-character kit
 
+// --- Mob types (M05): the v1 roster of rising difficulty. Blob mirrors
+// the original M02 flat constants; spitter is the ranged one (slow,
+// jumpable projectile, fires on its own level only). Original designs —
+// IP-safe names (gameplan). ---
+export const MOB_TYPES = {
+  blob: {
+    maxHp: 40,
+    speed: 1.2,
+    aggroSpeed: 2.2,
+    contactDamage: 10,
+    xp: 8,
+    mesosMin: 5,
+    mesosMax: 14,
+    potionChance: 0.3,
+    starPackChance: 0.15,
+    color: 0x8fd14f,
+    scale: 1,
+  },
+  bruiser: {
+    maxHp: 70,
+    speed: 1.0,
+    aggroSpeed: 2.6,
+    contactDamage: 16,
+    xp: 16,
+    mesosMin: 12,
+    mesosMax: 24,
+    potionChance: 0.35,
+    starPackChance: 0.2,
+    color: 0x5f8dff,
+    scale: 1.25,
+  },
+  spitter: {
+    maxHp: 55,
+    speed: 1.4,
+    aggroSpeed: 1.4,
+    contactDamage: 12,
+    xp: 22,
+    mesosMin: 16,
+    mesosMax: 30,
+    potionChance: 0.4,
+    starPackChance: 0.25,
+    color: 0xb968ff,
+    scale: 1.1,
+    ranged: { projectileSpeed: 6, cooldownMs: 2200, range: 6, damage: 8 },
+  },
+};
+
 // --- Maps / town / shop (M04) ---
 export const PORTAL_RANGE = 0.9; // Up within this of a portal transitions
 export const NPC_RANGE = 1.1; // Up within this of an NPC interacts
