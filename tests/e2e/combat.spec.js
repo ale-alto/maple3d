@@ -182,21 +182,85 @@ test.describe('M02 combat', () => {
     await gamePage.keyboard.up('Control');
   });
 
+  test('attack box tracks the player vertically', async ({ gamePage }) => {
+    // 2026-07-14 fix: the attack box is centered on the PLAYER'S BODY, ~one
+    // character tall. A platform mob is unreachable from the ground below;
+    // jumping up to its level makes it a valid target.
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const key = (t, k) =>
+        window.dispatchEvent(new KeyboardEvent(t, { key: k, bubbles: true }));
+      window.__test.gotoMap('field2');
+      window.advanceTime(100);
+      const spawns = read().map.mobSpawns;
+      const idx = spawns.findIndex((s) => s.type === 'spitter');
+      const sp = spawns[idx];
+
+      // (a) On the ground below the platform mob: spam attack, no damage.
+      window.__test.setPlayerPos(sp.patrolX1 - 1, 0);
+      window.advanceTime(50);
+      key('keydown', 'ArrowRight');
+      window.advanceTime(17);
+      key('keyup', 'ArrowRight');
+      key('keydown', 'Control');
+      for (let i = 0; i < 120; i++) window.advanceTime(16.667);
+      key('keyup', 'Control');
+      const fromGround = read().mobs.find((m) => m.spawn === idx);
+      const groundNoDamage = fromGround && fromGround.hp === fromGround.maxHp;
+
+      // (b) Airborne at the mob's level, just in front: throw locks + hits.
+      window.__test.gotoMap('field2');
+      window.advanceTime(100);
+      const sp2 = read().map.mobSpawns[idx];
+      window.__test.setPlayerPos(sp2.patrolX1 - 1, sp2.y + 0.1);
+      window.advanceTime(17); // still at the mob's level
+      key('keydown', 'ArrowRight');
+      window.advanceTime(17);
+      key('keyup', 'ArrowRight');
+      key('keydown', 'Control');
+      let hitAtLevel = false;
+      for (let i = 0; i < 200 && !hitAtLevel; i++) {
+        window.advanceTime(16.667);
+        const m = read().mobs.find((x) => x.spawn === idx);
+        hitAtLevel = !m || m.hp < m.maxHp;
+      }
+      key('keyup', 'Control');
+      return { groundNoDamage, hitAtLevel };
+    });
+    expect(result.groundNoDamage).toBe(true); // no vertical attack from below
+    expect(result.hitAtLevel).toBe(true); // jump-to-level connects
+  });
+
   test('grounded attack locks movement', async ({ gamePage }) => {
     // MSW ATTACK state: attacking while grounded is stand-and-throw — the
-    // run input is ignored during the attack window. (Air throws stay
-    // free; that's the kite, covered by the air momentum spec.)
-    await gamePage.keyboard.down('Control');
-    await gamePage.keyboard.down('ArrowRight');
-    await advance(gamePage, 600);
-    const locked = await state(gamePage);
-    expect(Math.abs(locked.player.x - (await state(gamePage)).map.spawn.x)).toBeLessThan(0.6);
+    // run input is ignored while the throw lock is active (holding attack
+    // keeps you planted). Releasing frees the run. Atomic in-page so the
+    // now-longer lock (650ms) isn't raced by background frames.
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const key = (t, k) =>
+        window.dispatchEvent(new KeyboardEvent(t, { key: k, bubbles: true }));
+      const spawnX = read().map.spawn.x;
+      window.__test.setPlayerPos(spawnX, 0);
+      window.advanceTime(50);
 
-    await gamePage.keyboard.up('Control');
-    await advance(gamePage, 800);
-    const freed = await state(gamePage);
-    await gamePage.keyboard.up('ArrowRight');
-    expect(freed.player.x - locked.player.x).toBeGreaterThan(1.5); // running again
+      key('keydown', 'Control');
+      key('keydown', 'ArrowRight');
+      window.advanceTime(600); // one throw cycle: rooted the whole time
+      const lockedX = read().player.x;
+
+      key('keyup', 'Control');
+      // Wait out the remaining lock, then run for a fixed window.
+      for (let i = 0; i < 120 && read().player.attackLockMs > 0; i++) window.advanceTime(16.667);
+      const freedStartX = read().player.x;
+      window.advanceTime(600);
+      key('keyup', 'ArrowRight');
+      return { spawnX, lockedX, freedStartX, ranToX: read().player.x };
+    });
+    // Rooted while attacking...
+    expect(Math.abs(result.lockedX - result.spawnX)).toBeLessThan(0.6);
+    // ...and running again once the lock clears.
+    expect(result.ranToX - result.freedStartX).toBeGreaterThan(2);
   });
 
   test('contact knockback', async ({ gamePage }) => {

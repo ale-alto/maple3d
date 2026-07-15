@@ -35,15 +35,19 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
   // --- Throw stars (Ctrl; held = auto-attack on cooldown) ---
   combat.cooldownMs = Math.max(0, combat.cooldownMs - ms);
   if (input.attack && combat.cooldownMs === 0 && !player.climbing) {
-    // Classic MS: lock the nearest mob inside the forward selection rect
-    // at press time. The star homes to the lock; no lock = whiff visual.
+    // Classic MS: lock the nearest mob inside the forward attack box at
+    // press time. The box is centered on the player's BODY (rises with a
+    // jump) and is ~one character tall, so a mob straight above is out of
+    // reach but a jump-attack to a mob's level connects. Star homes to the
+    // lock; no lock = whiff visual.
     const dir = player.facing === 'right' ? 1 : -1;
     const throwY = player.y + STAR_THROW_HEIGHT;
+    const playerCenter = player.y + PLAYER_HEIGHT / 2;
     let target = null;
     let bestDx = Infinity;
     for (const mob of mobsState.mobs) {
       const dx = (mob.x - player.x) * dir;
-      const dy = mob.y + MOB_HEIGHT / 2 - throwY;
+      const dy = mob.y + MOB_HEIGHT / 2 - playerCenter;
       if (dx <= 0 || dx > STAR_RANGE) continue;
       if (Math.abs(dy) > STAR_SELECT_HALF_HEIGHT) continue;
       if (dx < bestDx) {

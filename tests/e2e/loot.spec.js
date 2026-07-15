@@ -79,12 +79,52 @@ test.describe('M03 loot', () => {
         ok: true,
         dropsBefore,
         dropsAfter: cur.drops.length,
+        mesosDropGone: !cur.drops.some((d) => d.kind === 'mesos'),
         mesos: cur.inventory.mesos,
       };
     });
     expect(result.ok).toBe(true);
     expect(result.mesos).toBeGreaterThan(0);
-    expect(result.dropsAfter).toBe(result.dropsBefore - 1);
+    // Holding Z vacuums reachable drops — the mesos is collected and the
+    // ground pile shrinks.
+    expect(result.mesosDropGone).toBe(true);
+    expect(result.dropsAfter).toBeLessThan(result.dropsBefore);
+  });
+
+  test('loot while walking with Z held', async ({ gamePage }) => {
+    // Reproduces the reported bug: hold Z, THEN move onto a drop — it must
+    // be picked up (held-to-loot vacuum, not a one-shot edge on press).
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const key = (type, k) =>
+        window.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+      const sp0 = read().map.mobSpawns[0];
+      window.__test.setPlayerPos(sp0.patrolX1 - 0.5, sp0.y);
+      window.advanceTime(50);
+      key('keydown', 'ArrowRight');
+      window.advanceTime(17);
+      key('keyup', 'ArrowRight');
+      key('keydown', 'Control');
+      const before = read().mobs.length;
+      for (let i = 0; i < 500 && read().mobs.length >= before; i++) window.advanceTime(16.667);
+      key('keyup', 'Control');
+      window.advanceTime(1000);
+
+      const drop = read().drops.find((d) => d.kind === 'mesos');
+      if (!drop) return { ok: false };
+      // Press and HOLD Z away from the drop first (nothing to grab)...
+      window.__test.setPlayerPos(drop.x - 3, drop.y);
+      key('keydown', 'z');
+      window.advanceTime(100);
+      const mesosBefore = read().inventory.mesos;
+      // ...then walk onto the drop while Z stays held.
+      window.__test.setPlayerPos(drop.x, drop.y);
+      window.advanceTime(100);
+      key('keyup', 'z');
+      return { ok: true, mesosBefore, mesosAfter: read().inventory.mesos };
+    });
+    expect(result.ok).toBe(true);
+    expect(result.mesosAfter).toBeGreaterThan(result.mesosBefore);
   });
 
   test('potion use', async ({ gamePage }) => {

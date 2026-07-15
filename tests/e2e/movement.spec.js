@@ -21,39 +21,34 @@ test.describe('M01 movement', () => {
     expect(Math.abs(settled.player.vx)).toBeLessThan(0.01);
   });
 
-  test('jump and double jump', async ({ gamePage }) => {
+  test('single jump only (no double jump)', async ({ gamePage }) => {
+    // 2026-07-14: double jump removed (not authentic — classic assassins
+    // jump once; flash jump is a skill, backlog #4).
     const ground = await state(gamePage);
     expect(ground.player.grounded).toBe(true);
-    expect(ground.player.jumpsLeft).toBe(2);
+    expect(ground.player.jumpsLeft).toBe(1);
 
     await gamePage.keyboard.press('Alt');
     await advance(gamePage, 100);
     const rising = await state(gamePage);
     expect(rising.player.grounded).toBe(false);
     expect(rising.player.y).toBeGreaterThan(ground.player.y);
-    expect(rising.player.jumpsLeft).toBe(1);
+    expect(rising.player.jumpsLeft).toBe(0);
 
-    // Wait past apex (0.3s at current arc), then double jump gives a second
-    // upward impulse. Keep the wait well short of the ~583ms airtime so
-    // background rAF frames can't land us before the second Alt.
+    // A second Alt mid-air does NOTHING — no upward impulse, no extra jump.
     await advance(gamePage, 250);
-    const preDouble = await state(gamePage);
+    const preSecond = await state(gamePage);
     await gamePage.keyboard.press('Alt');
     await advance(gamePage, 50);
-    const doubled = await state(gamePage);
-    expect(doubled.player.vy).toBeGreaterThan(preDouble.player.vy);
-    expect(doubled.player.jumpsLeft).toBe(0);
+    const afterSecond = await state(gamePage);
+    expect(afterSecond.player.vy).toBeLessThan(preSecond.player.vy); // still falling, not boosted
+    expect(afterSecond.player.jumpsLeft).toBe(0);
 
-    // A third Alt mid-air does nothing.
-    await gamePage.keyboard.press('Alt');
-    await advance(gamePage, 50);
-    expect((await state(gamePage)).player.jumpsLeft).toBe(0);
-
-    // Landing resets both jumps.
+    // Landing resets the single jump.
     await advance(gamePage, 3000);
     const landed = await state(gamePage);
     expect(landed.player.grounded).toBe(true);
-    expect(landed.player.jumpsLeft).toBe(2);
+    expect(landed.player.jumpsLeft).toBe(1);
   });
 
   test('thin platform collision', async ({ gamePage }) => {
@@ -66,10 +61,8 @@ test.describe('M01 movement', () => {
     await teleport(gamePage, midX, 0);
     await advance(gamePage, 100);
 
-    // Jump (+ double jump) straight up: player must pass through from
-    // below while rising, then land ON the platform when falling.
-    await gamePage.keyboard.press('Alt');
-    await advance(gamePage, 250);
+    // A single jump (apex ~2.5u) clears the low platform: pass through
+    // from below while rising, then land ON it when falling.
     await gamePage.keyboard.press('Alt');
     await advance(gamePage, 3000);
 

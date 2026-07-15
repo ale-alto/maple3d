@@ -27,19 +27,22 @@ export const GROUND_FRICTION = 25; // decel when no input -> slight slide
 // far weaker than ground accel) with AirDecelerationX = 0 (momentum is
 // never dragged down in air — the kite stays committed).
 export const AIR_ACCEL = 6;
-// Tuned 2026-07-13 (playtest: "too floaty"): higher gravity with jump
-// velocity scaled to keep apex ≈ 2.0u — same reach, ~0.6s airtime vs 0.73s.
+// Tuned 2026-07-13 (playtest "too floaty"): higher gravity, scaled jump.
+// 2026-07-14: double jump removed (not authentic — classic assassins jump
+// once; flash jump is a skill, backlog #4). JUMP_VELOCITY raised so a
+// single jump apex ~2.5u clears the low platforms double jump used to.
 export const GRAVITY = 45;
 export const MAX_FALL_SPEED = 20;
-export const JUMP_VELOCITY = 13.5;
-export const DOUBLE_JUMP_VELOCITY = 12;
+export const JUMP_VELOCITY = 15;
+export const MAX_JUMPS = 1; // no double jump
 export const CLIMB_SPEED = 3;
 export const LADDER_GRAB_RANGE = 0.5; // horizontal reach to grab a ladder
 // MSW ActionJump(horizontalInput) off a climbable: modest sideways leap.
 export const LADDER_JUMP_VX = 4;
 export const LADDER_JUMP_VY = 6;
-// MSW ATTACK state: grounded attacks lock the run for the attack window.
-export const ATTACK_LOCK_MS = 350;
+// MSW ATTACK state: grounded attacks root you for the throw. Lock == the
+// throw interval so holding attack keeps you planted (classic MS).
+export const ATTACK_LOCK_MS = 650;
 // MSW HitEvent FeedbackAction: pop away from the mob on contact.
 export const KNOCKBACK_VX = 5;
 export const KNOCKBACK_VY = 4;
@@ -52,14 +55,14 @@ export const INVULN_MS = 1000; // i-frames after taking a hit
 export const STAR_DAMAGE = 8;
 export const STAR_SPEED = 14;
 export const STAR_RANGE = 7;
-// Classic MS attack model: the target is LOCKED at press time — nearest
-// mob inside the forward selection rect (STAR_RANGE ahead, limited
-// vertical tolerance). The star visual then homes to the locked mob and
-// cannot miss; a throw with no target in the rect is a whiff that hits
-// nothing. Platform mobs stay out of reach (tolerance << platform height).
-export const STAR_SELECT_HALF_HEIGHT = 1.5;
+// Classic MS attack model: target LOCKED at press time — nearest mob whose
+// center sits inside the forward attack box. The box is centered on the
+// PLAYER'S BODY (moves up with jumps) and is ~one character tall, so a mob
+// straight above (platform) is out of reach while a jump-attack that brings
+// you to a mob's level connects. The star homes to the lock; no lock = whiff.
+export const STAR_SELECT_HALF_HEIGHT = 1.1; // box half-height around player center
 export const STAR_THROW_HEIGHT = 1.0; // star spawn height above player feet
-export const ATTACK_COOLDOWN_MS = 350;
+export const ATTACK_COOLDOWN_MS = 650; // slower, weightier throw (was 350, "too fast")
 export const MOB_MAX_HP = 40; // M03 rebalance: 5 base hits (was 60/8-hit, playtest "tanky")
 export const MOB_SPEED = 1.2;
 export const MOB_AGGRO_SPEED = 2.2;

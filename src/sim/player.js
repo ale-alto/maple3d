@@ -9,7 +9,7 @@ import {
   GRAVITY,
   MAX_FALL_SPEED,
   JUMP_VELOCITY,
-  DOUBLE_JUMP_VELOCITY,
+  MAX_JUMPS,
   CLIMB_SPEED,
   LADDER_GRAB_RANGE,
   LADDER_JUMP_VX,
@@ -27,7 +27,7 @@ export function createPlayer(map) {
     climbing: false,
     ladder: null,
     facing: 'right',
-    jumpsLeft: 2,
+    jumpsLeft: MAX_JUMPS,
     dropThrough: null,
     hp: PLAYER_MAX_HP,
     maxHp: PLAYER_MAX_HP,
@@ -99,7 +99,7 @@ export function stepPlayer(p, map, input, dt, events) {
       p.vy = 0;
       if (surfaceAt(map, p.x, p.y)) {
         p.grounded = true;
-        p.jumpsLeft = 2;
+        p.jumpsLeft = MAX_JUMPS;
       }
       events?.emit('player:climb-exit', { reason: 'top' });
     } else if (p.y <= p.ladder.y1 && dir < 0) {
@@ -111,7 +111,7 @@ export function stepPlayer(p, map, input, dt, events) {
       p.vy = 0;
       if (surfaceAt(map, p.x, p.y)) {
         p.grounded = true;
-        p.jumpsLeft = 2;
+        p.jumpsLeft = MAX_JUMPS;
       }
       events?.emit('player:climb-exit', { reason: 'bottom' });
     } else {
@@ -181,12 +181,12 @@ export function stepPlayer(p, map, input, dt, events) {
     }
   }
 
-  // --- Jump / double jump ---
-  if (!jumpConsumed && input.jump && p.jumpsLeft > 0) {
-    p.vy = p.grounded || p.jumpsLeft === 2 ? JUMP_VELOCITY : DOUBLE_JUMP_VELOCITY;
+  // --- Jump (single only; no double jump) ---
+  if (!jumpConsumed && input.jump && p.grounded && p.jumpsLeft > 0) {
+    p.vy = JUMP_VELOCITY;
     p.jumpsLeft -= 1;
     p.grounded = false;
-    events?.emit('player:jumped', { double: p.jumpsLeft === 0 });
+    events?.emit('player:jumped', {});
   }
 
   // --- Gravity + integrate ---
@@ -225,7 +225,7 @@ export function stepPlayer(p, map, input, dt, events) {
       p.y = landedOn;
       p.vy = 0;
       p.grounded = true;
-      p.jumpsLeft = 2;
+      p.jumpsLeft = MAX_JUMPS;
       // Firm landing (Maple-authentic): momentum is committed in the air,
       // but touchdown with no direction held plants the feet — no skid.
       // Holding a direction carries the run through the landing seamlessly.

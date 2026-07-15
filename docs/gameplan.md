@@ -17,15 +17,15 @@ Verbs: **hunt, throw, jump, climb, loot, level, equip**.
 ## Game rules
 
 - Side-view 2.5D: movement is on a 2D plane (left/right, jump, ladders/ropes) laid through 3D map geometry; the camera swings/pans at map transitions and points of interest.
-- Assassin v1 kit: basic star throw (fast, short-mid range), double jump. (Flash jump, skills/skill tree = backlog.)
+- Assassin v1 kit: basic star throw (short-mid range), single jump. (Double/flash jump, skills/skill tree = backlog #4 — classic assassins jump once; single-jump apex ~2.5u, higher tiers use ladders/ropes.)
 - Air momentum is committed (per the official MSW RigidbodyComponent model): jumps carry run momentum with no air drag; midair input gives only subtle steering (AIR_ACCEL, far below ground accel) and flips facing instantly — this is the assassin kite (jump away, throw backward at the chaser). Landing plants the feet: no direction held → momentum dies on touchdown; direction held → the run carries through.
 - Down jump (MSW DownJump): Down+Alt on a thin platform drops through it to whatever is below. Down on the ground is crouch/prone (movement blocked; jump does nothing while prone on the floor).
 - Ladders/ropes (MSW ActionClimb/ActionJump): jump alone stays on the climbable; jump + a held direction leaps off sideways. Grabs are direction-aware (Up grabs only with ladder above you, Down only with ladder below). Climbing off the top pops you onto the ledge standing; the bottom stands you on the surface beneath, or drops you if the rope hangs over a gap. Climbables are typed ladder|rope for animation.
-- Attacking while grounded is stand-and-throw (MSW ATTACK state): the run is locked for the attack interval; air throws stay free (the kite).
+- Attacking while grounded is stand-and-throw (MSW ATTACK state): the run is rooted for the throw interval (~650ms — holding attack keeps you planted); air throws stay free (the kite). Throw cadence is weighty, not rapid-fire.
 - Getting touched by a mob knocks the player back (MSW HitEvent feedback): a small pop away from the mob, plus 1s of i-frames (MSW built-in PlayerHit ImmuneCooldown).
 - The sim exposes a named state machine (MSW StateComponent): idle/move/crouch/jump/fall/ladder/rope — the animation contract for ADR-0002's model sets.
 - Full official-model mapping: docs/reference/msw-parity.md.
-- Star throws use the classic MS target-lock model: pressing attack locks the nearest mob inside the forward selection rect (star range ahead, ±1.5 vertical); the star visual homes to the locked mob and cannot miss; if the lock dies mid-flight the star fizzles; a throw with no target in the rect is a whiff that hits nothing (even mobs that walk into its path). Platform mobs sit outside the rect — jump or climb to their level, then throw.
+- Star throws use the classic MS target-lock model: pressing attack locks the nearest mob whose center sits inside the forward attack box; the star homes to the lock and cannot miss; if the lock dies mid-flight the star fizzles; a throw with no target is a whiff that hits nothing (even mobs that walk into its path). The attack box is centered on the **player's body** (~one character tall), so it rises with a jump: a mob straight above on a platform is out of reach from the ground (no "vertical attack"), but a jump-attack that brings you to a mob's level connects. Platform mobs → jump or climb to their level, then throw.
 - Mobs have simple patrol/aggro AI, HP bars, floating damage numbers, death pop + drop spill.
 - Player HP/MP; mob contact damage; death = respawn in town with small XP penalty (Maple-honest but forgiving; exact % tuned in playtests).
 - XP curve levels 1–~15 in v1; stats grow per level; damage scales with level + equipped weapon tier.
@@ -58,7 +58,7 @@ Suno-generated BGM in the MapleStory idiom — whimsical, loopable town theme + 
 
 ## V1 scope ceiling (vertical slice)
 
-One hub town (shop NPC for potions/stars, spawn point) + two connected hunting fields + **3 mob types** of rising difficulty; assassin kit (throw + double jump); levels 1–~15 with gear drops; localStorage saves; shared-world presence + server-owned mobs + chat bubbles; 2 Suno tracks + core SFX; classic Maple controls (arrows, Alt jump, Ctrl attack, Z loot — rebindable later, backlog).
+One hub town (shop NPC for potions/stars, spawn point) + two connected hunting fields + **3 mob types** of rising difficulty; assassin kit (throw + single jump); levels 1–~15 with gear drops; localStorage saves; shared-world presence + server-owned mobs + chat bubbles; 2 Suno tracks + core SFX; classic Maple controls (arrows, Alt jump, Ctrl attack, Z loot [hold to vacuum], C potion — rebindable later, backlog).
 
 ## References
 

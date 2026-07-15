@@ -7,7 +7,8 @@ const held = { left: false, right: false, up: false, down: false };
 let jumpQueue = 0;
 let attackHeld = false;
 let attackQueue = 0;
-let lootQueue = 0; // Z
+let lootHeld = false; // Z: held-to-loot (vacuums drops you walk over)
+let lootQueue = 0; // Z: edge, so a quick tap still registers between steps
 let potionQueue = 0; // C
 
 const KEYS = {
@@ -35,6 +36,7 @@ export function initKeyboard(target) {
       e.preventDefault();
     } else if (e.key === 'z' || e.key === 'Z') {
       if (!e.repeat) lootQueue += 1;
+      lootHeld = true;
       e.preventDefault();
     } else if (e.key === 'c' || e.key === 'C') {
       if (!e.repeat) potionQueue += 1;
@@ -51,6 +53,9 @@ export function initKeyboard(target) {
     } else if (e.key === 'Control') {
       attackHeld = false;
       e.preventDefault();
+    } else if (e.key === 'z' || e.key === 'Z') {
+      lootHeld = false;
+      e.preventDefault();
     }
   });
 
@@ -60,6 +65,7 @@ export function initKeyboard(target) {
     jumpQueue = 0;
     attackHeld = false;
     attackQueue = 0;
+    lootHeld = false;
     lootQueue = 0;
     potionQueue = 0;
     upPressQueue = 0;
@@ -72,8 +78,9 @@ export function readInput() {
   if (jump) jumpQueue -= 1;
   const attack = attackHeld || attackQueue > 0;
   if (attackQueue > 0) attackQueue -= 1;
-  const loot = lootQueue > 0;
-  if (loot) lootQueue -= 1;
+  // Held OR a queued tap — so walking over a drop while holding Z loots it.
+  const loot = lootHeld || lootQueue > 0;
+  if (lootQueue > 0) lootQueue -= 1;
   const potion = potionQueue > 0;
   if (potion) potionQueue -= 1;
   const upPressed = upPressQueue > 0;
