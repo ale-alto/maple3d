@@ -7,6 +7,8 @@ const held = { left: false, right: false, up: false, down: false };
 let jumpQueue = 0;
 let attackHeld = false;
 let attackQueue = 0;
+let lootQueue = 0; // Z
+let potionQueue = 0; // C
 
 const KEYS = {
   ArrowLeft: 'left',
@@ -29,7 +31,11 @@ export function initKeyboard(target) {
       attackHeld = true;
       e.preventDefault();
     } else if (e.key === 'z' || e.key === 'Z') {
-      e.preventDefault(); // reserved: loot (M03)
+      if (!e.repeat) lootQueue += 1;
+      e.preventDefault();
+    } else if (e.key === 'c' || e.key === 'C') {
+      if (!e.repeat) potionQueue += 1;
+      e.preventDefault();
     }
   });
 
@@ -51,14 +57,20 @@ export function initKeyboard(target) {
     jumpQueue = 0;
     attackHeld = false;
     attackQueue = 0;
+    lootQueue = 0;
+    potionQueue = 0;
   });
 }
 
-// One sim step's input; consumes at most one queued jump/attack edge.
+// One sim step's input; consumes at most one queued edge per action.
 export function readInput() {
   const jump = jumpQueue > 0;
   if (jump) jumpQueue -= 1;
   const attack = attackHeld || attackQueue > 0;
   if (attackQueue > 0) attackQueue -= 1;
-  return { ...held, jump, attack };
+  const loot = lootQueue > 0;
+  if (loot) lootQueue -= 1;
+  const potion = potionQueue > 0;
+  if (potion) potionQueue -= 1;
+  return { ...held, jump, attack, loot, potion };
 }

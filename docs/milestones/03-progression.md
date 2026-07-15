@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress — all 7 automated AC green 2026-07-14 (33/33 suite); awaiting user playtest of level-up feel + exit condition
 
 ## Objective
 
@@ -34,13 +34,13 @@ Close the dopamine loop: kills grant XP, the XP bar fills, level-ups flash and g
 
 ## Acceptance criteria
 
-- [ ] Mob kill grants XP; XP bar fills proportionally — test: `tests/progression.spec.js::xp gain`
-- [ ] XP overflow levels up: flash fires, stats/damage grow, bar resets with remainder — test: `tests/progression.spec.js::level up`
-- [ ] Player death applies the XP penalty (never below current level's 0) — test: `tests/progression.spec.js::death penalty`
-- [ ] Dead mob spills drops that scatter, despawn on timer — test: `tests/loot.spec.js::drop spill and despawn`
-- [ ] Z over a drop picks it up into inventory; currency increments — test: `tests/loot.spec.js::pickup`
-- [ ] Using a potion restores HP and consumes the stack — test: `tests/loot.spec.js::potion use`
-- [ ] Reload page → level, XP, inventory, position restored from localStorage — test: `tests/save.spec.js::persistence roundtrip`
+- [x] Mob kill grants XP; XP bar fills proportionally — test: `tests/e2e/progression.spec.js::xp gain`
+- [x] XP overflow levels up: flash fires, stats/damage grow, bar resets with remainder — test: `tests/e2e/progression.spec.js::level up`
+- [x] Player death applies the XP penalty (never below current level's 0) — test: `tests/e2e/progression.spec.js::death penalty`
+- [x] Dead mob spills drops that scatter, despawn on timer — test: `tests/e2e/loot.spec.js::drop spill and despawn`
+- [x] Z over a drop picks it up into inventory; currency increments — test: `tests/e2e/loot.spec.js::pickup`
+- [x] Using a potion restores HP and consumes the stack — test: `tests/e2e/loot.spec.js::potion use`
+- [x] Reload page → level, XP, inventory, position restored from localStorage — test: `tests/e2e/save.spec.js::persistence roundtrip`
 - [ ] Level-up moment feels like Maple (flash timing/placement) — verified by user playtest
 
 ## Exit condition
@@ -55,3 +55,6 @@ Red-then-green Playwright specs above; persistence spec drives a real page reloa
 
 - localStorage schema gets a version field from day one — the multiplayer milestone and any future server-character ADR (backlog #2) will migrate it.
 - Drop rates/XP curve first pass can copy Maple v62 vibes, exact numbers are playtest-tuned.
+- 2026-07-14 implementation: XP curve 20×1.4^(lvl−1) (L1→2: 20, L14→15: ≈1568); XP_PER_MOB 8; death penalty 5% of xpToNext floored at 0; HP +5/level with classic full heal on level-up; star damage +1/level; potions heal 20, start with 3, key C; mesos always drop (5–14), potion 30%, star pack 15% via seeded rng (LOOT_SEED — server-owned later); drops despawn at 15s. MOB_MAX_HP rebalanced 60→40 (closes the M02 "tanky" note; 5 base hits, fewer as you level).
+- MP bar renders static-full (nothing spends MP until skills); star packs collect in inventory but stars are not yet consumed (ammo + shop = next content milestone).
+- Save lives in src/core/save.js — NOT src/sim (localStorage is a DOM API; sim purity).

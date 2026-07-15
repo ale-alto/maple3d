@@ -47,20 +47,33 @@ test.describe('M02 combat', () => {
   });
 
   test('star damages mob', async ({ gamePage }) => {
-    const s = await state(gamePage);
-    const spawn0 = s.map.mobSpawns[0];
-
-    await teleport(gamePage, spawn0.patrolX1 - 0.5, spawn0.y);
-    await holdKey(gamePage, 'ArrowRight', 30);
-
-    await gamePage.keyboard.down('Control');
-    await advance(gamePage, 1500);
-    await gamePage.keyboard.up('Control');
-
-    const after = await state(gamePage);
-    const mob0 = after.mobs.find((m) => m.spawn === 0);
-    expect(mob0.hp).toBeLessThan(mob0.maxHp);
-    expect(after.fx.damageNumbers.length).toBeGreaterThan(0);
+    // Atomic per-step sampling: short flights and 40-HP mobs mean both the
+    // hit and the mob's death can happen inside one coarse sample chunk.
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const key = (type, k) =>
+        window.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+      const sp0 = read().map.mobSpawns[0];
+      window.__test.setPlayerPos(sp0.patrolX1 - 0.5, sp0.y);
+      window.advanceTime(50);
+      key('keydown', 'ArrowRight');
+      window.advanceTime(17);
+      key('keyup', 'ArrowRight');
+      key('keydown', 'Control');
+      let sawNumber = false;
+      let sawDamage = false;
+      for (let i = 0; i < 300 && !(sawNumber && sawDamage); i++) {
+        window.advanceTime(16.667);
+        const cur = read();
+        if (cur.fx.damageNumbers.length > 0) sawNumber = true;
+        const mob = cur.mobs.find((m) => m.spawn === 0);
+        if (!mob || mob.hp < mob.maxHp) sawDamage = true; // dead counts
+      }
+      key('keyup', 'Control');
+      return { sawNumber, sawDamage };
+    });
+    expect(result.sawDamage).toBe(true);
+    expect(result.sawNumber).toBe(true);
   });
 
   test('platform mobs require level access', async ({ gamePage }) => {
@@ -118,25 +131,34 @@ test.describe('M02 combat', () => {
     // mob in the forward rect), and the star visual homes to it. Homing to
     // a ground mob from standing height means the star dips toward the
     // mob's center — vy goes negative, which flat flight can never do.
-    const s = await state(gamePage);
-    const spawn0 = s.map.mobSpawns[0];
-    await teleport(gamePage, spawn0.patrolX1 - 0.5, spawn0.y);
-    await advance(gamePage, 100);
-    await holdKey(gamePage, 'ArrowRight', 30);
-
-    await gamePage.keyboard.down('Control');
-    let sawHomingDip = false;
-    for (let i = 0; i < 40 && !sawHomingDip; i++) {
-      await advance(gamePage, 50);
-      const cur = await state(gamePage);
-      if (cur.projectiles.some((p) => p.vy < -0.2)) sawHomingDip = true;
-    }
-    await gamePage.keyboard.up('Control');
-    expect(sawHomingDip).toBe(true);
-
-    // And the locked throws connect.
-    const mob0 = (await state(gamePage)).mobs.find((m) => m.spawn === 0);
-    expect(!mob0 || mob0.hp < mob0.maxHp).toBe(true);
+    // Stand back from the patrol clamp so flights last multiple steps,
+    // and sample atomically per sim step so a mid-flight star can't slip
+    // between reads.
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const key = (type, k) =>
+        window.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+      const sp0 = read().map.mobSpawns[0];
+      window.__test.setPlayerPos(sp0.patrolX1 - 2.5, sp0.y);
+      window.advanceTime(50);
+      key('keydown', 'ArrowRight');
+      window.advanceTime(17);
+      key('keyup', 'ArrowRight');
+      key('keydown', 'Control');
+      let dip = false;
+      let hpDrop = false;
+      for (let i = 0; i < 300 && !(dip && hpDrop); i++) {
+        window.advanceTime(16.667);
+        const cur = read();
+        if (cur.projectiles.some((p) => p.vy < -0.2)) dip = true;
+        const mob = cur.mobs.find((m) => m.spawn === 0);
+        if (!mob || mob.hp < mob.maxHp) hpDrop = true;
+      }
+      key('keyup', 'Control');
+      return { dip, hpDrop };
+    });
+    expect(result.dip).toBe(true);
+    expect(result.hpDrop).toBe(true);
   });
 
   test('stars never fire steeply vertical', async ({ gamePage }) => {

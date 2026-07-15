@@ -13,3 +13,116 @@ body {
   width: 100vw;
   height: 100vh;
 }
+
+/* --- HUD (plain DOM, M03) --- */
+#hud {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px;
+  background: rgba(20, 24, 38, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  font-family: system-ui, sans-serif;
+  font-size: 12px;
+  color: #e8ecf5;
+  user-select: none;
+  z-index: 10;
+}
+#hud-level {
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffd24d;
+  white-space: nowrap;
+}
+.hud-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hud-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hud-label {
+  width: 20px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.hud-track {
+  width: 170px;
+  height: 9px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.hud-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 120ms linear;
+}
+.hud-fill.hp {
+  background: #ff5f6d;
+}
+.hud-fill.mp {
+  background: #5f8dff;
+}
+.hud-fill.xp {
+  background: #ffd24d;
+}
+.hud-value {
+  min-width: 52px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+#hud-items {
+  white-space: nowrap;
+  opacity: 0.95;
+}
+.hud-hint {
+  opacity: 0.55;
+}
+
+#levelup-flash {
+  position: fixed;
+  left: 50%;
+  top: 32%;
+  transform: translateX(-50%);
+  font-family: system-ui, sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  color: #ffd24d;
+  text-shadow: 0 0 18px rgba(255, 210, 77, 0.9), 0 2px 0 #7a5200;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 11;
+}
+#levelup-flash.show {
+  animation: levelup-pop 1.4s ease-out forwards;
+}
+@keyframes levelup-pop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.4);
+  }
+  15% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.15);
+  }
+  30% {
+    transform: translateX(-50%) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1);
+  }
+}

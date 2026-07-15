@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-M01 done (2026-07-13). M02 done (2026-07-14, user approved after six playtest-driven revisions). Next: M03 progression (docs/milestones/03-progression.md, status: planned).
+M01 done. M02 done. M03 progression in-progress: all 7 automated AC green (33/33 suite), implementation complete + live-verified; remaining: user playtest of level-up feel + exit condition (grind mobs → level-up flash; drops → Z; reload → character persists).
 
 ## Last action
 
@@ -27,7 +27,7 @@ M02 combat completed and closed. Movement/attack are 1:1 with the official MSW m
 
 ## Next step
 
-Start M03 (progression) via development.md: red Playwright specs first per 03-progression.md AC (xp gain, level up, death penalty, drop spill/despawn, Z pickup, potion use, localStorage persistence roundtrip), then implement src/sim/progression.js + src/sim/loot.js headless, HUD in src/ui/ (plain DOM), saves.
+User playtests M03 exit condition at localhost:5173: grind a few mobs → XP bar fills, level-up flash fires (DOM overlay), drops spill and Z picks them up, C drinks a potion, reload → character exactly restored. Then mark M03 done and run milestone planning for the next set (candidates: town+shop+Field 2 content, PartyKit multiplayer, audio). New systems this session: src/sim/progression.js + loot.js + rng.js, src/core/save.js, src/ui/hud.js, src/render/lootView.js; keys Z (loot) and C (potion).
 
 ## Blockers
 

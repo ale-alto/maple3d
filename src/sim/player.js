@@ -32,6 +32,8 @@ export function createPlayer(map) {
     hp: PLAYER_MAX_HP,
     maxHp: PLAYER_MAX_HP,
     invulnMs: 0,
+    level: 1,
+    xp: 0,
     attackLockMs: 0, // MSW ATTACK state: grounded stand-and-throw interval
     state: 'idle', // MSW StateComponent-style named state, for animation
   };

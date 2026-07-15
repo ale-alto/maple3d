@@ -2,7 +2,6 @@
 // i-frames, player death + respawn.
 
 import {
-  STAR_DAMAGE,
   STAR_SPEED,
   STAR_RANGE,
   STAR_SELECT_HALF_HEIGHT,
@@ -17,9 +16,9 @@ import {
   MOB_HEIGHT,
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
-  PLAYER_MAX_HP,
 } from '../core/constants.js';
 import { damageMob } from './mobs.js';
+import { starDamageForLevel, applyDeathPenalty } from './progression.js';
 
 export function createCombatState() {
   return { stars: [], cooldownMs: 0, nextStarId: 1 };
@@ -79,7 +78,7 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
       const dy = target.y + MOB_HEIGHT / 2 - star.y;
       const dist = Math.hypot(dx, dy);
       if (dist <= Math.max(step, 0.3)) {
-        damageMob(mobsState, target, STAR_DAMAGE, events);
+        damageMob(mobsState, target, starDamageForLevel(player.level), events);
         return false;
       }
       star.vx = (dx / dist) * STAR_SPEED;
@@ -110,11 +109,12 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
       events?.emit('player:hit', { amount: MOB_CONTACT_DAMAGE, x: player.x, y: player.y });
       if (player.hp <= 0) {
         events?.emit('player:died', {});
+        applyDeathPenalty(player, events);
         player.x = map.spawn.x;
         player.y = map.spawn.y;
         player.vx = 0;
         player.vy = 0;
-        player.hp = PLAYER_MAX_HP;
+        player.hp = player.maxHp;
         player.grounded = true;
         player.climbing = false;
         player.ladder = null;
