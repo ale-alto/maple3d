@@ -60,7 +60,7 @@ export const STAR_RANGE = 7;
 export const STAR_SELECT_HALF_HEIGHT = 1.5;
 export const STAR_THROW_HEIGHT = 1.0; // star spawn height above player feet
 export const ATTACK_COOLDOWN_MS = 350;
-export const MOB_MAX_HP = 60;
+export const MOB_MAX_HP = 40; // M03 rebalance: 5 base hits (was 60/8-hit, playtest "tanky")
 export const MOB_SPEED = 1.2;
 export const MOB_AGGRO_SPEED = 2.2;
 export const MOB_AGGRO_RADIUS = 4;
@@ -73,3 +73,24 @@ export const MOB_RESPAWN_MS = 5000;
 export const MOB_COLOR = 0x8fd14f; // green blob tier
 export const STAR_COLOR = 0xd8dee6;
 export const DAMAGE_NUMBER_MS = 800; // damage number lifetime
+
+// --- Progression (M03; curve/penalty playtest-tuned per gameplan) ---
+export const XP_PER_MOB = 8;
+export const XP_BASE = 20; // xp to go from level 1 -> 2
+export const XP_GROWTH = 1.4; // per-level multiplier
+export const LEVEL_CAP = 15;
+export const DEATH_XP_PENALTY = 0.05; // fraction of xpToNext lost on death
+export const HP_PER_LEVEL = 5;
+export const DAMAGE_PER_LEVEL = 1; // star damage bonus per level above 1
+export const POTION_HEAL = 20;
+export const POTION_KEY = 'c';
+export const STARTING_POTIONS = 3; // new-character kit
+
+// --- Loot (M03) ---
+export const DROP_DESPAWN_MS = 15000;
+export const PICKUP_RANGE = 0.9;
+export const MESOS_MIN = 5;
+export const MESOS_MAX = 14;
+export const POTION_DROP_CHANCE = 0.3;
+export const STARPACK_DROP_CHANCE = 0.15;
+export const LOOT_SEED = 1337; // seeded rng: deterministic for tests, server-owned later
