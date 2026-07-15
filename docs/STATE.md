@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-M01, M02, M03 all done (M03 user-approved 2026-07-14). No open milestones — milestone planning proposed M04 town/shop/portals → M05 Field 2 content → M06 PartyKit shared world; awaiting user confirmation.
+M01–M03 done. User adopted the next set 2026-07-14: **M04 town/shop/portals (active next)** → M05 Field 2 + mob roster → M06 PartyKit shared world; all three written to docs/milestones/.
 
 ## Last action
 
@@ -27,7 +27,7 @@ M02 combat completed and closed. Movement/attack are 1:1 with the official MSW m
 
 ## Next step
 
-Write the user-confirmed next milestones to docs/milestones/ (proposal presented 2026-07-14: M04 town+shop+portals, M05 Field 2 + mob roster, M06 PartyKit shared world; audio and Meshy assets deliberately later), then start the first one red-tests-first via development.md. New systems from M03: src/sim/progression.js + loot.js + rng.js, src/core/save.js, src/ui/hud.js, src/render/lootView.js; keys Z (loot) and C (potion).
+Start M04 via development.md: red specs first per 04-town-shop-portals.md AC (tests/e2e/maps.spec.js + shop.spec.js; note the existing combat spec `player death respawn` must be deliberately rewritten — respawn moves to town). Core build order: map registry + changeMap → portals/Up key → town blockout + camera swing → shop panel → save v2 (mapId, migrate v1). New systems from M03: src/sim/progression.js + loot.js + rng.js, src/core/save.js, src/ui/hud.js, src/render/lootView.js; keys Z (loot) and C (potion).
 
 ## Blockers
 
