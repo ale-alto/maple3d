@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress — all automated AC green 2026-07-13; awaiting user playtest of combat feel + exit condition
+done — 2026-07-14. All automated AC green (26/26 suite); feel verified through an extended user playtest cycle (six playtest-driven revisions: committed air momentum/kite, snappier jump arc, firm landing, ladder end stability, MSW parity batch, classic target-lock star homing), user approved 2026-07-14.
 
 ## Objective
 
@@ -50,7 +50,7 @@ Make the "hunt" and "throw" verbs real: mobs spawn and patrol Field 1, the assas
 - [x] Named state machine (MSW StateComponent): idle/move/crouch/jump/fall/ladder/rope exposed for animation; climbables typed ladder|rope — test: `tests/e2e/movement.spec.js::maple state machine`
 - [x] Ladder ends are stable: climbing off the top pops you onto the ledge standing (no exit→re-grab wiggle); the bottom stands you on ground or drops you off a hanging rope; grabs are direction-aware (Up needs ladder above, Down needs ladder below) — tests: `tests/e2e/movement.spec.js::ladder top and bottom exits are stable`, `::rope bottom drops you off` *(playtest bug 2026-07-14)*
 - [x] Stars use the classic MS target-lock model: press locks the nearest mob inside the forward selection rect (STAR_RANGE ahead, ±STAR_SELECT_HALF_HEIGHT 1.5 vertical); the star visual homes to the lock and lands on arrival; a throw with no lock is a whiff that hits nothing; platform mobs stay outside the rect and require level access — tests: `tests/e2e/combat.spec.js::star homes to its locked target`, `::platform mobs require level access`, `::stars never fire steeply vertical` *(user correction 2026-07-14: classic MS stars DO home — to a target locked at press time; supersedes both the free-aim cone and the brief flat-flight model)*
-- [ ] Throw/hit/death feel (pacing, numbers legibility) — verified by user playtest
+- [x] Throw/hit/death feel (pacing, numbers legibility) — verified by user playtest (iterative cycle 2026-07-13→14, approved 2026-07-14; open tuning notes below remain non-blocking)
 
 ## Exit condition
 

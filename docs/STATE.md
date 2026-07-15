@@ -4,30 +4,30 @@
 
 ## Last updated
 
-2026-07-13 by Claude (Fable 5) — scaffold session
+2026-07-14 by Claude (Fable 5) — M01+M02 development session
 
 ## Current phase
 
-development (scaffold completed 2026-07-13)
+development
 
 ## Current milestone
 
-M02 combat (docs/milestones/02-combat.md, status: in-progress). All 6 automated AC green (13/13 suite); remaining: user playtest of combat feel + exit condition.
+M01 done (2026-07-13). M02 done (2026-07-14, user approved after six playtest-driven revisions). Next: M03 progression (docs/milestones/03-progression.md, status: planned).
 
 ## Last action
 
-Scaffold phase completed per make-game scaffold.md:
+M02 combat completed and closed. Movement/attack are 1:1 with the official MSW model — full mapping lives in docs/reference/msw-parity.md (source of truth; don't re-crawl the Nexon docs, they're JS-rendered and painful). Playtest-driven revisions layered onto M01/M02, all regression-locked (suite 26/26):
 
-- create-vite 9.1.1 `vanilla` (JS) template; three 0.185.1, vite 8.1.4, @playwright/test 1.61.1 (pinned in tech.md). Gotcha: `npm create vite -- --template X` mangles the flag — use `npx create-vite@latest <dir> -t <template>`.
-- Boot scene (src/render/bootScene.js): side-view camera, grassy ground strip, placeholder capsule with idle bob; src/core/constants.js started.
-- Agent hooks live: `window.render_game_to_text()`, `window.advanceTime(ms)`, `window.__debug` ({renderer, scene, camera}).
-- Smoke test PASSED: console error-free; gl.readPixels confirms sky/ground/capsule pixels; 2 draw calls, 556 tris; advanceTime steps deterministically.
-- AGENTS.md + CLAUDE.md bootstrapped; git repo initialized, initial commit fb0f0a0 (repo-local identity ayyitsdrayy <ayyitsdrayy@gmail.com> — correct if wrong).
-- Launch config: session-level C:\Users\ayyit\.claude\launch.json has `maple3d-dev` (npm run dev --prefix maple3d, port 5173); repo also has its own .claude/launch.json.
+- Committed air momentum + subtle AIR_ACCEL steering (the assassin kite); firm landing (no-input touchdown plants); snappier arc (GRAVITY 45, apex ~2.0u preserved)
+- Down jump (Down+Alt through thin platforms); crouch/prone (Down on ground blocks movement, no floor jump)
+- Ladders: direction-aware grabs (fixed top/bottom wiggle), top exit pops onto ledge, rope bottoms drop you off, leap-off requires Alt+direction
+- Grounded attack lock (stand-and-throw); contact knockback (pop away from mob) + 1s i-frames (matches MSW built-in PlayerHit)
+- Stars: classic target-lock model — press locks nearest mob in forward rect (STAR_RANGE 7 × ±STAR_SELECT_HALF_HEIGHT 1.5), star homes to lock, fizzles if lock dies, whiffs hit nothing; platform mobs need level access. (History: 45° free-aim → flat flight → target-lock, all same day, user-corrected)
+- Named state machine in payload: idle/move/crouch/jump/fall/ladder/rope + attackLockMs — the animation contract for the Meshy GLB milestone
 
 ## Next step
 
-User re-playtests M02 movement + combat after the 2026-07-14 MSW parity batch (docs/reference/msw-parity.md maps the full official model): committed air momentum + subtle air steering, firm landing, snappier arc, down jump, crouch/prone, ladder leap-off requires direction, grounded attack lock (stand-and-throw), contact knockback, named state machine (idle/move/crouch/jump/fall/ladder/rope in payload — the animation contract), classic-MS target-lock stars (lock nearest mob in forward rect at press, star homes to lock, whiffs hit nothing, platform mobs need level access — user-corrected 2026-07-14 after two intermediate models). Suite is 26/26. Known tuning candidates: MOB_MAX_HP 60 (8 hits/kill); respawn camping (softened by knockback now). Then mark M02 done and start M03 (progression) red tests. Note: player HP still only visible via red damage numbers until the M03 HUD.
+Start M03 (progression) via development.md: red Playwright specs first per 03-progression.md AC (xp gain, level up, death penalty, drop spill/despawn, Z pickup, potion use, localStorage persistence roundtrip), then implement src/sim/progression.js + src/sim/loot.js headless, HUD in src/ui/ (plain DOM), saves.
 
 ## Blockers
 
@@ -35,8 +35,9 @@ none
 
 ## Notes for next session
 
-- Browser pane quirks found this session: rAF is throttled in hidden pane tabs (simTime won't advance on its own — always verify via advanceTime), and `computer screenshot` times out in this environment; use gl.readPixels via window.__debug for visual proof. drawImage-based canvas capture reads stale buffers — don't trust it.
-- bootScene.js is throwaway; M01 replaces it with the real map/render split. Keep the syncSize-in-loop pattern (hidden tab loads report 0x0 and fire no resize event).
-- Sim purity rule from the first line of M01: src/sim/ never imports Three.js/DOM.
-- Controls: arrows move/climb, Alt jump, Ctrl attack, Z loot.
-- STATE.md's earlier "billboarded player sprite" idea is obsolete — ADR-0002 made characters fully 3D (primitive chibi placeholders until the Meshy milestone, backlog #10).
+- Open tuning candidates (non-blocking, in 02-combat.md Notes): MOB_MAX_HP 60 = 8 hits/kill feels tanky; mob respawn camping (softened by knockback). M03's damage scaling will rebalance anyway.
+- Player HP is only visible via red damage numbers until the M03 HUD lands.
+- Test-flake playbook that evolved this session: background rAF frames keep simulating between tool roundtrips — any timing-sensitive assertion must run as ONE synchronous in-page evaluate (see contact damage / star throw / platform-mob specs for the pattern); position-sensitive combat setups should teleport-re-engage rather than rely on sustained contact (knockback breaks overlap).
+- Word "window" (or document/navigator/localStorage) in src/sim comments trips the purity spec regex — phrase comments accordingly. M03's localStorage save code must live OUTSIDE src/sim (localStorage is DOM — put persistence in src/core or main.js, feeding plain objects to/from the sim).
+- Browser pane: screenshots time out on this machine; use gl.readPixels via window.__debug. The pane occasionally kills the dev server — preview_start maple3d-dev to restart. Hidden-tab HMR can lag: after editing source, verify the page actually reloaded before trusting live checks (a stale module produced a ghost bug this session).
+- Controls: arrows move/climb, Alt jump (+direction on ladders to leap off; Down+Alt = down-jump), Ctrl attack, Z loot (M03).
