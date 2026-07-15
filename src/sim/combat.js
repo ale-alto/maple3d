@@ -108,18 +108,13 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
       player.grounded = false;
       events?.emit('player:hit', { amount: MOB_CONTACT_DAMAGE, x: player.x, y: player.y });
       if (player.hp <= 0) {
-        events?.emit('player:died', {});
+        // Penalty + heal here; WHERE the player wakes up (town, per the
+        // gameplan) is the orchestrator's job via the player:died event.
         applyDeathPenalty(player, events);
-        player.x = map.spawn.x;
-        player.y = map.spawn.y;
-        player.vx = 0;
-        player.vy = 0;
         player.hp = player.maxHp;
-        player.grounded = true;
-        player.climbing = false;
-        player.ladder = null;
         player.jumpsLeft = 2;
         player.invulnMs = INVULN_MS; // respawn grace
+        events?.emit('player:died', {});
         events?.emit('player:respawned', {});
       }
     }

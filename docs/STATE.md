@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-M01–M03 done. User adopted the next set 2026-07-14: **M04 town/shop/portals (active next)** → M05 Field 2 + mob roster → M06 PartyKit shared world; all three written to docs/milestones/.
+M01–M03 done. **M04 town/shop/portals in-progress**: all 6 automated AC green (41/41 suite), implementation live-verified; remaining: user playtest of transition feel + exit condition. Then M05 Field 2 → M06 PartyKit.
 
 ## Last action
 
@@ -27,7 +27,7 @@ M02 combat completed and closed. Movement/attack are 1:1 with the official MSW m
 
 ## Next step
 
-Start M04 via development.md: red specs first per 04-town-shop-portals.md AC (tests/e2e/maps.spec.js + shop.spec.js; note the existing combat spec `player death respawn` must be deliberately rewritten — respawn moves to town). Core build order: map registry + changeMap → portals/Up key → town blockout + camera swing → shop panel → save v2 (mapId, migrate v1). New systems from M03: src/sim/progression.js + loot.js + rng.js, src/core/save.js, src/ui/hud.js, src/render/lootView.js; keys Z (loot) and C (potion).
+User playtests M04 exit condition at localhost:5173: Field 1 left-edge portal (glowing slab at x −19) + Up → camera swings into town; walk to Shopkeeper Nara (x −4), Up opens shop, buy with farmed mesos (potion 30 / star pack 50); portal back (x 12) → field is fresh; die anywhere → wake in town. Then mark M04 done and start M05 (Field 2 + mob types) red tests. New systems: src/sim/maps/{index,town}.js, src/sim/shop.js, src/ui/shopPanel.js, changeMap in main.js (M06 will reuse it as join-room); save schema v2 (mapId) with v1 migration; Up is now edge-queued (upPressed) for portals/NPCs.
 
 ## Blockers
 

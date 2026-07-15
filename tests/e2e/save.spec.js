@@ -48,8 +48,10 @@ test.describe('M03 saves', () => {
 
   test('v1 save migrates', async ({ gamePage }) => {
     // Pre-M04 saves have no mapId: they must load with mapId 'field1'
-    // and keep their progress.
-    await gamePage.evaluate(() => {
+    // and keep their progress. Seed via init script — it runs after the
+    // old page's beforeunload save (which would clobber a plain
+    // localStorage.setItem) and before the new page's game code loads.
+    await gamePage.addInitScript(() => {
       localStorage.setItem(
         'maple3d-save',
         JSON.stringify({

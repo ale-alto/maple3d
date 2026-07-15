@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress — all 6 automated AC green 2026-07-14 (41/41 suite); awaiting user playtest of transition feel + exit condition
 
 ## Objective
 
@@ -34,12 +34,12 @@ Build the multi-map architecture (map registry, portal transitions, per-map spaw
 
 ## Acceptance criteria
 
-- [ ] Up at a Field 1 portal transitions to town: mapId changes, player appears at the linked portal, map geometry swaps — test: `tests/e2e/maps.spec.js::portal transition`
-- [ ] Camera swings (eased, ~0.5s) on map entry instead of snapping — test: `tests/e2e/maps.spec.js::camera swing on entry`
-- [ ] Town has no mobs; Field 1 mobs/loot state resets on re-entry — test: `tests/e2e/maps.spec.js::town is safe, fields reset`
-- [ ] Death respawns in town at full HP (not field start) — test: `tests/e2e/maps.spec.js::death respawns in town`
-- [ ] Shop: near the NPC, interact opens the panel; buying a potion decrements mesos and increments potions; insufficient mesos refuses — test: `tests/e2e/shop.spec.js::buy potion`, `::insufficient mesos`
-- [ ] Save/load round-trips mapId (v2 schema migrates v1 saves) — test: `tests/e2e/save.spec.js::map persistence`
+- [x] Up at a Field 1 portal transitions to town: mapId changes, player appears at the linked portal, map geometry swaps — test: `tests/e2e/maps.spec.js::portal transition`
+- [x] Camera swings (eased, ~0.5s) on map entry instead of snapping — test: `tests/e2e/maps.spec.js::camera swing on entry`
+- [x] Town has no mobs; Field 1 mobs/loot state resets on re-entry — test: `tests/e2e/maps.spec.js::town is safe, fields reset`
+- [x] Death respawns in town at full HP (not field start) — test: `tests/e2e/maps.spec.js::death respawns in town`
+- [x] Shop: near the NPC, interact opens the panel; buying a potion decrements mesos and increments potions; insufficient mesos refuses — test: `tests/e2e/shop.spec.js::buy potion`, `::insufficient mesos`
+- [x] Save/load round-trips mapId (v2 schema migrates v1 saves) — test: `tests/e2e/save.spec.js::map persistence`, `::v1 save migrates`
 - [ ] Transition feel (swing timing, portal placement) — verified by user playtest
 
 ## Exit condition

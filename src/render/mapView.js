@@ -1,5 +1,11 @@
 import * as THREE from 'three';
-import { GROUND_COLOR, PLATFORM_COLOR, LADDER_COLOR } from '../core/constants.js';
+import {
+  GROUND_COLOR,
+  PLATFORM_COLOR,
+  LADDER_COLOR,
+  PORTAL_COLOR,
+  NPC_COLOR,
+} from '../core/constants.js';
 
 // Builds blockout geometry from pure map data. Real map art is a later
 // milestone; this is deliberately just boxes.
@@ -31,6 +37,40 @@ export function buildMapView(scene, map) {
     group.add(mesh);
   }
 
+  // Portals: tall glowing slabs (blockout tier).
+  for (const portal of map.portals ?? []) {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 2.2, 0.3),
+      new THREE.MeshBasicMaterial({ color: PORTAL_COLOR, transparent: true, opacity: 0.55 }),
+    );
+    mesh.position.set(portal.x, (portal.y ?? 0) + 1.1, -0.5);
+    group.add(mesh);
+  }
+
+  // NPCs: static chibi blockouts.
+  for (const npc of map.npcs ?? []) {
+    const body = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.35, 0.35, 8, 16),
+      new THREE.MeshLambertMaterial({ color: NPC_COLOR }),
+    );
+    body.position.set(npc.x, (npc.y ?? 0) + 0.55, 0);
+    group.add(body);
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(0.32, 16, 12),
+      new THREE.MeshLambertMaterial({ color: 0xffe0bd }),
+    );
+    head.position.set(npc.x, (npc.y ?? 0) + 1.22, 0);
+    group.add(head);
+  }
+
   scene.add(group);
   return group;
+}
+
+export function disposeMapView(scene, group) {
+  scene.remove(group);
+  group.traverse((o) => {
+    o.geometry?.dispose?.();
+    o.material?.dispose?.();
+  });
 }

@@ -17,9 +17,12 @@ const KEYS = {
   ArrowDown: 'down',
 };
 
+let upPressQueue = 0; // rising-edge Up: portals/NPC interact (M04)
+
 export function initKeyboard(target) {
   target.addEventListener('keydown', (e) => {
     if (KEYS[e.key]) {
+      if (e.key === 'ArrowUp' && !e.repeat) upPressQueue += 1;
       held[KEYS[e.key]] = true;
       e.preventDefault();
     } else if (e.key === 'Alt') {
@@ -59,6 +62,7 @@ export function initKeyboard(target) {
     attackQueue = 0;
     lootQueue = 0;
     potionQueue = 0;
+    upPressQueue = 0;
   });
 }
 
@@ -72,5 +76,7 @@ export function readInput() {
   if (loot) lootQueue -= 1;
   const potion = potionQueue > 0;
   if (potion) potionQueue -= 1;
-  return { ...held, jump, attack, loot, potion };
+  const upPressed = upPressQueue > 0;
+  if (upPressed) upPressQueue -= 1;
+  return { ...held, jump, attack, loot, potion, upPressed };
 }

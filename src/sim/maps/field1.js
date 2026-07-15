@@ -25,4 +25,6 @@ export const field1 = {
     { x: 6.75, y: 0, patrolX1: 5.5, patrolX2: 8 },
     { x: 11.5, y: 3.0, patrolX1: 9.5, patrolX2: 13.5 },
   ],
+  portals: [{ id: 'toTown', x: -19, y: 0, targetMap: 'town', targetPortal: 'toField1' }],
+  npcs: [],
 };

@@ -89,6 +89,48 @@ body {
   opacity: 0.55;
 }
 
+/* --- Shop panel (M04) --- */
+#shop-panel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 240px;
+  padding: 16px 18px;
+  background: rgba(20, 24, 38, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  font-family: system-ui, sans-serif;
+  color: #e8ecf5;
+  z-index: 20;
+}
+.shop-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #ffd24d;
+  margin-bottom: 4px;
+}
+#shop-panel button {
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+#shop-panel button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+#shop-message {
+  min-height: 16px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
 #levelup-flash {
   position: fixed;
   left: 50%;

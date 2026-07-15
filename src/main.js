@@ -1,9 +1,18 @@
 import './style.css';
-import { FIXED_STEP_MS, XP_PER_MOB, STARTING_POTIONS } from './core/constants.js';
+import {
+  FIXED_STEP_MS,
+  XP_PER_MOB,
+  STARTING_POTIONS,
+  PORTAL_RANGE,
+  NPC_RANGE,
+  CAMERA_SWING_MS,
+  CAMERA_SWING_ZOOM,
+  CAMERA_Z,
+} from './core/constants.js';
 import { eventBus } from './core/eventBus.js';
 import { gameState } from './core/gameState.js';
 import { loadSave, persist } from './core/save.js';
-import { field1 } from './sim/maps/field1.js';
+import { maps, DEFAULT_MAP } from './sim/maps/index.js';
 import { createPlayer, stepPlayer } from './sim/player.js';
 import { createMobsState, stepMobs } from './sim/mobs.js';
 import { createCombatState, stepCombat } from './sim/combat.js';
@@ -11,28 +20,34 @@ import { grantXp, usePotion, xpToNext, maxHpForLevel } from './sim/progression.j
 import { createLootState, spawnDrops, stepLoot } from './sim/loot.js';
 import { initKeyboard, readInput } from './input/keyboard.js';
 import { createScene } from './render/scene.js';
-import { buildMapView } from './render/mapView.js';
+import { buildMapView, disposeMapView } from './render/mapView.js';
 import { CharacterView } from './render/characterView.js';
 import { MobsView } from './render/mobsView.js';
 import { CombatFxView } from './render/combatFxView.js';
 import { LootView } from './render/lootView.js';
 import { createCameraRig } from './render/cameraRig.js';
 import { createHud } from './ui/hud.js';
+import { createShopPanel } from './ui/shopPanel.js';
 
 const canvas = document.querySelector('#game');
 const { renderer, scene, camera, syncSize } = createScene(canvas);
 
-gameState.map = field1;
-gameState.player = createPlayer(field1);
-gameState.mobs = createMobsState(field1);
+gameState.mapId = DEFAULT_MAP;
+gameState.map = maps[DEFAULT_MAP];
+gameState.player = createPlayer(gameState.map);
+gameState.mobs = createMobsState(gameState.map);
 gameState.combat = createCombatState();
 gameState.loot = createLootState();
 gameState.inventory = { mesos: 0, potions: STARTING_POTIONS, starPacks: 0 };
+gameState.shopOpen = false;
 
 // Restore the character before anything renders.
 const saved = loadSave();
 if (saved) {
   const p = gameState.player;
+  gameState.mapId = maps[saved.mapId] ? saved.mapId : DEFAULT_MAP;
+  gameState.map = maps[gameState.mapId];
+  gameState.mobs = createMobsState(gameState.map);
   p.level = saved.player.level;
   p.xp = saved.player.xp;
   p.maxHp = maxHpForLevel(p.level);
@@ -44,18 +59,54 @@ if (saved) {
   gameState.inventory = { ...gameState.inventory, ...saved.inventory };
 }
 
-buildMapView(scene, field1);
+let mapViewGroup = buildMapView(scene, gameState.map);
 const playerView = new CharacterView(scene);
 const mobsView = new MobsView(scene);
 const fxView = new CombatFxView(scene, eventBus);
 const lootView = new LootView(scene);
-const cameraRig = createCameraRig(camera, field1);
+let cameraRig = createCameraRig(camera, gameState.map);
 const hud = createHud(eventBus);
+const shopPanel = createShopPanel(gameState, eventBus);
 initKeyboard(window);
 
 let simTimeMs = 0;
 let lastLevelUpSimMs = null;
+let transitionMs = 0; // camera swing on map entry
 const dt = FIXED_STEP_MS / 1000;
+
+// Swap maps: sim state resets per entry (Maple channel behavior); the
+// render side rebuilds; the camera swings in. M06 reuses this as
+// "join room".
+function changeMap(mapId, target) {
+  const map = maps[mapId];
+  if (!map) return;
+  gameState.mapId = mapId;
+  gameState.map = map;
+  gameState.mobs = createMobsState(map);
+  gameState.loot = createLootState();
+  gameState.combat.stars = [];
+  shopPanel.close();
+
+  const p = gameState.player;
+  const portal = target !== 'spawn' && map.portals?.find((pt) => pt.id === target);
+  p.x = portal ? portal.x : map.spawn.x;
+  p.y = portal ? (portal.y ?? 0) : map.spawn.y;
+  p.vx = 0;
+  p.vy = 0;
+  p.climbing = false;
+  p.ladder = null;
+  p.dropThrough = null;
+  p.grounded = false;
+
+  disposeMapView(scene, mapViewGroup);
+  mapViewGroup = buildMapView(scene, map);
+  mobsView.clear();
+  cameraRig = createCameraRig(camera, map);
+  cameraRig.snap(p);
+  transitionMs = CAMERA_SWING_MS;
+  eventBus.emit('map:changed', { mapId });
+  persist(gameState);
+}
 
 // Progression wiring: kills grant XP and spill loot.
 eventBus.on('mob:died', ({ x, y }) => {
@@ -64,6 +115,12 @@ eventBus.on('mob:died', ({ x, y }) => {
 });
 eventBus.on('player:levelup', () => {
   lastLevelUpSimMs = simTimeMs;
+});
+// Death sends you home to town (gameplan rule). Deferred to end-of-tick
+// so the combat step finishes on the map it started on.
+let pendingDeathRespawn = false;
+eventBus.on('player:died', () => {
+  pendingDeathRespawn = true;
 });
 // Saves: fire on every progression-relevant event + on leaving.
 for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned']) {
@@ -74,15 +131,41 @@ window.addEventListener('beforeunload', () => persist(gameState));
 function step() {
   simTimeMs += FIXED_STEP_MS;
   const input = readInput();
+
+  // Up press: portal first, then NPC interact (spatially disjoint).
+  if (input.upPressed && gameState.player.grounded && !gameState.player.climbing) {
+    const p = gameState.player;
+    const portal = gameState.map.portals?.find((pt) => Math.abs(pt.x - p.x) <= PORTAL_RANGE);
+    if (portal) {
+      changeMap(portal.targetMap, portal.targetPortal);
+      return; // fresh map: skip the rest of this tick
+    }
+    const npc = gameState.map.npcs?.find((n) => Math.abs(n.x - p.x) <= NPC_RANGE);
+    if (npc) shopPanel.open();
+  }
+  // Walking away (any movement input) closes the shop, Maple-style.
+  if (gameState.shopOpen && (input.left || input.right || input.jump)) shopPanel.close();
+
   stepPlayer(gameState.player, gameState.map, input, dt, eventBus);
   stepMobs(gameState.mobs, gameState.player, gameState.map, dt, eventBus);
   stepCombat(gameState.combat, gameState.player, gameState.mobs, gameState.map, input, dt, eventBus);
   stepLoot(gameState.loot, gameState.map, gameState.player, gameState.inventory, input, dt, eventBus);
   if (input.potion) usePotion(gameState.player, gameState.inventory, eventBus);
   cameraRig.update(gameState.player, dt);
+  // Map-entry swing: ease the camera in from a pulled-back pose.
+  if (transitionMs > 0) {
+    transitionMs = Math.max(0, transitionMs - FIXED_STEP_MS);
+    const t = transitionMs / CAMERA_SWING_MS;
+    camera.position.z = CAMERA_Z + CAMERA_SWING_ZOOM * t * t;
+  }
   // FX age in sim time so advanceTime() verification is deterministic.
   mobsView.tick(FIXED_STEP_MS);
   fxView.tick(FIXED_STEP_MS);
+
+  if (pendingDeathRespawn) {
+    pendingDeathRespawn = false;
+    changeMap('town', 'spawn');
+  }
 }
 
 function draw() {
@@ -121,6 +204,9 @@ window.render_game_to_text = () => {
     coords: 'origin:world x:right y:up',
     mode: gameState.mode,
     simTimeMs: Math.round(simTimeMs),
+    mapId: gameState.mapId,
+    shopOpen: gameState.shopOpen,
+    transitionMs: Math.round(transitionMs),
     map: {
       id: m.id,
       minX: m.minX,
@@ -129,6 +215,8 @@ window.render_game_to_text = () => {
       platforms: m.platforms,
       ladders: m.ladders,
       mobSpawns: m.mobSpawns,
+      portals: m.portals ?? [],
+      npcs: m.npcs ?? [],
     },
     player: {
       x: round3(p.x),
@@ -178,7 +266,11 @@ window.render_game_to_text = () => {
       damageNumbers: fxView.numbersPayload(),
       lastLevelUpAgoMs: lastLevelUpSimMs === null ? null : Math.round(simTimeMs - lastLevelUpSimMs),
     },
-    camera: { x: round3(camera.position.x), y: round3(camera.position.y) },
+    camera: {
+      x: round3(camera.position.x),
+      y: round3(camera.position.y),
+      z: round3(camera.position.z),
+    },
   });
 };
 
@@ -210,6 +302,12 @@ window.__test = {
     p.maxHp = maxHpForLevel(level);
     p.hp = p.maxHp;
     eventBus.emit('player:xp', { amount: 0 }); // triggers a save
+  },
+  gotoMap(mapId) {
+    changeMap(mapId, 'spawn');
+  },
+  grantMesos(amount) {
+    gameState.inventory.mesos += amount;
   },
 };
 window.__debug = { renderer, scene, camera, gameState, eventBus };

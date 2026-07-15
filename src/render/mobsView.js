@@ -73,6 +73,14 @@ export class MobsView {
     }
   }
 
+  // Map change: drop all views and pops immediately (no death pops).
+  clear() {
+    for (const [, view] of this.views) this.scene.remove(view.group);
+    this.views.clear();
+    for (const pop of this.pops) this.scene.remove(pop.group);
+    this.pops = [];
+  }
+
   tick(dtMs) {
     this.pops = this.pops.filter((pop) => {
       pop.ageMs += dtMs;
