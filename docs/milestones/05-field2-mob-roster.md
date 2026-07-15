@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress — all 4 automated AC green 2026-07-14 (45/45 suite), live-verified; awaiting user playtest of Field 2 difficulty feel
+done — 2026-07-14. All 4 automated AC green (45/45 suite); user playtested and approved Field 2 difficulty + roster same day.
 
 ## Objective
 
@@ -33,7 +33,7 @@ Deliver the second hunting field and complete the v1 mob roster (3 types of risi
 - [x] Field 2 spawns type-2 (bruiser) and type-3 (spitter) mobs with their own stats, verifiably tougher than type-1 blob (bruiser 70 hp / 16 contact vs blob 40/10) — test: `tests/e2e/field2.spec.js::mob types and stats`
 - [x] Type-specific XP and drops (bruiser grants 16 XP vs blob's 8; richer mesos/potion tables) — test: `tests/e2e/field2.spec.js::xp and drops scale`
 - [x] Type-3 is ranged (user decision 2026-07-14): the spitter fires a slow, flat, jumpable shot on its own level that damages the player — test: `tests/e2e/field2.spec.js::ranged mob`
-- [ ] Field 2 difficulty feel (is the jump fair at ~level 5–8?) — verified by user playtest
+- [x] Field 2 difficulty feel (is the jump fair at ~level 5–8?) — verified by user playtest (approved 2026-07-14)
 
 ## Exit condition
 

@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-M01–M04 done. **M05 Field 2 + mob roster in-progress**: all 4 automated AC green (45/45 suite), implementation live-verified; remaining: user playtest of Field 2 difficulty feel. Then M06 PartyKit shared world (last v1 milestone before audio + Meshy assets).
+M01–M05 done (M05 user-approved 2026-07-14). Next: M06 PartyKit shared world (docs/milestones/06-partykit-shared-world.md, status: planned) — the last v1 gameplay milestone before audio + Meshy assets.
 
 ## Last action
 
@@ -27,7 +27,9 @@ M02 combat completed and closed. Movement/attack are 1:1 with the official MSW m
 
 ## Next step
 
-User playtests M05 exit condition at localhost:5173: portal Field 1 right edge (x 19) → Field 2 (purple-themed, more vertical); fight bruisers (tankier, hit harder, pay 16 XP) and spitters (ranged — jump their slow flat shots); come back richer per kill. Then mark M05 done and start M06 (PartyKit shared world) — the last v1 milestone. M06 build: `party/` room server runs src/sim/mobs.js authoritatively, src/net/ partysocket client, presence + name tags + chat bubbles, per-player loot; changeMap already shaped as join-room; multi-client Playwright via /add-multiplayer patterns. New M05 systems: MOB_TYPES table (constants), typed mobs.js with spitter projectiles (mobs.projectiles resolved in combat.js), src/sim/maps/field2.js, per-type drops in loot.js, mapView reads map.theme.
+Start M06 (PartyKit shared world) via development.md — the last v1 gameplay milestone. Consider /add-multiplayer skill for scaffolding patterns. Build: `party/` room-per-map server running src/sim/mobs.js authoritatively on a tick (sim purity finally pays off); src/net/ partysocket client joining on changeMap; presence broadcast (pos/facing/state) → remote CharacterViews + name tags; server-owned mob hp/death/respawn with local prediction; per-player loot (server rolls per killer, sends privately); chat bubbles; offline fallback to local sim. ADR-0003 if client/server sim-sharing needs a build/tooling decision. Multi-client Playwright fixture (two pages, one room) asserting convergence via each page's render_game_to_text. Watch: single-player suite (45/45) must stay green with no room running.
+
+Available since M05: MOB_TYPES table (constants), typed mobs.js with spitter projectiles (mobs.projectiles resolved in combat.js), src/sim/maps/field2.js, per-type drops in loot.js, changeMap in main.js (reuse as join-room), save v2, upPressed edge for portals/NPCs.
 
 ## Blockers
 
