@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-M01 done. M02 done. M03 progression in-progress: all 7 automated AC green (33/33 suite), implementation complete + live-verified; remaining: user playtest of level-up feel + exit condition (grind mobs → level-up flash; drops → Z; reload → character persists).
+M01, M02, M03 all done (M03 user-approved 2026-07-14). No open milestones — milestone planning proposed M04 town/shop/portals → M05 Field 2 content → M06 PartyKit shared world; awaiting user confirmation.
 
 ## Last action
 
@@ -27,7 +27,7 @@ M02 combat completed and closed. Movement/attack are 1:1 with the official MSW m
 
 ## Next step
 
-User playtests M03 exit condition at localhost:5173: grind a few mobs → XP bar fills, level-up flash fires (DOM overlay), drops spill and Z picks them up, C drinks a potion, reload → character exactly restored. Then mark M03 done and run milestone planning for the next set (candidates: town+shop+Field 2 content, PartyKit multiplayer, audio). New systems this session: src/sim/progression.js + loot.js + rng.js, src/core/save.js, src/ui/hud.js, src/render/lootView.js; keys Z (loot) and C (potion).
+Write the user-confirmed next milestones to docs/milestones/ (proposal presented 2026-07-14: M04 town+shop+portals, M05 Field 2 + mob roster, M06 PartyKit shared world; audio and Meshy assets deliberately later), then start the first one red-tests-first via development.md. New systems from M03: src/sim/progression.js + loot.js + rng.js, src/core/save.js, src/ui/hud.js, src/render/lootView.js; keys Z (loot) and C (potion).
 
 ## Blockers
 

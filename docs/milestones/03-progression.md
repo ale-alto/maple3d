@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress — all 7 automated AC green 2026-07-14 (33/33 suite); awaiting user playtest of level-up feel + exit condition
+done — 2026-07-14. All 7 automated AC green (33/33 suite); user playtested and approved the loop + level-up feel same day.
 
 ## Objective
 
@@ -41,7 +41,7 @@ Close the dopamine loop: kills grant XP, the XP bar fills, level-ups flash and g
 - [x] Z over a drop picks it up into inventory; currency increments — test: `tests/e2e/loot.spec.js::pickup`
 - [x] Using a potion restores HP and consumes the stack — test: `tests/e2e/loot.spec.js::potion use`
 - [x] Reload page → level, XP, inventory, position restored from localStorage — test: `tests/e2e/save.spec.js::persistence roundtrip`
-- [ ] Level-up moment feels like Maple (flash timing/placement) — verified by user playtest
+- [x] Level-up moment feels like Maple (flash timing/placement) — verified by user playtest (approved 2026-07-14; jingle arrives with the audio milestone)
 
 ## Exit condition
 
