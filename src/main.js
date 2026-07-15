@@ -2,6 +2,7 @@ import './style.css';
 import {
   FIXED_STEP_MS,
   XP_PER_MOB,
+  MOB_TYPES,
   STARTING_POTIONS,
   PORTAL_RANGE,
   NPC_RANGE,
@@ -108,10 +109,11 @@ function changeMap(mapId, target) {
   persist(gameState);
 }
 
-// Progression wiring: kills grant XP and spill loot.
-eventBus.on('mob:died', ({ x, y }) => {
-  grantXp(gameState.player, XP_PER_MOB, eventBus);
-  spawnDrops(gameState.loot, gameState.map, x, y, eventBus);
+// Progression wiring: kills grant per-type XP and spill per-type loot.
+eventBus.on('mob:died', ({ x, y, type }) => {
+  const def = MOB_TYPES[type] ?? MOB_TYPES.blob;
+  grantXp(gameState.player, def.xp ?? XP_PER_MOB, eventBus);
+  spawnDrops(gameState.loot, gameState.map, x, y, eventBus, def);
 });
 eventBus.on('player:levelup', () => {
   lastLevelUpSimMs = simTimeMs;
@@ -171,6 +173,7 @@ function step() {
 function draw() {
   playerView.update(gameState.player);
   mobsView.sync(gameState.mobs.mobs);
+  mobsView.syncProjectiles(gameState.mobs.projectiles ?? []);
   fxView.sync(gameState.combat.stars, simTimeMs);
   lootView.sync(gameState.loot.drops, simTimeMs);
   hud.update(gameState, xpToNext);
@@ -249,12 +252,18 @@ window.render_game_to_text = () => {
     mobs: gameState.mobs.mobs.map((mob) => ({
       id: mob.id,
       spawn: mob.spawn,
+      type: mob.type,
       x: round3(mob.x),
       y: round3(mob.y),
       hp: mob.hp,
       maxHp: mob.maxHp,
       state: mob.state,
       facing: mob.facing,
+    })),
+    mobProjectiles: (gameState.mobs.projectiles ?? []).map((s) => ({
+      x: round3(s.x),
+      y: round3(s.y),
+      vx: round3(s.vx),
     })),
     projectiles: gameState.combat.stars.map((s) => ({
       x: round3(s.x),

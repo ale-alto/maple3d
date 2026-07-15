@@ -61,14 +61,16 @@ test.describe('M05 field2', () => {
       window.__test.gotoMap('field2');
       window.advanceTime(200);
       // Kill a ground bruiser: stand outside its patrol edge, lock on.
-      const spawn = read().map.mobSpawns.find((s) => s.type === 'bruiser' && s.y === 0);
+      // (Index and object from ONE read — JSON payloads never share refs.)
+      const spawns = read().map.mobSpawns;
+      const spawnIdx = spawns.findIndex((s) => s.type === 'bruiser' && s.y === 0);
+      const spawn = spawns[spawnIdx];
       window.__test.setPlayerPos(spawn.patrolX1 - 2, 0);
       window.advanceTime(50);
       key('keydown', 'ArrowRight');
       window.advanceTime(17);
       key('keyup', 'ArrowRight');
       const xpBefore = read().player.xp;
-      const spawnIdx = read().map.mobSpawns.indexOf(spawn);
       key('keydown', 'Control');
       let dead = false;
       for (let i = 0; i < 700 && !dead; i++) {

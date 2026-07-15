@@ -92,31 +92,50 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
     return true;
   });
 
-  // --- Contact damage + death ---
+  // --- Player damage (contact + spitter shots) ---
   player.invulnMs = Math.max(0, player.invulnMs - ms);
+
+  // Damage + knockback away from sourceX (MSW HitEvent FeedbackAction);
+  // death penalty/heal here, WHERE the player wakes up (town, per the
+  // gameplan) is the orchestrator's job via the player:died event.
+  function hurtPlayer(amount, sourceX) {
+    player.hp -= amount;
+    player.invulnMs = INVULN_MS;
+    const kbDir = Math.sign(player.x - sourceX) || (player.facing === 'right' ? -1 : 1);
+    player.vx = kbDir * KNOCKBACK_VX;
+    player.vy = KNOCKBACK_VY;
+    player.grounded = false;
+    events?.emit('player:hit', { amount, x: player.x, y: player.y });
+    if (player.hp <= 0) {
+      applyDeathPenalty(player, events);
+      player.hp = player.maxHp;
+      player.jumpsLeft = 2;
+      player.invulnMs = INVULN_MS; // respawn grace
+      events?.emit('player:died', {});
+      events?.emit('player:respawned', {});
+    }
+  }
+
   if (player.invulnMs === 0) {
     const touching = mobsState.mobs.find((m) =>
       overlaps(player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT, m.x, m.y, MOB_WIDTH, MOB_HEIGHT),
     );
-    if (touching) {
-      player.hp -= MOB_CONTACT_DAMAGE;
-      player.invulnMs = INVULN_MS;
-      // MSW HitEvent FeedbackAction: pop back away from the mob.
-      const kbDir = Math.sign(player.x - touching.x) || (player.facing === 'right' ? -1 : 1);
-      player.vx = kbDir * KNOCKBACK_VX;
-      player.vy = KNOCKBACK_VY;
-      player.grounded = false;
-      events?.emit('player:hit', { amount: MOB_CONTACT_DAMAGE, x: player.x, y: player.y });
-      if (player.hp <= 0) {
-        // Penalty + heal here; WHERE the player wakes up (town, per the
-        // gameplan) is the orchestrator's job via the player:died event.
-        applyDeathPenalty(player, events);
-        player.hp = player.maxHp;
-        player.jumpsLeft = 2;
-        player.invulnMs = INVULN_MS; // respawn grace
-        events?.emit('player:died', {});
-        events?.emit('player:respawned', {});
-      }
-    }
+    if (touching) hurtPlayer(touching.contactDamage ?? MOB_CONTACT_DAMAGE, touching.x);
   }
+
+  // --- Spitter shots: slow, flat, jumpable; spawned by the mob sim ---
+  mobsState.projectiles = (mobsState.projectiles ?? []).filter((shot) => {
+    shot.x += shot.vx * dt;
+    shot.traveled += Math.abs(shot.vx) * dt;
+    if (shot.traveled >= shot.maxRange) return false;
+    if (shot.x < map.minX || shot.x > map.maxX) return false;
+    if (
+      player.invulnMs === 0 &&
+      overlaps(shot.x, shot.y - 0.2, 0.4, 0.4, player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT)
+    ) {
+      hurtPlayer(shot.damage, shot.x);
+      return false;
+    }
+    return true;
+  });
 }

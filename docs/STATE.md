@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-M01–M04 done (M04 user-approved 2026-07-14). Next: M05 Field 2 + mob roster (docs/milestones/05-field2-mob-roster.md, status: planned), then M06 PartyKit shared world.
+M01–M04 done. **M05 Field 2 + mob roster in-progress**: all 4 automated AC green (45/45 suite), implementation live-verified; remaining: user playtest of Field 2 difficulty feel. Then M06 PartyKit shared world (last v1 milestone before audio + Meshy assets).
 
 ## Last action
 
@@ -27,7 +27,7 @@ M02 combat completed and closed. Movement/attack are 1:1 with the official MSW m
 
 ## Next step
 
-Start M05 via development.md: red specs first per 05-field2-mob-roster.md AC (tests/e2e/field2.spec.js — portal chain, per-type mob stats, type-scaled xp/drops, type-3 melee-vs-ranged decision goes to the user at red-test time). Build: mob type system in constants + mobs.js (mobSpawns gain `type`), field2 map module, per-type drop tables in loot.js, MobsView type variants. M04 systems available: src/sim/maps/{index,town}.js, src/sim/shop.js, src/ui/shopPanel.js, changeMap (M06 reuses as join-room), save v2, upPressed edge for portals/NPCs.
+User playtests M05 exit condition at localhost:5173: portal Field 1 right edge (x 19) → Field 2 (purple-themed, more vertical); fight bruisers (tankier, hit harder, pay 16 XP) and spitters (ranged — jump their slow flat shots); come back richer per kill. Then mark M05 done and start M06 (PartyKit shared world) — the last v1 milestone. M06 build: `party/` room server runs src/sim/mobs.js authoritatively, src/net/ partysocket client, presence + name tags + chat bubbles, per-player loot; changeMap already shaped as join-room; multi-client Playwright via /add-multiplayer patterns. New M05 systems: MOB_TYPES table (constants), typed mobs.js with spitter projectiles (mobs.projectiles resolved in combat.js), src/sim/maps/field2.js, per-type drops in loot.js, mapView reads map.theme.
 
 ## Blockers
 

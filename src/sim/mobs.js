@@ -1,32 +1,32 @@
-// Headless mob sim: spawn, patrol, aggro, damage, death, timed respawn.
-// Runs identically inside the PartyKit room later — keep it pure.
+// Headless mob sim: typed roster (M05), patrol, aggro, damage, death,
+// timed respawn, and spitter projectiles. Runs identically inside the
+// PartyKit room later — keep it pure.
 
-import {
-  MOB_MAX_HP,
-  MOB_SPEED,
-  MOB_AGGRO_SPEED,
-  MOB_AGGRO_RADIUS,
-  MOB_RESPAWN_MS,
-} from '../core/constants.js';
+import { MOB_TYPES, MOB_AGGRO_RADIUS, MOB_RESPAWN_MS } from '../core/constants.js';
 
 export function createMobsState(map) {
-  const state = { mobs: [], pending: [], nextId: 1 };
+  const state = { mobs: [], pending: [], projectiles: [], nextId: 1 };
   map.mobSpawns.forEach((_, i) => spawnMob(state, map, i));
   return state;
 }
 
 export function spawnMob(state, map, spawnIndex) {
   const sp = map.mobSpawns[spawnIndex];
+  const type = sp.type ?? 'blob';
+  const def = MOB_TYPES[type];
   state.mobs.push({
     id: state.nextId++,
     spawn: spawnIndex,
+    type,
     x: sp.x,
     y: sp.y,
-    hp: MOB_MAX_HP,
-    maxHp: MOB_MAX_HP,
+    hp: def.maxHp,
+    maxHp: def.maxHp,
+    contactDamage: def.contactDamage,
     state: 'patrol',
     facing: 'left',
     dir: -1,
+    shotCooldownMs: 0,
   });
 }
 
@@ -45,6 +45,7 @@ export function stepMobs(state, player, map, dt, events) {
 
   for (const mob of state.mobs) {
     const sp = map.mobSpawns[mob.spawn];
+    const def = MOB_TYPES[mob.type];
     const dx = player.x - mob.x;
     const sameLevel = Math.abs(player.y - mob.y) < 1.2;
 
@@ -52,10 +53,10 @@ export function stepMobs(state, player, map, dt, events) {
       mob.state = 'aggro';
       const dir = Math.sign(dx) || mob.dir;
       mob.dir = dir;
-      mob.x += dir * MOB_AGGRO_SPEED * dt;
+      mob.x += dir * def.aggroSpeed * dt;
     } else {
       mob.state = 'patrol';
-      mob.x += mob.dir * MOB_SPEED * dt;
+      mob.x += mob.dir * def.speed * dt;
       if (mob.x <= sp.patrolX1) mob.dir = 1;
       else if (mob.x >= sp.patrolX2) mob.dir = -1;
     }
@@ -63,6 +64,26 @@ export function stepMobs(state, player, map, dt, events) {
     // Never leave the home surface (Maple mobs don't chase off platforms).
     mob.x = Math.max(sp.patrolX1, Math.min(sp.patrolX2, mob.x));
     mob.facing = mob.dir > 0 ? 'right' : 'left';
+
+    // Spitters: slow, jumpable shot at a same-level player in range.
+    if (def.ranged) {
+      mob.shotCooldownMs = Math.max(0, mob.shotCooldownMs - ms);
+      if (sameLevel && Math.abs(dx) <= def.ranged.range && mob.shotCooldownMs === 0) {
+        const dir = Math.sign(dx) || mob.dir;
+        state.projectiles.push({
+          id: state.nextId++,
+          x: mob.x,
+          y: mob.y + 0.5,
+          vx: dir * def.ranged.projectileSpeed,
+          damage: def.ranged.damage,
+          traveled: 0,
+          maxRange: def.ranged.range + 2,
+        });
+        mob.shotCooldownMs = def.ranged.cooldownMs;
+        mob.facing = dir > 0 ? 'right' : 'left';
+        events?.emit('mob:shot', { id: mob.id, x: mob.x, y: mob.y });
+      }
+    }
   }
 }
 
@@ -72,6 +93,6 @@ export function damageMob(state, mob, amount, events) {
   if (mob.hp <= 0) {
     state.mobs = state.mobs.filter((m) => m !== mob);
     state.pending.push({ spawn: mob.spawn, timerMs: MOB_RESPAWN_MS });
-    events?.emit('mob:died', { id: mob.id, x: mob.x, y: mob.y, spawn: mob.spawn });
+    events?.emit('mob:died', { id: mob.id, x: mob.x, y: mob.y, spawn: mob.spawn, type: mob.type });
   }
 }

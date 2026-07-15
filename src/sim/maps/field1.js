@@ -21,10 +21,17 @@ export const field1 = {
     { x: 2.2, y1: 0, y2: 2.2, type: 'ladder' },
     { x: 0.5, y1: 2.2, y2: 4.4, type: 'rope' },
   ],
+  // Field 1 stays blob-tier (levels 1-5): the tougher roster starts in
+  // Field 2 (M05 scope adjustment — a deep-end bruiser here kept
+  // colliding with combat-spec geometry, and tier-pure fields are
+  // Maple-authentic anyway).
   mobSpawns: [
-    { x: 6.75, y: 0, patrolX1: 5.5, patrolX2: 8 },
-    { x: 11.5, y: 3.0, patrolX1: 9.5, patrolX2: 13.5 },
+    { x: 6.75, y: 0, patrolX1: 5.5, patrolX2: 8, type: 'blob' },
+    { x: 11.5, y: 3.0, patrolX1: 9.5, patrolX2: 13.5, type: 'blob' },
   ],
-  portals: [{ id: 'toTown', x: -19, y: 0, targetMap: 'town', targetPortal: 'toField1' }],
+  portals: [
+    { id: 'toTown', x: -19, y: 0, targetMap: 'town', targetPortal: 'toField1' },
+    { id: 'toField2', x: 19, y: 0, targetMap: 'field2', targetPortal: 'toField1' },
+  ],
   npcs: [],
 };

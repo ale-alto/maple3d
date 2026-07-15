@@ -26,12 +26,14 @@ function surfaceBelow(map, x, yRef) {
   return best;
 }
 
-export function spawnDrops(state, map, x, y, events) {
-  const items = [
-    { kind: 'mesos', amount: MESOS_MIN + Math.floor(state.rand() * (MESOS_MAX - MESOS_MIN + 1)) },
-  ];
-  if (state.rand() < POTION_DROP_CHANCE) items.push({ kind: 'potion' });
-  if (state.rand() < STARPACK_DROP_CHANCE) items.push({ kind: 'starPack' });
+// typeDef (M05): per-mob-type drop table {mesosMin, mesosMax,
+// potionChance, starPackChance}; falls back to the M03 blob-tier values.
+export function spawnDrops(state, map, x, y, events, typeDef) {
+  const lo = typeDef?.mesosMin ?? MESOS_MIN;
+  const hi = typeDef?.mesosMax ?? MESOS_MAX;
+  const items = [{ kind: 'mesos', amount: lo + Math.floor(state.rand() * (hi - lo + 1)) }];
+  if (state.rand() < (typeDef?.potionChance ?? POTION_DROP_CHANCE)) items.push({ kind: 'potion' });
+  if (state.rand() < (typeDef?.starPackChance ?? STARPACK_DROP_CHANCE)) items.push({ kind: 'starPack' });
   for (const item of items) {
     state.drops.push({
       id: state.nextId++,

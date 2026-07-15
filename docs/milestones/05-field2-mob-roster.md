@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress — all 4 automated AC green 2026-07-14 (45/45 suite), live-verified; awaiting user playtest of Field 2 difficulty feel
 
 ## Objective
 
@@ -29,10 +29,10 @@ Deliver the second hunting field and complete the v1 mob roster (3 types of risi
 
 ## Acceptance criteria
 
-- [ ] Portal chain reaches Field 2 and back — test: `tests/e2e/field2.spec.js::portal chain`
-- [ ] Field 2 spawns type-2 and type-3 mobs with their own stats (verifiably tougher: higher hp/contact damage than type 1) — test: `tests/e2e/field2.spec.js::mob types and stats`
-- [ ] Type-specific XP and drops (killing a type-2 grants more XP than type-1) — test: `tests/e2e/field2.spec.js::xp and drops scale`
-- [ ] If type 3 is ranged: its projectile damages the player and can be avoided — test: `tests/e2e/field2.spec.js::ranged mob` (else AC revised to its melee behavior)
+- [x] Portal chain reaches Field 2 and back — test: `tests/e2e/field2.spec.js::portal chain`
+- [x] Field 2 spawns type-2 (bruiser) and type-3 (spitter) mobs with their own stats, verifiably tougher than type-1 blob (bruiser 70 hp / 16 contact vs blob 40/10) — test: `tests/e2e/field2.spec.js::mob types and stats`
+- [x] Type-specific XP and drops (bruiser grants 16 XP vs blob's 8; richer mesos/potion tables) — test: `tests/e2e/field2.spec.js::xp and drops scale`
+- [x] Type-3 is ranged (user decision 2026-07-14): the spitter fires a slow, flat, jumpable shot on its own level that damages the player — test: `tests/e2e/field2.spec.js::ranged mob`
 - [ ] Field 2 difficulty feel (is the jump fair at ~level 5–8?) — verified by user playtest
 
 ## Exit condition
@@ -45,4 +45,7 @@ Red-then-green per AC; reuse atomic kill helpers parameterized by map/type. Regr
 
 ## Notes
 
-- Mob type decision (melee vs ranged #3) gets made at red-test time with the user if playtest instinct hasn't already settled it.
+- Mob type decision: user chose **ranged spitter** for type 3 (2026-07-14). Slow flat jumpable shot, fires only on the player's own level, 2.2s cooldown, 6-range, 8 dmg — spawned by the mob sim (`mobs.projectiles`), resolved against the player in combat.js.
+- Roster & stats live in `MOB_TYPES` (constants.js): blob 40hp/8xp (Field 1), bruiser 70hp/16xp, spitter 55hp/22xp (Field 2). mobSpawns carry `type`; MobsView tints/scales per type; drops/xp scale per type via the `mob:died` payload.
+- Scope adjustment: Field 1 stayed blob-only (a deep-end bruiser there collided with combat-spec geometry, and tier-pure fields are Maple-authentic). Field 2 carries both new types.
+- Field 2 map has its own `theme` colors (mapView reads `map.theme`), a 5-platform vertical layout, ladder + rope.
