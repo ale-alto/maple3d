@@ -2,7 +2,7 @@
 
 ## Status
 
-done — 2026-07-14. All automated AC green (26/26 suite); feel verified through an extended user playtest cycle (six playtest-driven revisions: committed air momentum/kite, snappier jump arc, firm landing, ladder end stability, MSW parity batch, classic target-lock star homing), user approved 2026-07-14.
+done — 2026-07-14. Feel verified through an extended playtest cycle. Combat later corrected against real-MapleStory research (not just MSW docs): **throwing stars are consumable ammo** (spend 1/attack, refill drops/shop, empty = no throw), **720ms cast** (authentic Fast (4) claw), homing kept (confirmed authentic). See docs/reference/msw-parity.md "Real-MapleStory combat facts". Also removed double jump (single only). Suite 50/50.
 
 ## Objective
 

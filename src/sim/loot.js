@@ -9,6 +9,8 @@ import {
   MESOS_MAX,
   POTION_DROP_CHANCE,
   STARPACK_DROP_CHANCE,
+  STARPACK_SIZE,
+  STAR_MAX,
   LOOT_SEED,
 } from '../core/constants.js';
 import { mulberry32 } from './rng.js';
@@ -86,7 +88,7 @@ export function stepLoot(state, map, player, inventory, input, dt, events) {
       state.drops = state.drops.filter((d) => d !== best);
       if (best.kind === 'mesos') inventory.mesos += best.amount;
       else if (best.kind === 'potion') inventory.potions += 1;
-      else if (best.kind === 'starPack') inventory.starPacks += 1;
+      else if (best.kind === 'starPack') inventory.stars = Math.min(STAR_MAX, inventory.stars + STARPACK_SIZE);
       events?.emit('loot:picked', { kind: best.kind, amount: best.amount ?? 1 });
     }
   }

@@ -32,6 +32,14 @@
 | Attack areas are forward rects (`Attack(size, offset)`, offset anchored by LookDirectionX); classic MS resolves the attack at press time (target-lock) and the projectile visual homes to the lock | Selection is box-based, never angle-based; the box tracks the character (moves with jumps); the star can't miss its lock; whiffs hit nothing | 1:1 as of 2026-07-14: lock nearest mob whose center is in the forward box (STAR_RANGE ahead × ±STAR_SELECT_HALF_HEIGHT 1.1 around the PLAYER'S BODY CENTER), star homes to lock, damage on arrival, fizzle if lock dies; whiffs are pure visuals. Body-centered box = mob straight above is unreachable (no vertical attack), jump-to-level connects. (History: free-aim 45° cone → flat-flight → throwY-anchored ±1.5 band → body-centered box, all user-corrected.) |
 | IsAttackTarget excludes DEAD | Dead entities can't be hit | dead mobs leave the list ✓ |
 
+## Real-MapleStory (not MSW) combat facts adopted 2026-07-14
+
+Grounded in the actual MapleStory wikis + MapleStory Classic timing tables (the MSW docs cover the maker engine, not MS combat feel):
+
+- **Claw basic attack cast time = 720ms** (Fast (4), the near-universal claw speed; 600ms with Claw Booster, a 2nd-job skill = backlog). Lucky Seven and all skills cast at the same speed. → `ATTACK_COOLDOWN_MS`/`ATTACK_LOCK_MS` = 720.
+- **Ranged basic attacks auto-target/home** — the game locks a monster in the attack's range box and the star flies to it (confirmed authentic; our target-lock model was right).
+- **Throwing stars are consumable ammo** — equipped stack (500–2000 cap by type, small attack boost per type), one spent per attack, refilled at shops / from drops, empty = can't attack. → `STARTING_STARS`/`STARPACK_SIZE`/`STAR_MAX`; consumed in combat.js, refilled in loot.js + shop.js, shown in HUD.
+
 ## Deliberately not adopted (yet)
 
 - WalkSlant (slopes) — maps are flat segments in v1

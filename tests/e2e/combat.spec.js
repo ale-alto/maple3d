@@ -1,5 +1,5 @@
 import { test, expect, state, advance, teleport, holdKey } from '../fixtures/game-test.js';
-import { STAR_RANGE, PLAYER_MAX_HP } from '../../src/core/constants.js';
+import { STAR_RANGE, PLAYER_MAX_HP, STARPACK_SIZE, STAR_MAX } from '../../src/core/constants.js';
 
 // M02 contract additions:
 //   player.hp / player.maxHp / player.invulnMs
@@ -229,6 +229,53 @@ test.describe('M02 combat', () => {
     });
     expect(result.groundNoDamage).toBe(true); // no vertical attack from below
     expect(result.hitAtLevel).toBe(true); // jump-to-level connects
+  });
+
+  test('throwing stars are consumable ammo', async ({ gamePage }) => {
+    // Authentic assassin: each throw spends one equipped star. Attack in
+    // town (no mobs) so throws whiff and deplete without killing anything.
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const key = (t, k) =>
+        window.dispatchEvent(new KeyboardEvent(t, { key: k, bubbles: true }));
+      window.__test.gotoMap('town');
+      window.advanceTime(100);
+      window.__test.setStars(3);
+      const before = read().inventory.stars;
+      key('keydown', 'Control');
+      for (let i = 0; i < 260; i++) window.advanceTime(16.667); // ~4.3s, 3 throws @720ms
+      key('keyup', 'Control');
+      return { before, after: read().inventory.stars };
+    });
+    expect(result.before).toBe(3);
+    expect(result.after).toBe(0); // all three spent
+  });
+
+  test('cannot attack with no stars', async ({ gamePage }) => {
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const key = (t, k) =>
+        window.dispatchEvent(new KeyboardEvent(t, { key: k, bubbles: true }));
+      const sp0 = read().map.mobSpawns[0];
+      window.__test.setPlayerPos(sp0.patrolX1 - 0.5, sp0.y);
+      window.__test.setStars(0);
+      window.advanceTime(50);
+      key('keydown', 'ArrowRight');
+      window.advanceTime(17);
+      key('keyup', 'ArrowRight');
+      key('keydown', 'Control');
+      let everFired = false;
+      for (let i = 0; i < 120; i++) {
+        window.advanceTime(16.667);
+        if (read().projectiles.length > 0) everFired = true;
+      }
+      key('keyup', 'Control');
+      const mob0 = read().mobs.find((m) => m.spawn === 0);
+      return { everFired, mobFullHp: mob0 && mob0.hp === mob0.maxHp, stars: read().inventory.stars };
+    });
+    expect(result.everFired).toBe(false); // no star with no ammo
+    expect(result.mobFullHp).toBe(true); // mob untouched
+    expect(result.stars).toBe(0); // never went negative
   });
 
   test('grounded attack locks movement', async ({ gamePage }) => {

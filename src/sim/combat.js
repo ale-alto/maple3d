@@ -29,12 +29,14 @@ function overlaps(ax, ay, aw, ah, bx, by, bw, bh) {
   return Math.abs(ax - bx) * 2 < aw + bw && ay < by + bh && by < ay + ah;
 }
 
-export function stepCombat(combat, player, mobsState, map, input, dt, events) {
+export function stepCombat(combat, player, mobsState, map, input, dt, events, inventory) {
   const ms = dt * 1000;
 
   // --- Throw stars (Ctrl; held = auto-attack on cooldown) ---
+  // Throwing stars are consumable ammo — no stars, no throw (classic MS).
   combat.cooldownMs = Math.max(0, combat.cooldownMs - ms);
-  if (input.attack && combat.cooldownMs === 0 && !player.climbing) {
+  const hasAmmo = !inventory || inventory.stars > 0;
+  if (input.attack && combat.cooldownMs === 0 && !player.climbing && hasAmmo) {
     // Classic MS: lock the nearest mob inside the forward attack box at
     // press time. The box is centered on the player's BODY (rises with a
     // jump) and is ~one character tall, so a mob straight above is out of
@@ -64,11 +66,12 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events) {
       targetId: target ? target.id : null,
       traveled: 0,
     });
+    if (inventory) inventory.stars -= 1; // spend the star
     combat.cooldownMs = ATTACK_COOLDOWN_MS;
     // MSW ATTACK state: grounded throws are stand-and-throw; air throws
     // stay free (that's the kite).
     if (player.grounded) player.attackLockMs = ATTACK_LOCK_MS;
-    events?.emit('player:attacked', { facing: player.facing });
+    events?.emit('player:attacked', { facing: player.facing, stars: inventory ? inventory.stars : null });
   }
 
   // --- Fly + hit (locked stars home and land on arrival; whiffs never

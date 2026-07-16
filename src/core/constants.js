@@ -41,8 +41,9 @@ export const LADDER_GRAB_RANGE = 0.5; // horizontal reach to grab a ladder
 export const LADDER_JUMP_VX = 4;
 export const LADDER_JUMP_VY = 6;
 // MSW ATTACK state: grounded attacks root you for the throw. Lock == the
-// throw interval so holding attack keeps you planted (classic MS).
-export const ATTACK_LOCK_MS = 650;
+// throw interval so holding attack keeps you planted (classic MS). 720ms =
+// authentic Fast (4) claw cast time (MapleStory Classic; 600ms w/ Booster).
+export const ATTACK_LOCK_MS = 720;
 // MSW HitEvent FeedbackAction: pop away from the mob on contact.
 export const KNOCKBACK_VX = 5;
 export const KNOCKBACK_VY = 4;
@@ -62,7 +63,12 @@ export const STAR_RANGE = 7;
 // you to a mob's level connects. The star homes to the lock; no lock = whiff.
 export const STAR_SELECT_HALF_HEIGHT = 1.1; // box half-height around player center
 export const STAR_THROW_HEIGHT = 1.0; // star spawn height above player feet
-export const ATTACK_COOLDOWN_MS = 650; // slower, weightier throw (was 350, "too fast")
+export const ATTACK_COOLDOWN_MS = 720; // authentic Fast (4) claw cast time (MapleStory Classic)
+// Throwing stars are consumable ammo (core assassin mechanic): each attack
+// spends one; refill via star-pack drops and the shop; empty = can't throw.
+export const STARTING_STARS = 100;
+export const STARPACK_SIZE = 50; // stars per pack (drop or purchase)
+export const STAR_MAX = 800; // equipped stack cap (Ilbi-tier)
 export const MOB_MAX_HP = 40; // M03 rebalance: 5 base hits (was 60/8-hit, playtest "tanky")
 export const MOB_SPEED = 1.2;
 export const MOB_AGGRO_SPEED = 2.2;

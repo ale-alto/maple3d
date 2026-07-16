@@ -4,6 +4,7 @@ import {
   XP_PER_MOB,
   MOB_TYPES,
   STARTING_POTIONS,
+  STARTING_STARS,
   PORTAL_RANGE,
   NPC_RANGE,
   CAMERA_SWING_MS,
@@ -39,7 +40,7 @@ gameState.player = createPlayer(gameState.map);
 gameState.mobs = createMobsState(gameState.map);
 gameState.combat = createCombatState();
 gameState.loot = createLootState();
-gameState.inventory = { mesos: 0, potions: STARTING_POTIONS, starPacks: 0 };
+gameState.inventory = { mesos: 0, potions: STARTING_POTIONS, stars: STARTING_STARS };
 gameState.shopOpen = false;
 
 // Restore the character before anything renders.
@@ -57,7 +58,10 @@ if (saved) {
   p.y = saved.player.y;
   p.facing = saved.player.facing;
   p.grounded = false; // physics settles onto whatever is at the saved spot
+  // Merge saved inventory; ensure `stars` exists for pre-ammo (v1/early-v2) saves.
   gameState.inventory = { ...gameState.inventory, ...saved.inventory };
+  if (typeof gameState.inventory.stars !== 'number') gameState.inventory.stars = STARTING_STARS;
+  delete gameState.inventory.starPacks; // legacy field
 }
 
 let mapViewGroup = buildMapView(scene, gameState.map);
@@ -125,7 +129,7 @@ eventBus.on('player:died', () => {
   pendingDeathRespawn = true;
 });
 // Saves: fire on every progression-relevant event + on leaving.
-for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned']) {
+for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned', 'shop:bought']) {
   eventBus.on(ev, () => persist(gameState));
 }
 window.addEventListener('beforeunload', () => persist(gameState));
@@ -150,7 +154,7 @@ function step() {
 
   stepPlayer(gameState.player, gameState.map, input, dt, eventBus);
   stepMobs(gameState.mobs, gameState.player, gameState.map, dt, eventBus);
-  stepCombat(gameState.combat, gameState.player, gameState.mobs, gameState.map, input, dt, eventBus);
+  stepCombat(gameState.combat, gameState.player, gameState.mobs, gameState.map, input, dt, eventBus, gameState.inventory);
   stepLoot(gameState.loot, gameState.map, gameState.player, gameState.inventory, input, dt, eventBus);
   if (input.potion) usePotion(gameState.player, gameState.inventory, eventBus);
   cameraRig.update(gameState.player, dt);
@@ -317,6 +321,9 @@ window.__test = {
   },
   grantMesos(amount) {
     gameState.inventory.mesos += amount;
+  },
+  setStars(n) {
+    gameState.inventory.stars = n;
   },
 };
 window.__debug = { renderer, scene, camera, gameState, eventBus };
