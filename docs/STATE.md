@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-M01–M05 done. **M06 PartyKit shared world in-progress**: all 5 automated AC green (55/55 suite, zero single-player regressions), live-verified in the pane with a scripted peer; remaining: user playtest of latency feel (two windows). Last v1 gameplay milestone.
+**M01–M06 ALL DONE (2026-07-14) — v1 gameplay scope complete.** Milestone planning for the polish/ship set proposed (audio, Meshy assets, deploy); awaiting user confirmation.
 
 ## Last action
 
@@ -27,7 +27,7 @@ M02 combat completed and closed. Movement/attack are 1:1 with the official MSW m
 
 ## Next step
 
-User playtests M06 latency feel: run `npm run mp` (party server, port 1999) alongside `npm run dev`, open TWO browser windows at `localhost:5173/?mp=1&name=A` and `?mp=1&name=B` — both characters visible with name tags, hunting the same server-owned mobs, Enter to chat (bubbles). Then mark M06 done → v1 gameplay complete → milestone planning for the polish set (audio via Suno/add-audio, Meshy GLB asset pass per ADR-0002, plus deploy: partykit deploy + client hosting).
+Write the user-confirmed polish milestones (proposal 2026-07-14: M07 audio → M08 Meshy GLB assets → M09 deploy, order flexible per user), then start the first red-tests-first where testable (audio = playtest-heavy; assets swap through CharacterView per ADR-0002; deploy = partykit login --provider github + deploy, client static hosting + VITE_MP_HOST).
 
 M06 systems: party/index.js (room per map, imports src/sim directly — 20Hz tick, 10Hz snapshots, ghost-peer prune, per-killer loot rolls), src/net/networkManager.js (?mp=1 gate, ?mproom= room isolation for tests), src/render/remotePlayersView.js (lerped views + name tags + bubbles), src/ui/chat.js (Enter to talk; keyboard ignores keys while typing), combat/mobs/loot refactors (stepMobs takes players[], stepMobProjectiles extracted, rollDrops/spawnDropsFromItems split, net.sendHit path). Also fixed in passing: respawn granted 2 jumps (pre-single-jump leftover).
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress — all 5 automated AC green 2026-07-14 (55/55 suite, no single-player regressions); awaiting user playtest of latency feel (two windows)
+done — 2026-07-14. All 8 automated AC green (58/58 suite, zero single-player regressions); user playtested two-window hunting through five refinement rounds (visible stars, classic loot protection, name tags below, shared pickup removal, remote level-up flashes) and approved.
 
 ## Objective
 
@@ -39,7 +39,7 @@ Deliver the gameplan's day-one promise: everyone on a map shares a PartyKit room
 - [x] Picked-up loot vanishes on every screen (server-assigned dropIds + pickup relay) — test: `tests/e2e/multiplayer.spec.js::picked-up loot vanishes for everyone` *(added 2026-07-14 from playtest)*
 - [x] Party members' level-ups are visible (presence carries level; a jump up flashes gold over their head for 2s) — test: `tests/e2e/multiplayer.spec.js::remote level-ups are visible` *(added 2026-07-14 from playtest)*
 - [x] Disconnect/offline falls back to local sim without errors — test: `tests/e2e/multiplayer.spec.js::offline fallback` (plus: the 50 single-player specs run with the party server up and stay pure-local)
-- [ ] Latency feel while hunting together — verified by user playtest
+- [x] Latency feel while hunting together — verified by user playtest (approved 2026-07-14)
 
 ## Exit condition
 
