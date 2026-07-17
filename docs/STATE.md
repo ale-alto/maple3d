@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-M01–M05 done (M05 user-approved 2026-07-14). Next: M06 PartyKit shared world (docs/milestones/06-partykit-shared-world.md, status: planned) — the last v1 gameplay milestone before audio + Meshy assets.
+M01–M05 done. **M06 PartyKit shared world in-progress**: all 5 automated AC green (55/55 suite, zero single-player regressions), live-verified in the pane with a scripted peer; remaining: user playtest of latency feel (two windows). Last v1 gameplay milestone.
 
 ## Last action
 
@@ -27,9 +27,9 @@ M02 combat completed and closed. Movement/attack are 1:1 with the official MSW m
 
 ## Next step
 
-Start M06 (PartyKit shared world) via development.md — the last v1 gameplay milestone. Consider /add-multiplayer skill for scaffolding patterns. Build: `party/` room-per-map server running src/sim/mobs.js authoritatively on a tick (sim purity finally pays off); src/net/ partysocket client joining on changeMap; presence broadcast (pos/facing/state) → remote CharacterViews + name tags; server-owned mob hp/death/respawn with local prediction; per-player loot (server rolls per killer, sends privately); chat bubbles; offline fallback to local sim. ADR-0003 if client/server sim-sharing needs a build/tooling decision. Multi-client Playwright fixture (two pages, one room) asserting convergence via each page's render_game_to_text. Watch: single-player suite (45/45) must stay green with no room running.
+User playtests M06 latency feel: run `npm run mp` (party server, port 1999) alongside `npm run dev`, open TWO browser windows at `localhost:5173/?mp=1&name=A` and `?mp=1&name=B` — both characters visible with name tags, hunting the same server-owned mobs, Enter to chat (bubbles). Then mark M06 done → v1 gameplay complete → milestone planning for the polish set (audio via Suno/add-audio, Meshy GLB asset pass per ADR-0002, plus deploy: partykit deploy + client hosting).
 
-Available since M05: MOB_TYPES table (constants), typed mobs.js with spitter projectiles (mobs.projectiles resolved in combat.js), src/sim/maps/field2.js, per-type drops in loot.js, changeMap in main.js (reuse as join-room), save v2, upPressed edge for portals/NPCs.
+M06 systems: party/index.js (room per map, imports src/sim directly — 20Hz tick, 10Hz snapshots, ghost-peer prune, per-killer loot rolls), src/net/networkManager.js (?mp=1 gate, ?mproom= room isolation for tests), src/render/remotePlayersView.js (lerped views + name tags + bubbles), src/ui/chat.js (Enter to talk; keyboard ignores keys while typing), combat/mobs/loot refactors (stepMobs takes players[], stepMobProjectiles extracted, rollDrops/spawnDropsFromItems split, net.sendHit path). Also fixed in passing: respawn granted 2 jumps (pre-single-jump leftover).
 
 ## Blockers
 

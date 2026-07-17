@@ -16,6 +16,9 @@ dist-ssr
 test-results/
 playwright-report/
 
+# PartyKit dev state
+.partykit/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -12,6 +12,7 @@ import {
   KNOCKBACK_VX,
   KNOCKBACK_VY,
   MOB_CONTACT_DAMAGE,
+  MAX_JUMPS,
   MOB_WIDTH,
   MOB_HEIGHT,
   PLAYER_WIDTH,
@@ -29,7 +30,9 @@ function overlaps(ax, ay, aw, ah, bx, by, bw, bh) {
   return Math.abs(ax - bx) * 2 < aw + bw && ay < by + bh && by < ay + ah;
 }
 
-export function stepCombat(combat, player, mobsState, map, input, dt, events, inventory) {
+// net (M06, optional): {sendHit(mobId, damage)} — when present the server
+// owns mob hp, so star arrivals report the hit instead of applying it.
+export function stepCombat(combat, player, mobsState, map, input, dt, events, inventory, net) {
   const ms = dt * 1000;
 
   // --- Throw stars (Ctrl; held = auto-attack on cooldown) ---
@@ -85,7 +88,8 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
       const dy = target.y + MOB_HEIGHT / 2 - star.y;
       const dist = Math.hypot(dx, dy);
       if (dist <= Math.max(step, 0.3)) {
-        damageMob(mobsState, target, starDamageForLevel(player.level), events);
+        if (net) net.sendHit(target.id, starDamageForLevel(player.level));
+        else damageMob(mobsState, target, starDamageForLevel(player.level), events);
         return false;
       }
       star.vx = (dx / dist) * STAR_SPEED;
@@ -116,7 +120,7 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
     if (player.hp <= 0) {
       applyDeathPenalty(player, events);
       player.hp = player.maxHp;
-      player.jumpsLeft = 2;
+      player.jumpsLeft = MAX_JUMPS;
       player.invulnMs = INVULN_MS; // respawn grace
       events?.emit('player:died', {});
       events?.emit('player:respawned', {});
@@ -130,12 +134,9 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
     if (touching) hurtPlayer(touching.contactDamage ?? MOB_CONTACT_DAMAGE, touching.x);
   }
 
-  // --- Spitter shots: slow, flat, jumpable; spawned by the mob sim ---
+  // --- Spitter shots vs the local player (collision only — motion lives
+  // in mobs.stepMobProjectiles, run locally offline or on the server) ---
   mobsState.projectiles = (mobsState.projectiles ?? []).filter((shot) => {
-    shot.x += shot.vx * dt;
-    shot.traveled += Math.abs(shot.vx) * dt;
-    if (shot.traveled >= shot.maxRange) return false;
-    if (shot.x < map.minX || shot.x > map.maxX) return false;
     if (
       player.invulnMs === 0 &&
       overlaps(shot.x, shot.y - 0.2, 0.4, 0.4, player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT)

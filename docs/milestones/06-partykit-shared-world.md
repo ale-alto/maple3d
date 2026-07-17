@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress — all 5 automated AC green 2026-07-14 (55/55 suite, no single-player regressions); awaiting user playtest of latency feel (two windows)
 
 ## Objective
 
@@ -31,11 +31,11 @@ Deliver the gameplan's day-one promise: everyone on a map shares a PartyKit room
 
 ## Acceptance criteria
 
-- [ ] Two clients on the same map see each other move with name tags — test: `tests/e2e/multiplayer.spec.js::presence`
-- [ ] Mob state converges: a mob killed by client A dies for client B; respawns appear for both — test: `tests/e2e/multiplayer.spec.js::server-owned mobs`
-- [ ] Chat bubble shows over the speaker for both clients — test: `tests/e2e/multiplayer.spec.js::chat bubbles`
-- [ ] Loot is per-player: A's kill drops are invisible to B — test: `tests/e2e/multiplayer.spec.js::private drops`
-- [ ] Disconnect/offline falls back to local sim without errors — test: `tests/e2e/multiplayer.spec.js::offline fallback`
+- [x] Two clients on the same map see each other move with name tags — test: `tests/e2e/multiplayer.spec.js::presence`
+- [x] Mob state converges: a mob killed by client A dies for client B; respawns appear for both — test: `tests/e2e/multiplayer.spec.js::server-owned mobs converge`
+- [x] Chat bubble shows over the speaker for both clients — test: `tests/e2e/multiplayer.spec.js::chat bubbles`
+- [x] Loot is per-player: A's kill drops are invisible to B — test: `tests/e2e/multiplayer.spec.js::private drops`
+- [x] Disconnect/offline falls back to local sim without errors — test: `tests/e2e/multiplayer.spec.js::offline fallback` (plus: the 50 single-player specs run with the party server up and stay pure-local)
 - [ ] Latency feel while hunting together — verified by user playtest
 
 ## Exit condition
@@ -48,5 +48,9 @@ User opens two browser windows on the same field → both characters visible wit
 
 ## Notes
 
-- ADR check at implementation time: if the sim-sharing between client and party server needs a build/tooling decision (shared package vs direct import), write ADR-0003.
-- Tick rate, interpolation, and throttle values in constants; start crude (10Hz presence, server 20Hz) and tune.
+- No ADR needed: the party server imports `../src/sim/*` directly and PartyKit's esbuild bundles it — the sim-purity rule made this a plain relative import, no tooling.
+- Implementation (2026-07-14): multiplayer is **opt-in via `?mp=1`** (`?name=` sets display name, `?mproom=` isolates a room instance — tests use this). Default page load never opens a socket, which is what keeps the 50 single-player specs deterministic with the party server running. Promoting to on-by-default is a later UX decision.
+- Server: 20Hz sim tick, 10Hz mob snapshots, per-mob nearest-player aggro, ghost-peer prune at 1Hz (hard-killed sockets never fire onClose), room resets to a fresh field when empty (channel behavior). Hit validation clamps damage; chat capped 120 chars.
+- Client: server mobs applied by snapshot (stars keep locks by id; contactDamage re-patched from MOB_TYPES); presence lerp on remote views; XP granted only to the kill's `killerId`; server-rolled loot lands via the shared spill physics. Chat: Enter opens the input; keyboard ignores game keys while typing.
+- Known v1 divergences (accepted): server trusts presence positions (a hacked client could report any x/y — fine for co-op v1); spitter shots removed locally on player-hit continue server-side for others; between 10Hz snapshots mobs hold last state (interpolation = polish backlog).
+- Local playtest: `npm run mp` (party server) + `npm run dev`, then two windows at `localhost:5173/?mp=1&name=A` / `?mp=1&name=B`. Deploy later via `npx partykit login --provider github` + `deploy` (skill's deploy.md).

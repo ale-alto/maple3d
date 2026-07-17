@@ -131,6 +131,24 @@ body {
   opacity: 0.85;
 }
 
+/* --- Chat input (M06) --- */
+#chat-input {
+  position: fixed;
+  left: 50%;
+  bottom: 86px;
+  transform: translateX(-50%);
+  width: 320px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  background: rgba(20, 24, 38, 0.92);
+  color: #e8ecf5;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  outline: none;
+  z-index: 15;
+}
+
 #levelup-flash {
   position: fixed;
   left: 50%;

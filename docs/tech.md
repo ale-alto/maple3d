@@ -11,7 +11,7 @@
 | Library | Version | Purpose |
 |---------|---------|---------|
 | three | 0.185.1 | 3D maps, GLB character rendering (GLTFLoader + AnimationMixer), camera |
-| partykit / partysocket | pinned at M-multiplayer | Room-based shared world (Cloudflare Durable Objects): presence, chat, server-owned mob state |
+| partykit / partysocket | 0.0.115 / 1.3.0 | Room-based shared world (Cloudflare Durable Objects): room per map, presence, chat, server-owned mob state; server imports src/sim directly (purity payoff). Local: `npm run mp`; opt-in via `?mp=1` |
 | vite | 8.1.4 | Dev server + build |
 | @playwright/test | 1.61.1 | Gameplay/QA tests (per qa-game skill) |
 

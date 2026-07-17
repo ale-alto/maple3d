@@ -30,7 +30,10 @@ export function spawnMob(state, map, spawnIndex) {
   });
 }
 
-export function stepMobs(state, player, map, dt, events) {
+// players: ARRAY of {x, y} — each mob targets its nearest player (M06:
+// the PartyKit room passes every connected player; single-player passes
+// [player]).
+export function stepMobs(state, players, map, dt, events) {
   // Timed respawns.
   const ms = dt * 1000;
   for (const p of state.pending) p.timerMs -= ms;
@@ -46,6 +49,16 @@ export function stepMobs(state, player, map, dt, events) {
   for (const mob of state.mobs) {
     const sp = map.mobSpawns[mob.spawn];
     const def = MOB_TYPES[mob.type];
+    let player = null;
+    let best = Infinity;
+    for (const cand of players) {
+      const d = Math.abs(cand.x - mob.x);
+      if (d < best) {
+        best = d;
+        player = cand;
+      }
+    }
+    if (!player) player = { x: mob.x + 1000, y: -1000 }; // empty room: pure patrol
     const dx = player.x - mob.x;
     const sameLevel = Math.abs(player.y - mob.y) < 1.2;
 
@@ -85,6 +98,19 @@ export function stepMobs(state, player, map, dt, events) {
       }
     }
   }
+}
+
+// Spitter shot motion + range/bounds cull. Collision against a player is
+// the client's job (each client owns its character; see combat.js) — the
+// server runs only this motion step.
+export function stepMobProjectiles(state, map, dt) {
+  state.projectiles = (state.projectiles ?? []).filter((shot) => {
+    shot.x += shot.vx * dt;
+    shot.traveled += Math.abs(shot.vx) * dt;
+    if (shot.traveled >= shot.maxRange) return false;
+    if (shot.x < map.minX || shot.x > map.maxX) return false;
+    return true;
+  });
 }
 
 export function damageMob(state, mob, amount, events) {

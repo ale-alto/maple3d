@@ -16,10 +16,11 @@ import { gameState } from './core/gameState.js';
 import { loadSave, persist } from './core/save.js';
 import { maps, DEFAULT_MAP } from './sim/maps/index.js';
 import { createPlayer, stepPlayer } from './sim/player.js';
-import { createMobsState, stepMobs } from './sim/mobs.js';
+import { createMobsState, stepMobs, stepMobProjectiles } from './sim/mobs.js';
 import { createCombatState, stepCombat } from './sim/combat.js';
 import { grantXp, usePotion, xpToNext, maxHpForLevel } from './sim/progression.js';
-import { createLootState, spawnDrops, stepLoot } from './sim/loot.js';
+import { createLootState, spawnDrops, spawnDropsFromItems, stepLoot } from './sim/loot.js';
+import { createNetwork } from './net/networkManager.js';
 import { initKeyboard, readInput } from './input/keyboard.js';
 import { createScene } from './render/scene.js';
 import { buildMapView, disposeMapView } from './render/mapView.js';
@@ -27,9 +28,11 @@ import { CharacterView } from './render/characterView.js';
 import { MobsView } from './render/mobsView.js';
 import { CombatFxView } from './render/combatFxView.js';
 import { LootView } from './render/lootView.js';
+import { RemotePlayersView } from './render/remotePlayersView.js';
 import { createCameraRig } from './render/cameraRig.js';
 import { createHud } from './ui/hud.js';
 import { createShopPanel } from './ui/shopPanel.js';
+import { createChatInput } from './ui/chat.js';
 
 const canvas = document.querySelector('#game');
 const { renderer, scene, camera, syncSize } = createScene(canvas);
@@ -74,6 +77,13 @@ const hud = createHud(eventBus);
 const shopPanel = createShopPanel(gameState, eventBus);
 initKeyboard(window);
 
+// === Multiplayer (M06) ===
+const net = createNetwork(eventBus);
+const remoteView = new RemotePlayersView(scene);
+createChatInput((text) => net.sendChat(text));
+const CHAT_SHOW_MS = 4000;
+let presenceStep = 0;
+
 let simTimeMs = 0;
 let lastLevelUpSimMs = null;
 let transitionMs = 0; // camera swing on map entry
@@ -106,18 +116,36 @@ function changeMap(mapId, target) {
   disposeMapView(scene, mapViewGroup);
   mapViewGroup = buildMapView(scene, map);
   mobsView.clear();
+  remoteView.clear();
   cameraRig = createCameraRig(camera, map);
   cameraRig.snap(p);
   transitionMs = CAMERA_SWING_MS;
   eventBus.emit('map:changed', { mapId });
+  net.join(mapId); // room per map (no-op unless ?mp=1)
   persist(gameState);
 }
 
 // Progression wiring: kills grant per-type XP and spill per-type loot.
+// Connected: the SERVER owns kills — XP/loot arrive via net events below.
 eventBus.on('mob:died', ({ x, y, type }) => {
+  if (net.connected) return;
   const def = MOB_TYPES[type] ?? MOB_TYPES.blob;
   grantXp(gameState.player, def.xp ?? XP_PER_MOB, eventBus);
   spawnDrops(gameState.loot, gameState.map, x, y, eventBus, def);
+});
+eventBus.on('net:mob-died', ({ type, killerId }) => {
+  if (killerId === net.id) {
+    const def = MOB_TYPES[type] ?? MOB_TYPES.blob;
+    grantXp(gameState.player, def.xp ?? XP_PER_MOB, eventBus);
+  }
+});
+eventBus.on('net:loot', ({ items, x, y }) => {
+  spawnDropsFromItems(gameState.loot, gameState.map, x, y, items, eventBus);
+});
+// Server lost mid-hunt: fall back to a fresh local field seamlessly.
+eventBus.on('net:disconnected', () => {
+  gameState.mobs = createMobsState(gameState.map);
+  remoteView.clear();
 });
 eventBus.on('player:levelup', () => {
   lastLevelUpSimMs = simTimeMs;
@@ -153,9 +181,43 @@ function step() {
   if (gameState.shopOpen && (input.left || input.right || input.jump)) shopPanel.close();
 
   stepPlayer(gameState.player, gameState.map, input, dt, eventBus);
-  stepMobs(gameState.mobs, gameState.player, gameState.map, dt, eventBus);
-  stepCombat(gameState.combat, gameState.player, gameState.mobs, gameState.map, input, dt, eventBus, gameState.inventory);
+
+  if (net.connected) {
+    // Server-owned mobs: apply the latest room snapshot; between
+    // snapshots the last-applied objects persist (stars keep their locks
+    // by id; contact damage reads the patched contactDamage).
+    if (net.snapshot) {
+      gameState.mobs.mobs = net.snapshot.mobs.map((m) => ({
+        ...m,
+        contactDamage: MOB_TYPES[m.type]?.contactDamage ?? 10,
+      }));
+      gameState.mobs.projectiles = net.snapshot.projectiles.map((s) => ({ ...s }));
+      net.snapshot = null;
+    }
+  } else {
+    stepMobs(gameState.mobs, [gameState.player], gameState.map, dt, eventBus);
+    stepMobProjectiles(gameState.mobs, gameState.map, dt);
+  }
+
+  stepCombat(
+    gameState.combat,
+    gameState.player,
+    gameState.mobs,
+    gameState.map,
+    input,
+    dt,
+    eventBus,
+    gameState.inventory,
+    net.connected ? net : null,
+  );
   stepLoot(gameState.loot, gameState.map, gameState.player, gameState.inventory, input, dt, eventBus);
+
+  // Presence at 10 Hz.
+  presenceStep += 1;
+  if (net.connected && presenceStep % 6 === 0) {
+    const p = gameState.player;
+    net.sendState({ x: +p.x.toFixed(2), y: +p.y.toFixed(2), facing: p.facing, state: p.state, level: p.level });
+  }
   if (input.potion) usePotion(gameState.player, gameState.inventory, eventBus);
   cameraRig.update(gameState.player, dt);
   // Map-entry swing: ease the camera in from a pulled-back pose.
@@ -180,11 +242,14 @@ function draw() {
   mobsView.syncProjectiles(gameState.mobs.projectiles ?? []);
   fxView.sync(gameState.combat.stars, simTimeMs);
   lootView.sync(gameState.loot.drops, simTimeMs);
+  remoteView.sync(net.remoteList(), (r) => net.freshChat(r));
+  remoteView.ownBubble(gameState.player, net.myChat, CHAT_SHOW_MS);
   hud.update(gameState, xpToNext);
   renderer.render(scene, camera);
 }
 
 cameraRig.snap(gameState.player);
+net.join(gameState.mapId); // no-op unless ?mp=1
 
 let lastTime = performance.now();
 let accumulator = 0;
@@ -279,6 +344,20 @@ window.render_game_to_text = () => {
       damageNumbers: fxView.numbersPayload(),
       lastLevelUpAgoMs: lastLevelUpSimMs === null ? null : Math.round(simTimeMs - lastLevelUpSimMs),
     },
+    multiplayer: {
+      enabled: net.enabled,
+      connected: net.connected,
+      id: net.id,
+      name: net.name,
+      roomId: net.roomId,
+    },
+    remotePlayers: net.remoteList().map((r) => ({
+      id: r.id,
+      name: r.name,
+      x: round3(r.x),
+      y: round3(r.y),
+      chat: net.freshChat(r),
+    })),
     camera: {
       x: round3(camera.position.x),
       y: round3(camera.position.y),
@@ -322,8 +401,11 @@ window.__test = {
   grantMesos(amount) {
     gameState.inventory.mesos += amount;
   },
+  sendChat(text) {
+    net.sendChat(text);
+  },
   setStars(n) {
     gameState.inventory.stars = n;
   },
 };
-window.__debug = { renderer, scene, camera, gameState, eventBus };
+window.__debug = { renderer, scene, camera, gameState, eventBus, net };

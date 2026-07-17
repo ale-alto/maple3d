@@ -28,14 +28,21 @@ function surfaceBelow(map, x, yRef) {
   return best;
 }
 
-// typeDef (M05): per-mob-type drop table {mesosMin, mesosMax,
-// potionChance, starPackChance}; falls back to the M03 blob-tier values.
-export function spawnDrops(state, map, x, y, events, typeDef) {
+// Roll the drop table only (no physics). typeDef (M05): per-mob-type
+// {mesosMin, mesosMax, potionChance, starPackChance}, blob-tier fallback.
+// The PartyKit room uses this server-side to roll per-killer loot (M06).
+export function rollDrops(rand, typeDef) {
   const lo = typeDef?.mesosMin ?? MESOS_MIN;
   const hi = typeDef?.mesosMax ?? MESOS_MAX;
-  const items = [{ kind: 'mesos', amount: lo + Math.floor(state.rand() * (hi - lo + 1)) }];
-  if (state.rand() < (typeDef?.potionChance ?? POTION_DROP_CHANCE)) items.push({ kind: 'potion' });
-  if (state.rand() < (typeDef?.starPackChance ?? STARPACK_DROP_CHANCE)) items.push({ kind: 'starPack' });
+  const items = [{ kind: 'mesos', amount: lo + Math.floor(rand() * (hi - lo + 1)) }];
+  if (rand() < (typeDef?.potionChance ?? POTION_DROP_CHANCE)) items.push({ kind: 'potion' });
+  if (rand() < (typeDef?.starPackChance ?? STARPACK_DROP_CHANCE)) items.push({ kind: 'starPack' });
+  return items;
+}
+
+// Give rolled items spill physics into the local drop pool. Used both by
+// local kills (via spawnDrops) and server-rolled per-player loot (M06).
+export function spawnDropsFromItems(state, map, x, y, items, events) {
   for (const item of items) {
     state.drops.push({
       id: state.nextId++,
@@ -50,6 +57,10 @@ export function spawnDrops(state, map, x, y, events, typeDef) {
     });
   }
   events?.emit('loot:dropped', { count: items.length, x, y });
+}
+
+export function spawnDrops(state, map, x, y, events, typeDef) {
+  spawnDropsFromItems(state, map, x, y, rollDrops(state.rand, typeDef), events);
 }
 
 export function stepLoot(state, map, player, inventory, input, dt, events) {

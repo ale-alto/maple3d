@@ -11,10 +11,19 @@ import { test, expect } from '@playwright/test';
 
 const read = () => JSON.parse(window.render_game_to_text());
 
-async function openClient(browser, name) {
+// Each test isolates its own room instance (?mproom=<suffix>) — the specs
+// run in parallel against ONE partykit dev server, and without isolation
+// every client would share the same field1 room across tests.
+let roomCounter = 0;
+function freshRoom() {
+  roomCounter += 1;
+  return `t${Date.now()}x${roomCounter}`;
+}
+
+async function openClient(browser, name, room) {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto(`http://localhost:5173/?mp=1&name=${name}`);
+  await page.goto(`http://localhost:5173/?mp=1&name=${name}&mproom=${room}`);
   await page.waitForFunction(
     () => typeof window.render_game_to_text === 'function',
     null,
@@ -33,8 +42,9 @@ async function waitConnected(page) {
 
 test.describe('M06 multiplayer', () => {
   test('presence', async ({ browser }) => {
-    const a = await openClient(browser, 'Aya');
-    const b = await openClient(browser, 'Bee');
+    const room = freshRoom();
+    const a = await openClient(browser, 'Aya', room);
+    const b = await openClient(browser, 'Bee', room);
     await waitConnected(a.page);
     await waitConnected(b.page);
 
@@ -54,9 +64,14 @@ test.describe('M06 multiplayer', () => {
     const xBefore = await b.page.evaluate(
       () => JSON.parse(window.render_game_to_text()).remotePlayers.find((r) => r.name === 'Aya').x,
     );
-    await a.page.keyboard.down('ArrowRight');
-    await a.page.waitForTimeout(1200);
-    await a.page.keyboard.up('ArrowRight');
+    // Drive the run in sim time — a backgrounded page gets few rAF frames,
+    // so a real-time key hold can under-move. advanceTime steps the sim
+    // (and its 10Hz presence sends) regardless of frame throttling.
+    await a.page.evaluate(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      window.advanceTime(1500);
+      window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight', bubbles: true }));
+    });
     await b.page.waitForFunction(
       (x0) =>
         JSON.parse(window.render_game_to_text()).remotePlayers.find((r) => r.name === 'Aya')?.x >
@@ -70,8 +85,9 @@ test.describe('M06 multiplayer', () => {
   });
 
   test('server-owned mobs converge', async ({ browser }) => {
-    const a = await openClient(browser, 'Aya');
-    const b = await openClient(browser, 'Bee');
+    const room = freshRoom();
+    const a = await openClient(browser, 'Aya', room);
+    const b = await openClient(browser, 'Bee', room);
     await waitConnected(a.page);
     await waitConnected(b.page);
 
@@ -120,8 +136,9 @@ test.describe('M06 multiplayer', () => {
   });
 
   test('chat bubbles', async ({ browser }) => {
-    const a = await openClient(browser, 'Aya');
-    const b = await openClient(browser, 'Bee');
+    const room = freshRoom();
+    const a = await openClient(browser, 'Aya', room);
+    const b = await openClient(browser, 'Bee', room);
     await waitConnected(a.page);
     await waitConnected(b.page);
     await b.page.waitForFunction(
@@ -144,8 +161,9 @@ test.describe('M06 multiplayer', () => {
   });
 
   test('private drops', async ({ browser }) => {
-    const a = await openClient(browser, 'Aya');
-    const b = await openClient(browser, 'Bee');
+    const room = freshRoom();
+    const a = await openClient(browser, 'Aya', room);
+    const b = await openClient(browser, 'Bee', room);
     await waitConnected(a.page);
     await waitConnected(b.page);
 

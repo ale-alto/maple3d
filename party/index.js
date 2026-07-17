@@ -1,19 +1,160 @@
 // PartyKit room server — one room per map (room.id === mapId).
-// RED-PHASE STUB: accepts connections and says hello; the authoritative
-// mob sim, presence fanout, loot rolls and chat land with the M06
-// implementation commit.
+// Runs the SAME headless mob sim as the client (src/sim is pure by rule,
+// which is exactly what makes this import legal). Owns: mob state,
+// presence fanout, per-killer loot rolls, chat relay.
+
+import { maps } from '../src/sim/maps/index.js';
+import { createMobsState, stepMobs, stepMobProjectiles, damageMob } from '../src/sim/mobs.js';
+import { rollDrops } from '../src/sim/loot.js';
+import { MOB_TYPES, LOOT_SEED } from '../src/core/constants.js';
+import { mulberry32 } from '../src/sim/rng.js';
+
+const TICK_MS = 50; // 20 Hz sim
+const SNAPSHOT_EVERY = 2; // mobs snapshot at 10 Hz
+const MAX_DAMAGE = 40; // loose validation: > any legit star hit
+const MAX_CHAT = 120;
+const MAX_MSG_BYTES = 2048;
 
 export default class MapRoom {
   constructor(room) {
     this.room = room;
+    // Room id is "<mapId>" or "<mapId>~<instance>" (tests isolate rooms
+    // with a suffix). Unknown map (e.g. the health probe): peers-only.
+    this.mapId = room.id.split('~')[0];
+    this.map = maps[this.mapId] ?? null;
+    this.mobs = this.map ? createMobsState(this.map) : null;
+    this.peers = new Map(); // conn.id -> {id, name, x, y, facing, state, level}
+    this.rand = mulberry32(LOOT_SEED ^ hashCode(room.id));
+    this.interval = null;
+    this.tickCount = 0;
+    this.attacker = null; // set around damageMob so the event bus knows the killer
+    // Server-side event bus: turns sim events into broadcasts.
+    this.bus = {
+      emit: (event, payload) => {
+        if (event === 'mob:hit') {
+          this.broadcast({ t: 'mob-hit', mobId: payload.id, amount: payload.amount, x: payload.x, y: payload.y, attackerId: this.attacker });
+        } else if (event === 'mob:died') {
+          this.broadcast({ t: 'mob-died', mobId: payload.id, x: payload.x, y: payload.y, type: payload.type, killerId: this.attacker });
+          // Per-player loot (gameplan): roll for the killer only.
+          const killer = this.attacker && [...this.room.getConnections()].find((c) => c.id === this.attacker);
+          if (killer) {
+            const items = rollDrops(this.rand, MOB_TYPES[payload.type]);
+            killer.send(JSON.stringify({ t: 'loot', items, x: payload.x, y: payload.y }));
+          }
+        }
+      },
+    };
   }
 
-  onConnect(conn) {
-    conn.send(JSON.stringify({ t: 'welcome', id: conn.id, peers: [], mobs: [], projectiles: [] }));
+  broadcast(obj, excludeIds) {
+    this.room.broadcast(JSON.stringify(obj), excludeIds);
+  }
+
+  startTicking() {
+    if (this.interval || !this.map) return;
+    this.interval = setInterval(() => this.tick(), TICK_MS);
+  }
+
+  stopTicking() {
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
+  }
+
+  tick() {
+    const dt = TICK_MS / 1000;
+    const players = [...this.peers.values()];
+    stepMobs(this.mobs, players, this.map, dt, this.bus);
+    stepMobProjectiles(this.mobs, this.map, dt);
+    this.tickCount += 1;
+    if (this.tickCount % SNAPSHOT_EVERY === 0) {
+      this.broadcast({ t: 'mobs', mobs: this.mobs.mobs, projectiles: this.mobs.projectiles });
+    }
+    // Ghost-peer prune (1 Hz): hard-killed sockets may never fire onClose.
+    if (this.tickCount % 20 === 0) {
+      const live = new Set([...this.room.getConnections()].map((c) => c.id));
+      for (const id of this.peers.keys()) {
+        if (!live.has(id)) {
+          this.peers.delete(id);
+          this.broadcast({ t: 'peer-left', id });
+        }
+      }
+      if (this.peers.size === 0) this.onEmpty();
+    }
+  }
+
+  onConnect(conn, ctx) {
+    const url = new URL(ctx.request.url);
+    const name = (url.searchParams.get('name') || 'Hunter').slice(0, 24);
+    this.peers.set(conn.id, { id: conn.id, name, x: 0, y: 0, facing: 'right', state: 'idle', level: 1 });
+
+    conn.send(
+      JSON.stringify({
+        t: 'welcome',
+        id: conn.id,
+        peers: [...this.peers.values()].filter((p) => p.id !== conn.id),
+        mobs: this.mobs ? this.mobs.mobs : [],
+        projectiles: this.mobs ? this.mobs.projectiles : [],
+      }),
+    );
+    this.broadcast({ t: 'peer', p: this.peers.get(conn.id) }, [conn.id]);
+    this.startTicking();
+  }
+
+  onMessage(raw, sender) {
+    if (typeof raw !== 'string' || raw.length > MAX_MSG_BYTES) return;
+    let msg;
+    try {
+      msg = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    const peer = this.peers.get(sender.id);
+    if (!peer) return;
+
+    if (msg.t === 'state' && msg.p && typeof msg.p.x === 'number' && typeof msg.p.y === 'number') {
+      peer.x = msg.p.x;
+      peer.y = msg.p.y;
+      peer.facing = msg.p.facing === 'left' ? 'left' : 'right';
+      peer.state = String(msg.p.state ?? 'idle').slice(0, 16);
+      peer.level = Number(msg.p.level) || 1;
+      this.broadcast({ t: 'peer', p: peer }, [sender.id]);
+    } else if (msg.t === 'hit' && this.mobs) {
+      const mob = this.mobs.mobs.find((m) => m.id === msg.mobId);
+      const damage = Math.min(Math.max(1, Number(msg.damage) || 0), MAX_DAMAGE);
+      if (mob) {
+        this.attacker = sender.id;
+        damageMob(this.mobs, mob, damage, this.bus);
+        this.attacker = null;
+      }
+    } else if (msg.t === 'chat') {
+      const text = String(msg.text ?? '').slice(0, MAX_CHAT);
+      if (text) this.broadcast({ t: 'chat', id: sender.id, text });
+    }
+  }
+
+  onClose(conn) {
+    this.peers.delete(conn.id);
+    this.broadcast({ t: 'peer-left', id: conn.id });
+    if (this.peers.size === 0) this.onEmpty();
+  }
+
+  onEmpty() {
+    this.stopTicking();
+    // Fresh field for the next arrivals (Maple channel behavior).
+    if (this.map) this.mobs = createMobsState(this.map);
+    this.tickCount = 0;
   }
 
   // HTTP health check (Playwright webServer readiness probe).
   onRequest() {
     return new Response('ok', { status: 200 });
   }
+}
+
+function hashCode(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  return h >>> 0;
 }

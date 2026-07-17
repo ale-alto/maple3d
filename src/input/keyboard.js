@@ -20,8 +20,12 @@ const KEYS = {
 
 let upPressQueue = 0; // rising-edge Up: portals/NPC interact (M04)
 
+const isTyping = (e) =>
+  e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+
 export function initKeyboard(target) {
   target.addEventListener('keydown', (e) => {
+    if (isTyping(e)) return; // chat box open: keys type, not move
     if (KEYS[e.key]) {
       if (e.key === 'ArrowUp' && !e.repeat) upPressQueue += 1;
       held[KEYS[e.key]] = true;
@@ -45,6 +49,7 @@ export function initKeyboard(target) {
   });
 
   target.addEventListener('keyup', (e) => {
+    if (isTyping(e)) return;
     if (KEYS[e.key]) {
       held[KEYS[e.key]] = false;
       e.preventDefault();
