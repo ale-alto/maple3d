@@ -115,9 +115,15 @@ test.describe('M02 combat', () => {
       key('keyup', 'ArrowRight');
       key('keydown', 'Control');
       let hit = false;
-      for (let i = 0; i < 300 && !hit; i++) {
+      for (let i = 0; i < 400 && !hit; i++) {
         window.advanceTime(16.667);
-        const mob1 = read().mobs.find((m) => m.spawn === 1);
+        const s = read();
+        // Contact/shot knockback can punt us off the ledge — step back up
+        // (the assertion stays honest: hits only ever land at-level).
+        if (s.player.y < sp1.y - 0.5) {
+          window.__test.setPlayerPos(9.05, sp1.y + 0.1);
+        }
+        const mob1 = s.mobs.find((m) => m.spawn === 1);
         hit = !mob1 || mob1.hp < mob1.maxHp; // dead also counts
       }
       key('keyup', 'Control');

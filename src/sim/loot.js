@@ -47,7 +47,9 @@ export function rollDrops(rand, typeDef) {
 export function spawnDropsFromItems(state, map, x, y, items, events, ownerId = null) {
   for (const item of items) {
     state.drops.push({
-      id: state.nextId++,
+      // Server-assigned dropId (string) when networked, so every client
+      // shares the drop's identity; local counter offline.
+      id: item.dropId ?? state.nextId++,
       ...item,
       ownerId,
       x,
@@ -107,7 +109,12 @@ export function stepLoot(state, map, player, inventory, input, dt, events, myId 
       if (best.kind === 'mesos') inventory.mesos += best.amount;
       else if (best.kind === 'potion') inventory.potions += 1;
       else if (best.kind === 'starPack') inventory.stars = Math.min(STAR_MAX, inventory.stars + STARPACK_SIZE);
-      events?.emit('loot:picked', { kind: best.kind, amount: best.amount ?? 1 });
+      events?.emit('loot:picked', {
+        kind: best.kind,
+        amount: best.amount ?? 1,
+        dropId: best.id,
+        networked: !!best.ownerId,
+      });
     }
   }
 }

@@ -142,6 +142,13 @@ eventBus.on('net:mob-died', ({ type, killerId }) => {
 eventBus.on('net:loot', ({ items, x, y, ownerId }) => {
   spawnDropsFromItems(gameState.loot, gameState.map, x, y, items, eventBus, ownerId ?? null);
 });
+// Shared loot identity: my pickups broadcast; others' pickups vanish here.
+eventBus.on('loot:picked', ({ dropId, networked }) => {
+  if (networked && net.connected) net.sendPicked(dropId);
+});
+eventBus.on('net:loot-picked', ({ dropId }) => {
+  gameState.loot.drops = gameState.loot.drops.filter((d) => String(d.id) !== String(dropId));
+});
 // Server lost mid-hunt: fall back to a fresh local field seamlessly.
 eventBus.on('net:disconnected', () => {
   gameState.mobs = createMobsState(gameState.map);
@@ -244,7 +251,7 @@ function draw() {
   mobsView.syncProjectiles(gameState.mobs.projectiles ?? []);
   fxView.sync([...gameState.combat.stars, ...net.remoteStars], simTimeMs);
   lootView.sync(gameState.loot.drops, simTimeMs, net.id);
-  remoteView.sync(net.remoteList(), (r) => net.freshChat(r));
+  remoteView.sync(net.remoteList(), (r) => net.freshChat(r), (r) => net.freshLevelUp(r));
   remoteView.ownBubble(gameState.player, net.myChat, CHAT_SHOW_MS);
   hud.update(gameState, xpToNext);
   renderer.render(scene, camera);
@@ -361,6 +368,7 @@ window.render_game_to_text = () => {
       x: round3(r.x),
       y: round3(r.y),
       chat: net.freshChat(r),
+      leveledUp: net.freshLevelUp(r),
     })),
     camera: {
       x: round3(camera.position.x),

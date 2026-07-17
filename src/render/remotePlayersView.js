@@ -48,7 +48,7 @@ export class RemotePlayersView {
     this.ownBubbleText = null;
   }
 
-  sync(list, freshChat) {
+  sync(list, freshChat, freshLevelUp) {
     const seen = new Set();
     for (const r of list) {
       seen.add(r.id);
@@ -59,6 +59,7 @@ export class RemotePlayersView {
           tag: makeTextSprite(r.name, { bg: 'rgba(20,24,38,0.75)' }),
           bubble: null,
           bubbleText: null,
+          levelFx: null,
           dispX: r.x,
           dispY: r.y,
         };
@@ -87,6 +88,17 @@ export class RemotePlayersView {
         if (v.bubble) this.scene.add(v.bubble);
       }
       if (v.bubble) v.bubble.position.set(v.dispX, v.dispY + 2.45, 0.5);
+
+      // Party member leveled up: gold flash over their head.
+      const leveling = freshLevelUp ? freshLevelUp(r) : false;
+      if (leveling && !v.levelFx) {
+        v.levelFx = makeTextSprite('LEVEL UP!', { fg: '#ffd24d', bg: 'rgba(20,24,38,0.6)' });
+        this.scene.add(v.levelFx);
+      } else if (!leveling && v.levelFx) {
+        disposeSprite(this.scene, v.levelFx);
+        v.levelFx = null;
+      }
+      if (v.levelFx) v.levelFx.position.set(v.dispX, v.dispY + 3.0, 0.5);
     }
 
     for (const [id, v] of this.views) {
@@ -112,6 +124,7 @@ export class RemotePlayersView {
     this.scene.remove(v.char.group);
     disposeSprite(this.scene, v.tag);
     if (v.bubble) disposeSprite(this.scene, v.bubble);
+    if (v.levelFx) disposeSprite(this.scene, v.levelFx);
     this.views.delete(id);
   }
 

@@ -7,6 +7,7 @@ import PartySocket from 'partysocket';
 
 const CONNECT_TIMEOUT_MS = 4000;
 const CHAT_SHOW_MS = 4000;
+const LEVELUP_SHOW_MS = 2000;
 
 export function createNetwork(eventBus) {
   const params = new URLSearchParams(window.location.search);
@@ -72,7 +73,10 @@ export function createNetwork(eventBus) {
           eventBus.emit('net:connected', { id: m.id, roomId: mapId });
         } else if (m.t === 'peer') {
           const prev = net.remote.get(m.p.id);
-          net.remote.set(m.p.id, { chat: null, chatMs: 0, ...prev, ...m.p });
+          const entry = { chat: null, chatMs: 0, levelUpMs: 0, ...prev, ...m.p };
+          // Presence carries level: a jump up = that player leveled.
+          if (prev && m.p.level > (prev.level ?? m.p.level)) entry.levelUpMs = Date.now();
+          net.remote.set(m.p.id, entry);
         } else if (m.t === 'peer-left') {
           net.remote.delete(m.id);
         } else if (m.t === 'mobs') {
@@ -83,7 +87,9 @@ export function createNetwork(eventBus) {
         } else if (m.t === 'mob-died') {
           eventBus.emit('net:mob-died', m);
         } else if (m.t === 'loot') {
-          eventBus.emit('net:loot', m); // carries ownerId
+          eventBus.emit('net:loot', m); // carries ownerId + dropIds
+        } else if (m.t === 'loot-picked') {
+          eventBus.emit('net:loot-picked', m);
         } else if (m.t === 'throw') {
           net.remoteStars.push({
             id: `r${net.nextRemoteStarId++}`,
@@ -152,9 +158,15 @@ export function createNetwork(eventBus) {
     sendChat(text) {
       if (net.connected) net.socket?.send(JSON.stringify({ t: 'chat', text }));
     },
+    sendPicked(dropId) {
+      if (net.connected) net.socket?.send(JSON.stringify({ t: 'loot-picked', dropId }));
+    },
 
     freshChat(entry) {
       return entry && entry.chat && Date.now() - entry.chatMs < CHAT_SHOW_MS ? entry.chat : null;
+    },
+    freshLevelUp(entry) {
+      return !!entry && !!entry.levelUpMs && Date.now() - entry.levelUpMs < LEVELUP_SHOW_MS;
     },
     remoteList() {
       return [...net.remote.values()];

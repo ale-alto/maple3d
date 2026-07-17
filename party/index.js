@@ -25,6 +25,7 @@ export default class MapRoom {
     this.mobs = this.map ? createMobsState(this.map) : null;
     this.peers = new Map(); // conn.id -> {id, name, x, y, facing, state, level}
     this.rand = mulberry32(LOOT_SEED ^ hashCode(room.id));
+    this.nextDropId = 1;
     this.interval = null;
     this.tickCount = 0;
     this.attacker = null; // set around damageMob so the event bus knows the killer
@@ -36,9 +37,13 @@ export default class MapRoom {
         } else if (event === 'mob:died') {
           this.broadcast({ t: 'mob-died', mobId: payload.id, x: payload.x, y: payload.y, type: payload.type, killerId: this.attacker });
           // Classic MS loot rule: EVERYONE sees the drops; only the killer
-          // may pick them up (ownerId enforced client-side on pickup).
+          // may pick them up. Server-assigned dropIds give every client the
+          // same identity, so pickups can be removed everywhere.
           if (this.attacker) {
-            const items = rollDrops(this.rand, MOB_TYPES[payload.type]);
+            const items = rollDrops(this.rand, MOB_TYPES[payload.type]).map((item) => ({
+              ...item,
+              dropId: `d${this.nextDropId++}`,
+            }));
             this.broadcast({ t: 'loot', items, x: payload.x, y: payload.y, ownerId: this.attacker });
           }
         }
@@ -131,6 +136,9 @@ export default class MapRoom {
     } else if (msg.t === 'chat') {
       const text = String(msg.text ?? '').slice(0, MAX_CHAT);
       if (text) this.broadcast({ t: 'chat', id: sender.id, text });
+    } else if (msg.t === 'loot-picked' && msg.dropId) {
+      // Relay removal to everyone else (sender already removed locally).
+      this.broadcast({ t: 'loot-picked', dropId: String(msg.dropId) }, [sender.id]);
     } else if (msg.t === 'throw' && msg.star) {
       // Cosmetic relay: everyone sees the throw; damage still arrives
       // only via validated 'hit' messages.
