@@ -160,7 +160,9 @@ test.describe('M06 multiplayer', () => {
     await b.context.close();
   });
 
-  test('private drops', async ({ browser }) => {
+  test('drops are visible to all but owner-protected', async ({ browser }) => {
+    // Classic MS loot rule: everyone SEES the drops; only the killer can
+    // pick them up (no loot stealing — gameplan).
     const room = freshRoom();
     const a = await openClient(browser, 'Aya', room);
     const b = await openClient(browser, 'Bee', room);
@@ -185,12 +187,71 @@ test.describe('M06 multiplayer', () => {
       window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control', bubbles: true })),
     );
 
-    // A's kill drops are invisible to B (per-player loot).
-    await b.page.waitForTimeout(1500);
-    const bDrops = await b.page.evaluate(
-      () => JSON.parse(window.render_game_to_text()).drops.length,
+    // B SEES the drops, marked not-mine…
+    await b.page.waitForFunction(
+      () => {
+        const s = JSON.parse(window.render_game_to_text());
+        return s.drops.length > 0 && s.drops.every((d) => d.mine === false);
+      },
+      null,
+      { timeout: 10000 },
     );
-    expect(bDrops).toBe(0);
+
+    // …but Z refuses them for B.
+    const bTried = await b.page.evaluate(() => {
+      const read2 = () => JSON.parse(window.render_game_to_text());
+      const drop = read2().drops.find((d) => d.kind === 'mesos');
+      const before = read2().inventory.mesos;
+      window.__test.setPlayerPos(drop.x, drop.y);
+      window.advanceTime(100);
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true }));
+      window.advanceTime(150);
+      window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z', bubbles: true }));
+      return { before, after: read2().inventory.mesos, dropStill: read2().drops.some((d) => d.kind === 'mesos') };
+    });
+    expect(bTried.after).toBe(bTried.before);
+    expect(bTried.dropStill).toBe(true);
+
+    // While the owner picks them up fine.
+    const aPicked = await a.page.evaluate(() => {
+      const read2 = () => JSON.parse(window.render_game_to_text());
+      const drop = read2().drops.find((d) => d.kind === 'mesos');
+      if (!drop) return { ok: false };
+      const before = read2().inventory.mesos;
+      window.__test.setPlayerPos(drop.x, drop.y);
+      window.advanceTime(100);
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true }));
+      window.advanceTime(150);
+      window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z', bubbles: true }));
+      return { ok: true, before, after: read2().inventory.mesos };
+    });
+    expect(aPicked.ok).toBe(true);
+    expect(aPicked.after).toBeGreaterThan(aPicked.before);
+
+    await a.context.close();
+    await b.context.close();
+  });
+
+  test('remote throws are visible', async ({ browser }) => {
+    // You see your party member throwing stars (cosmetic replicas; the
+    // server still owns the damage).
+    const room = freshRoom();
+    const a = await openClient(browser, 'Aya', room);
+    const b = await openClient(browser, 'Bee', room);
+    await waitConnected(a.page);
+    await waitConnected(b.page);
+
+    await a.page.evaluate(() => {
+      window.__test.setPlayerPos(-15, 0);
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Control', bubbles: true }));
+      window.advanceTime(1500);
+      window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control', bubbles: true }));
+    });
+    await b.page.waitForFunction(
+      () => JSON.parse(window.render_game_to_text()).remoteStars?.length > 0,
+      null,
+      { timeout: 10000 },
+    );
 
     await a.context.close();
     await b.context.close();
