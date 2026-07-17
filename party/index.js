@@ -35,11 +35,11 @@ export default class MapRoom {
           this.broadcast({ t: 'mob-hit', mobId: payload.id, amount: payload.amount, x: payload.x, y: payload.y, attackerId: this.attacker });
         } else if (event === 'mob:died') {
           this.broadcast({ t: 'mob-died', mobId: payload.id, x: payload.x, y: payload.y, type: payload.type, killerId: this.attacker });
-          // Per-player loot (gameplan): roll for the killer only.
-          const killer = this.attacker && [...this.room.getConnections()].find((c) => c.id === this.attacker);
-          if (killer) {
+          // Classic MS loot rule: EVERYONE sees the drops; only the killer
+          // may pick them up (ownerId enforced client-side on pickup).
+          if (this.attacker) {
             const items = rollDrops(this.rand, MOB_TYPES[payload.type]);
-            killer.send(JSON.stringify({ t: 'loot', items, x: payload.x, y: payload.y }));
+            this.broadcast({ t: 'loot', items, x: payload.x, y: payload.y, ownerId: this.attacker });
           }
         }
       },
@@ -131,6 +131,22 @@ export default class MapRoom {
     } else if (msg.t === 'chat') {
       const text = String(msg.text ?? '').slice(0, MAX_CHAT);
       if (text) this.broadcast({ t: 'chat', id: sender.id, text });
+    } else if (msg.t === 'throw' && msg.star) {
+      // Cosmetic relay: everyone sees the throw; damage still arrives
+      // only via validated 'hit' messages.
+      this.broadcast(
+        {
+          t: 'throw',
+          id: sender.id,
+          star: {
+            x: Number(msg.star.x) || 0,
+            y: Number(msg.star.y) || 0,
+            vx: Number(msg.star.vx) || 0,
+            targetId: msg.star.targetId ?? null,
+          },
+        },
+        [sender.id],
+      );
     }
   }
 

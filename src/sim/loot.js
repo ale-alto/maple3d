@@ -41,12 +41,15 @@ export function rollDrops(rand, typeDef) {
 }
 
 // Give rolled items spill physics into the local drop pool. Used both by
-// local kills (via spawnDrops) and server-rolled per-player loot (M06).
-export function spawnDropsFromItems(state, map, x, y, items, events) {
+// local kills (via spawnDrops) and server-rolled loot (M06). ownerId
+// (M06): classic MS loot protection — everyone sees the drop, only the
+// owner may pick it up; null = unowned (single-player).
+export function spawnDropsFromItems(state, map, x, y, items, events, ownerId = null) {
   for (const item of items) {
     state.drops.push({
       id: state.nextId++,
       ...item,
+      ownerId,
       x,
       y: y + 0.4,
       spawnY: y + 0.4,
@@ -63,7 +66,9 @@ export function spawnDrops(state, map, x, y, events, typeDef) {
   spawnDropsFromItems(state, map, x, y, rollDrops(state.rand, typeDef), events);
 }
 
-export function stepLoot(state, map, player, inventory, input, dt, events) {
+// myId (M06): the local player's network id, for loot-protection checks;
+// null offline (all local drops are unowned anyway).
+export function stepLoot(state, map, player, inventory, input, dt, events, myId = null) {
   const ms = dt * 1000;
 
   for (const d of state.drops) {
@@ -84,11 +89,13 @@ export function stepLoot(state, map, player, inventory, input, dt, events) {
   }
   state.drops = state.drops.filter((d) => d.ageMs < DROP_DESPAWN_MS);
 
-  // Z: pick up the nearest drop in reach — one item per press.
+  // Z: pick up the nearest drop in reach. Loot protection (classic MS):
+  // drops owned by another player are visible but refuse the pickup.
   if (input.loot) {
     let best = null;
     let bestDist = Infinity;
     for (const d of state.drops) {
+      if (d.ownerId && d.ownerId !== myId) continue; // not yours
       const dist = Math.hypot(d.x - player.x, d.y - player.y);
       if (dist <= PICKUP_RANGE && dist < bestDist) {
         bestDist = dist;

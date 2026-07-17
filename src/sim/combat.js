@@ -60,7 +60,7 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
         target = mob;
       }
     }
-    combat.stars.push({
+    const star = {
       id: combat.nextStarId++,
       x: player.x,
       y: throwY,
@@ -68,7 +68,9 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
       vy: 0,
       targetId: target ? target.id : null,
       traveled: 0,
-    });
+    };
+    combat.stars.push(star);
+    if (net) net.sendThrow(star); // party members see the throw
     if (inventory) inventory.stars -= 1; // spend the star
     combat.cooldownMs = ATTACK_COOLDOWN_MS;
     // MSW ATTACK state: grounded throws are stand-and-throw; air throws
@@ -102,6 +104,8 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
     if (star.x < map.minX || star.x > map.maxX) return false;
     return true;
   });
+
+  // (cosmetic remote stars are stepped by stepCosmeticStars below)
 
   // --- Player damage (contact + spitter shots) ---
   player.invulnMs = Math.max(0, player.invulnMs - ms);
@@ -144,6 +148,31 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
       hurtPlayer(shot.damage, shot.x);
       return false;
     }
+    return true;
+  });
+}
+
+// Cosmetic replicas of party members' throws (M06): same homing flight as
+// real stars, but they never deal damage — the server owns that. Mutates
+// and returns the filtered list.
+export function stepCosmeticStars(stars, mobs, map, dt) {
+  return stars.filter((star) => {
+    const step = STAR_SPEED * dt;
+    if (star.targetId !== null) {
+      const target = mobs.find((m) => m.id === star.targetId);
+      if (!target) return false;
+      const dx = target.x - star.x;
+      const dy = target.y + MOB_HEIGHT / 2 - star.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist <= Math.max(step, 0.3)) return false; // arrived (visual only)
+      star.vx = (dx / dist) * STAR_SPEED;
+      star.vy = (dy / dist) * STAR_SPEED;
+    }
+    star.x += star.vx * dt;
+    star.y += star.vy * dt;
+    star.traveled += step;
+    if (star.traveled >= STAR_RANGE) return false;
+    if (star.x < map.minX || star.x > map.maxX) return false;
     return true;
   });
 }

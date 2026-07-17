@@ -17,7 +17,7 @@ import { loadSave, persist } from './core/save.js';
 import { maps, DEFAULT_MAP } from './sim/maps/index.js';
 import { createPlayer, stepPlayer } from './sim/player.js';
 import { createMobsState, stepMobs, stepMobProjectiles } from './sim/mobs.js';
-import { createCombatState, stepCombat } from './sim/combat.js';
+import { createCombatState, stepCombat, stepCosmeticStars } from './sim/combat.js';
 import { grantXp, usePotion, xpToNext, maxHpForLevel } from './sim/progression.js';
 import { createLootState, spawnDrops, spawnDropsFromItems, stepLoot } from './sim/loot.js';
 import { createNetwork } from './net/networkManager.js';
@@ -139,8 +139,8 @@ eventBus.on('net:mob-died', ({ type, killerId }) => {
     grantXp(gameState.player, def.xp ?? XP_PER_MOB, eventBus);
   }
 });
-eventBus.on('net:loot', ({ items, x, y }) => {
-  spawnDropsFromItems(gameState.loot, gameState.map, x, y, items, eventBus);
+eventBus.on('net:loot', ({ items, x, y, ownerId }) => {
+  spawnDropsFromItems(gameState.loot, gameState.map, x, y, items, eventBus, ownerId ?? null);
 });
 // Server lost mid-hunt: fall back to a fresh local field seamlessly.
 eventBus.on('net:disconnected', () => {
@@ -210,7 +210,9 @@ function step() {
     gameState.inventory,
     net.connected ? net : null,
   );
-  stepLoot(gameState.loot, gameState.map, gameState.player, gameState.inventory, input, dt, eventBus);
+  stepLoot(gameState.loot, gameState.map, gameState.player, gameState.inventory, input, dt, eventBus, net.id);
+  // Party members' throws: cosmetic flight only.
+  net.remoteStars = stepCosmeticStars(net.remoteStars, gameState.mobs.mobs, gameState.map, dt);
 
   // Presence at 10 Hz.
   presenceStep += 1;
@@ -240,8 +242,8 @@ function draw() {
   playerView.update(gameState.player);
   mobsView.sync(gameState.mobs.mobs);
   mobsView.syncProjectiles(gameState.mobs.projectiles ?? []);
-  fxView.sync(gameState.combat.stars, simTimeMs);
-  lootView.sync(gameState.loot.drops, simTimeMs);
+  fxView.sync([...gameState.combat.stars, ...net.remoteStars], simTimeMs);
+  lootView.sync(gameState.loot.drops, simTimeMs, net.id);
   remoteView.sync(net.remoteList(), (r) => net.freshChat(r));
   remoteView.ownBubble(gameState.player, net.myChat, CHAT_SHOW_MS);
   hud.update(gameState, xpToNext);
@@ -317,7 +319,9 @@ window.render_game_to_text = () => {
       y: round3(d.y),
       grounded: d.grounded,
       ageMs: Math.round(d.ageMs),
+      mine: !d.ownerId || d.ownerId === net.id,
     })),
+    remoteStars: net.remoteStars.map((s) => ({ x: round3(s.x), y: round3(s.y) })),
     mobs: gameState.mobs.mobs.map((mob) => ({
       id: mob.id,
       spawn: mob.spawn,

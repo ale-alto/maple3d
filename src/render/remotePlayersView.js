@@ -74,7 +74,8 @@ export class RemotePlayersView {
         grounded: r.state !== 'jump' && r.state !== 'fall',
         climbing: r.state === 'ladder' || r.state === 'rope',
       });
-      v.tag.position.set(v.dispX, v.dispY + 1.85, 0.4);
+      // Classic MS: the name tag sits UNDER the character, not overhead.
+      v.tag.position.set(v.dispX, v.dispY - 0.35, 0.4);
 
       const chat = freshChat(r);
       if (chat !== v.bubbleText) {

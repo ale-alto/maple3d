@@ -35,6 +35,8 @@ export function createNetwork(eventBus) {
     remote: new Map(), // id -> {id, name, x, y, facing, state, level, chat, chatMs}
     snapshot: null, // latest server {mobs, projectiles}, applied by main step
     myChat: null, // {text, ms} own bubble
+    remoteStars: [], // cosmetic replicas of party members' throws
+    nextRemoteStarId: 1,
     socket: null,
 
     join(mapId) {
@@ -81,7 +83,17 @@ export function createNetwork(eventBus) {
         } else if (m.t === 'mob-died') {
           eventBus.emit('net:mob-died', m);
         } else if (m.t === 'loot') {
-          eventBus.emit('net:loot', m);
+          eventBus.emit('net:loot', m); // carries ownerId
+        } else if (m.t === 'throw') {
+          net.remoteStars.push({
+            id: `r${net.nextRemoteStarId++}`,
+            x: m.star.x,
+            y: m.star.y,
+            vx: m.star.vx,
+            vy: 0,
+            targetId: m.star.targetId,
+            traveled: 0,
+          });
         } else if (m.t === 'chat') {
           if (m.id === net.id) {
             net.myChat = { text: m.text, ms: Date.now() };
@@ -100,6 +112,7 @@ export function createNetwork(eventBus) {
           net.connected = false;
           net.snapshot = null;
           net.remote.clear();
+          net.remoteStars = [];
           eventBus.emit('net:disconnected', {});
         }
       });
@@ -112,6 +125,7 @@ export function createNetwork(eventBus) {
         net.connected = false;
         net.snapshot = null;
         net.remote.clear();
+        net.remoteStars = [];
         try {
           s.close();
         } catch {
@@ -125,6 +139,15 @@ export function createNetwork(eventBus) {
     },
     sendHit(mobId, damage) {
       if (net.connected) net.socket?.send(JSON.stringify({ t: 'hit', mobId, damage }));
+    },
+    sendThrow(star) {
+      if (net.connected)
+        net.socket?.send(
+          JSON.stringify({
+            t: 'throw',
+            star: { x: star.x, y: star.y, vx: star.vx, targetId: star.targetId },
+          }),
+        );
     },
     sendChat(text) {
       if (net.connected) net.socket?.send(JSON.stringify({ t: 'chat', text }));

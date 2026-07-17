@@ -30,7 +30,7 @@ Verbs: **hunt, throw, jump, climb, loot, level, equip**.
 - Mobs have simple patrol/aggro AI, HP bars, floating damage numbers, death pop + drop spill.
 - Player HP/MP; mob contact damage; death = respawn in town with small XP penalty (Maple-honest but forgiving; exact % tuned in playtests).
 - XP curve levels 1–~15 in v1; stats grow per level; damage scales with level + equipped weapon tier.
-- Drops despawn after a timer; drops are per-player (no loot stealing) in v1.
+- Drops despawn after a timer; drops are loot-protected the classic way (everyone sees them — foreign drops dimmed — but only the killer can pick them up; no loot stealing).
 - Saves: character (level, XP, inventory, gear, position) in localStorage. Server never stores characters in v1.
 - Shared world: everyone on a map is in one PartyKit room — you see other players moving/hunting with name tags and chat bubbles. **Mob state is server-owned** (spawns, HP, deaths) so shared hunting looks coherent; player characters are client-owned.
 
