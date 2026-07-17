@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress — all 3 automated AC green 2026-07-14 (61/61 suite), live-verified; awaiting user listening playtest (jingle, BGM loops, SFX fatigue)
 
 ## Objective
 
@@ -28,9 +28,9 @@ Deliver the audio layer: loopable BGM per map (town theme + field theme, whimsic
 
 ## Acceptance criteria
 
-- [ ] Audio engine boots muted-until-gesture with no console errors; M toggles mute — test: `tests/e2e/audio.spec.js::mute toggle and state`
-- [ ] BGM track switches on map change (payload `audio.bgm` reflects the current map's track) — test: `tests/e2e/audio.spec.js::bgm follows the map`
-- [ ] SFX dispatch on combat/loot/level events (engine records last-played sfx in payload for verification) — test: `tests/e2e/audio.spec.js::sfx fire on events`
+- [x] Audio engine boots muted-until-gesture with no console errors; M toggles mute — test: `tests/e2e/audio.spec.js::mute toggle and state`
+- [x] BGM track switches on map change (payload `audio.bgm` reflects the current map's track) — test: `tests/e2e/audio.spec.js::bgm follows the map`
+- [x] SFX dispatch on combat/loot/level events (engine records last-played sfx in payload for verification) — test: `tests/e2e/audio.spec.js::sfx fire on events`
 - [ ] The level-up jingle lands (timing, Maple-feel), BGM loops cleanly, SFX aren't fatiguing — verified by user playtest
 
 ## Exit condition

@@ -10,6 +10,7 @@ let attackQueue = 0;
 let lootHeld = false; // Z: held-to-loot (vacuums drops you walk over)
 let lootQueue = 0; // Z: edge, so a quick tap still registers between steps
 let potionQueue = 0; // C
+let muteQueue = 0; // M
 
 const KEYS = {
   ArrowLeft: 'left',
@@ -45,6 +46,9 @@ export function initKeyboard(target) {
     } else if (e.key === 'c' || e.key === 'C') {
       if (!e.repeat) potionQueue += 1;
       e.preventDefault();
+    } else if (e.key === 'm' || e.key === 'M') {
+      if (!e.repeat) muteQueue += 1;
+      e.preventDefault();
     }
   });
 
@@ -73,6 +77,7 @@ export function initKeyboard(target) {
     lootHeld = false;
     lootQueue = 0;
     potionQueue = 0;
+    muteQueue = 0;
     upPressQueue = 0;
   });
 }
@@ -88,7 +93,9 @@ export function readInput() {
   if (lootQueue > 0) lootQueue -= 1;
   const potion = potionQueue > 0;
   if (potion) potionQueue -= 1;
+  const mute = muteQueue > 0;
+  if (mute) muteQueue -= 1;
   const upPressed = upPressQueue > 0;
   if (upPressed) upPressQueue -= 1;
-  return { ...held, jump, attack, loot, potion, upPressed };
+  return { ...held, jump, attack, loot, potion, mute, upPressed };
 }

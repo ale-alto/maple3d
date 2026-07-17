@@ -142,6 +142,13 @@ export const MOB_TYPES = {
   },
 };
 
+// --- Audio (M07) ---
+export const AUDIO_MASTER_VOL = 0.8;
+export const AUDIO_BGM_VOL = 0.35;
+export const AUDIO_SFX_VOL = 0.6;
+export const SFX_LOG_SIZE = 24; // dispatch ring buffer for verification
+export const MUTE_KEY = 'm';
+
 // --- Maps / town / shop (M04) ---
 export const PORTAL_RANGE = 0.9; // Up within this of a portal transitions
 export const NPC_RANGE = 1.1; // Up within this of an NPC interacts

@@ -23,32 +23,39 @@ test.describe('M01 movement', () => {
 
   test('single jump only (no double jump)', async ({ gamePage }) => {
     // 2026-07-14: double jump removed (not authentic — classic assassins
-    // jump once; flash jump is a skill, backlog #4).
-    const ground = await state(gamePage);
-    expect(ground.player.grounded).toBe(true);
-    expect(ground.player.jumpsLeft).toBe(1);
-
-    await gamePage.keyboard.press('Alt');
-    await advance(gamePage, 100);
-    const rising = await state(gamePage);
-    expect(rising.player.grounded).toBe(false);
-    expect(rising.player.y).toBeGreaterThan(ground.player.y);
-    expect(rising.player.jumpsLeft).toBe(0);
-
-    // A second Alt mid-air does NOTHING — no upward impulse, no extra jump.
-    await advance(gamePage, 250);
-    const preSecond = await state(gamePage);
-    await gamePage.keyboard.press('Alt');
-    await advance(gamePage, 50);
-    const afterSecond = await state(gamePage);
-    expect(afterSecond.player.vy).toBeLessThan(preSecond.player.vy); // still falling, not boosted
-    expect(afterSecond.player.jumpsLeft).toBe(0);
-
+    // jump once; flash jump is a skill, backlog #4). Atomic in-page so
+    // background frames can't land the player before the mid-air press.
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const alt = () => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Alt', bubbles: true }));
+        window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Alt', bubbles: true }));
+      };
+      const ground = read().player;
+      alt();
+      window.advanceTime(100);
+      const rising = read().player;
+      window.advanceTime(150); // past apex, still airborne (~667ms airtime)
+      const preSecond = read().player;
+      alt();
+      window.advanceTime(50);
+      const afterSecond = read().player;
+      window.advanceTime(3000);
+      const landed = read().player;
+      return { ground, rising, preSecond, afterSecond, landed };
+    });
+    expect(result.ground.grounded).toBe(true);
+    expect(result.ground.jumpsLeft).toBe(1);
+    expect(result.rising.grounded).toBe(false);
+    expect(result.rising.y).toBeGreaterThan(result.ground.y);
+    expect(result.rising.jumpsLeft).toBe(0);
+    // A second Alt mid-air does NOTHING — no upward impulse.
+    expect(result.afterSecond.grounded).toBe(false);
+    expect(result.afterSecond.vy).toBeLessThan(result.preSecond.vy);
+    expect(result.afterSecond.jumpsLeft).toBe(0);
     // Landing resets the single jump.
-    await advance(gamePage, 3000);
-    const landed = await state(gamePage);
-    expect(landed.player.grounded).toBe(true);
-    expect(landed.player.jumpsLeft).toBe(1);
+    expect(result.landed.grounded).toBe(true);
+    expect(result.landed.jumpsLeft).toBe(1);
   });
 
   test('thin platform collision', async ({ gamePage }) => {

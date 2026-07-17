@@ -21,6 +21,7 @@ import { createCombatState, stepCombat, stepCosmeticStars } from './sim/combat.j
 import { grantXp, usePotion, xpToNext, maxHpForLevel } from './sim/progression.js';
 import { createLootState, spawnDrops, spawnDropsFromItems, stepLoot } from './sim/loot.js';
 import { createNetwork } from './net/networkManager.js';
+import { createAudioEngine } from './audio/engine.js';
 import { initKeyboard, readInput } from './input/keyboard.js';
 import { createScene } from './render/scene.js';
 import { buildMapView, disposeMapView } from './render/mapView.js';
@@ -76,6 +77,11 @@ let cameraRig = createCameraRig(camera, gameState.map);
 const hud = createHud(eventBus);
 const shopPanel = createShopPanel(gameState, eventBus);
 initKeyboard(window);
+
+// === Audio (M07) ===
+const audio = createAudioEngine(eventBus);
+audio.setBgm(gameState.mapId);
+eventBus.on('map:changed', ({ mapId }) => audio.setBgm(mapId));
 
 // === Multiplayer (M06) ===
 const net = createNetwork(eventBus);
@@ -228,6 +234,7 @@ function step() {
     net.sendState({ x: +p.x.toFixed(2), y: +p.y.toFixed(2), facing: p.facing, state: p.state, level: p.level });
   }
   if (input.potion) usePotion(gameState.player, gameState.inventory, eventBus);
+  if (input.mute) audio.toggleMute();
   cameraRig.update(gameState.player, dt);
   // Map-entry swing: ease the camera in from a pulled-back pose.
   if (transitionMs > 0) {
@@ -355,6 +362,7 @@ window.render_game_to_text = () => {
       damageNumbers: fxView.numbersPayload(),
       lastLevelUpAgoMs: lastLevelUpSimMs === null ? null : Math.round(simTimeMs - lastLevelUpSimMs),
     },
+    audio: audio.state(),
     multiplayer: {
       enabled: net.enabled,
       connected: net.connected,

@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-M01–M06 done — v1 gameplay complete. User adopted the extended set 2026-07-14: **M07 audio (active next)** → M08 Meshy assets → M09 deploy → M10 gear/itemization → M11 skills (Lucky Seven + Flash Jump). All five written to docs/milestones/; backlog #4/#10/#11 promoted with trail.
+M01–M06 done. **M07 audio in-progress**: all 3 automated AC green (61/61 suite), engine live-verified; remaining: user LISTENING playtest (jingle feel, BGM loops, SFX fatigue). Then M08 Meshy assets → M09 deploy → M10 gear → M11 skills.
 
 ## Last action
 
@@ -27,7 +27,7 @@ M02 combat completed and closed. Movement/attack are 1:1 with the official MSW m
 
 ## Next step
 
-Start M07 (audio) via development.md: red specs on the payload-assertable AC (audio.muted / audio.bgm / last-sfx), then build src/audio/engine.js per the game-audio skill patterns — Web Audio buses, M mute, per-map BGM with crossfade (public/audio/<mapId>.mp3 drop-ins for future Suno tracks, procedural loops until then), eventBus-driven SFX incl. the level-up jingle. Engine must no-op cleanly in headless Playwright (suspended AudioContext).
+User listens: click once (autoplay unlock), hunt with sound — field arpeggio loop under throws/hits/pops, level-up jingle over the flash, portal whoosh on map change, M mutes. Drop real Suno tracks into public/audio/{town,field1,field2}.mp3 anytime — the engine auto-prefers files over the procedural loops. Then mark M07 done and start M08 (Meshy assets — needs MESHY_API_KEY from the user; meshyai skill; swap via CharacterView per ADR-0002).
 
 M06 systems: party/index.js (room per map, imports src/sim directly — 20Hz tick, 10Hz snapshots, ghost-peer prune, per-killer loot rolls), src/net/networkManager.js (?mp=1 gate, ?mproom= room isolation for tests), src/render/remotePlayersView.js (lerped views + name tags + bubbles), src/ui/chat.js (Enter to talk; keyboard ignores keys while typing), combat/mobs/loot refactors (stepMobs takes players[], stepMobProjectiles extracted, rollDrops/spawnDropsFromItems split, net.sendHit path). Also fixed in passing: respawn granted 2 jumps (pre-single-jump leftover).
 
