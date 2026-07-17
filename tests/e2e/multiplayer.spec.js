@@ -232,6 +232,88 @@ test.describe('M06 multiplayer', () => {
     await b.context.close();
   });
 
+  test('picked-up loot vanishes for everyone', async ({ browser }) => {
+    const room = freshRoom();
+    const a = await openClient(browser, 'Aya', room);
+    const b = await openClient(browser, 'Bee', room);
+    await waitConnected(a.page);
+    await waitConnected(b.page);
+
+    // A kills a mob; both sides see the drops.
+    await b.page.evaluate(() => window.__test.setPlayerPos(-18, 0));
+    await a.page.evaluate(() => {
+      const sp0 = JSON.parse(window.render_game_to_text()).map.mobSpawns[0];
+      window.__test.setPlayerPos(sp0.patrolX1 - 1.5, sp0.y);
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight', bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Control', bubbles: true }));
+    });
+    await a.page.waitForFunction(
+      () => JSON.parse(window.render_game_to_text()).drops.length > 0,
+      null,
+      { timeout: 30000 },
+    );
+    await a.page.evaluate(() =>
+      window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control', bubbles: true })),
+    );
+    await b.page.waitForFunction(
+      () => JSON.parse(window.render_game_to_text()).drops.some((d) => d.kind === 'mesos'),
+      null,
+      { timeout: 10000 },
+    );
+
+    // A picks up the mesos → it disappears from B's ground too.
+    await a.page.evaluate(() => {
+      const read2 = () => JSON.parse(window.render_game_to_text());
+      const drop = read2().drops.find((d) => d.kind === 'mesos');
+      window.__test.setPlayerPos(drop.x, drop.y);
+      window.advanceTime(100);
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true }));
+      window.advanceTime(150);
+      window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z', bubbles: true }));
+    });
+    await b.page.waitForFunction(
+      () => !JSON.parse(window.render_game_to_text()).drops.some((d) => d.kind === 'mesos'),
+      null,
+      { timeout: 10000 },
+    );
+
+    await a.context.close();
+    await b.context.close();
+  });
+
+  test('remote level-ups are visible', async ({ browser }) => {
+    const room = freshRoom();
+    const a = await openClient(browser, 'Aya', room);
+    const b = await openClient(browser, 'Bee', room);
+    await waitConnected(a.page);
+    await waitConnected(b.page);
+    await b.page.waitForFunction(
+      () => JSON.parse(window.render_game_to_text()).remotePlayers?.some((r) => r.name === 'Aya'),
+      null,
+      { timeout: 15000 },
+    );
+
+    // A levels up; B sees the moment on Aya (presence carries level).
+    await a.page.evaluate(() => {
+      window.__test.setXp(2, 0);
+      window.advanceTime(300); // a few presence sends
+    });
+    await b.page.waitForFunction(
+      () => {
+        const aya = JSON.parse(window.render_game_to_text()).remotePlayers.find(
+          (r) => r.name === 'Aya',
+        );
+        return aya && aya.leveledUp === true;
+      },
+      null,
+      { timeout: 10000 },
+    );
+
+    await a.context.close();
+    await b.context.close();
+  });
+
   test('remote throws are visible', async ({ browser }) => {
     // You see your party member throwing stars (cosmetic replicas; the
     // server still owns the damage).
