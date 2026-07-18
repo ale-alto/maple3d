@@ -32,6 +32,7 @@ Deliver the audio layer: loopable BGM per map (town theme + field theme, whimsic
 - [x] BGM track switches on map change (payload `audio.bgm` reflects the current map's track) — test: `tests/e2e/audio.spec.js::bgm follows the map`
 - [x] SFX dispatch on combat/loot/level events (engine records last-played sfx in payload for verification) — test: `tests/e2e/audio.spec.js::sfx fire on events`
 - [x] The level-up jingle lands (timing, Maple-feel), BGM loops cleanly, SFX aren't fatiguing — verified by user playtest (approved 2026-07-18 after the warm-arrangement revision)
+- [x] Sound settings UI: speaker button (top-right) opens a panel with mute + BGM/SFX sliders; prefs persist across sessions (localStorage, separate from the save) — test: `tests/e2e/audio.spec.js::sound settings panel` *(added 2026-07-18, user request, post-approval rider)*
 
 ## Exit condition
 

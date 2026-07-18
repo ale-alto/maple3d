@@ -49,15 +49,39 @@ const MOODS = {
   },
 };
 
+const PREFS_KEY = 'maple3d-audio'; // separate from the save: prefs survive resets
+
 export function createAudioEngine(eventBus) {
   let ctx = null;
   let master = null;
   let bgmBus = null;
   let sfxBus = null;
   let muted = false;
+  let bgmVol = AUDIO_BGM_VOL;
+  let sfxVol = AUDIO_SFX_VOL;
   let bgm = null; // current track id (mapId)
   let bgmStop = null; // stops the current bgm (fn)
   const lastSfx = []; // ring buffer of dispatched sfx names
+
+  // Restore persisted prefs.
+  try {
+    const prefs = JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null');
+    if (prefs) {
+      muted = !!prefs.muted;
+      if (typeof prefs.bgmVol === 'number') bgmVol = prefs.bgmVol;
+      if (typeof prefs.sfxVol === 'number') sfxVol = prefs.sfxVol;
+    }
+  } catch {
+    /* fresh prefs */
+  }
+
+  function persistPrefs() {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ muted, bgmVol, sfxVol }));
+    } catch {
+      /* storage blocked */
+    }
+  }
 
   function ensureContext() {
     if (ctx) return true;
@@ -69,10 +93,10 @@ export function createAudioEngine(eventBus) {
       master.gain.value = muted ? 0 : AUDIO_MASTER_VOL;
       master.connect(ctx.destination);
       bgmBus = ctx.createGain();
-      bgmBus.gain.value = AUDIO_BGM_VOL;
+      bgmBus.gain.value = bgmVol;
       bgmBus.connect(master);
       sfxBus = ctx.createGain();
-      sfxBus.gain.value = AUDIO_SFX_VOL;
+      sfxBus.gain.value = sfxVol;
       sfxBus.connect(master);
       if (bgm) startBgm(bgm); // a track was requested before the gesture
       return true;
@@ -325,10 +349,21 @@ export function createAudioEngine(eventBus) {
     toggleMute() {
       muted = !muted;
       if (master) master.gain.value = muted ? 0 : AUDIO_MASTER_VOL;
+      persistPrefs();
       return muted;
     },
+    setBgmVolume(v) {
+      bgmVol = Math.max(0, Math.min(1, v));
+      if (bgmBus) bgmBus.gain.value = bgmVol;
+      persistPrefs();
+    },
+    setSfxVolume(v) {
+      sfxVol = Math.max(0, Math.min(1, v));
+      if (sfxBus) sfxBus.gain.value = sfxVol;
+      persistPrefs();
+    },
     state() {
-      return { muted, bgm, lastSfx: [...lastSfx] };
+      return { muted, bgm, bgmVol, sfxVol, lastSfx: [...lastSfx] };
     },
   };
 }
