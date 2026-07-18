@@ -45,6 +45,47 @@ test.describe('M07 audio', () => {
     expect((await state(gamePage)).audio.bgm).toBe('field2');
   });
 
+  test('sound settings panel', async ({ gamePage }) => {
+    // A speaker button opens a settings panel: mute toggle + BGM/SFX
+    // volume sliders; payload carries bgmVol/sfxVol; prefs persist.
+    const result = await gamePage.evaluate(() => {
+      const read = () => JSON.parse(window.render_game_to_text());
+      const btn = document.querySelector('#audio-btn');
+      if (!btn) return { ok: false, why: 'no button' };
+      btn.click();
+      const panel = document.querySelector('#audio-panel');
+      const visible = !!panel && panel.style.display !== 'none';
+
+      const bgmSlider = document.querySelector('#audio-bgm-vol');
+      bgmSlider.value = '20';
+      bgmSlider.dispatchEvent(new Event('input', { bubbles: true }));
+      const sfxSlider = document.querySelector('#audio-sfx-vol');
+      sfxSlider.value = '90';
+      sfxSlider.dispatchEvent(new Event('input', { bubbles: true }));
+
+      document.querySelector('#audio-mute').click();
+      const s = read().audio;
+      return { ok: true, visible, bgmVol: s.bgmVol, sfxVol: s.sfxVol, muted: s.muted };
+    });
+    expect(result.ok).toBe(true);
+    expect(result.visible).toBe(true);
+    expect(result.bgmVol).toBeCloseTo(0.2, 5);
+    expect(result.sfxVol).toBeCloseTo(0.9, 5);
+    expect(result.muted).toBe(true);
+
+    // Prefs survive a reload.
+    await gamePage.reload();
+    await gamePage.waitForFunction(
+      () => typeof window.render_game_to_text === 'function',
+      null,
+      { timeout: 10000 },
+    );
+    const after = (await state(gamePage)).audio;
+    expect(after.muted).toBe(true);
+    expect(after.bgmVol).toBeCloseTo(0.2, 5);
+    expect(after.sfxVol).toBeCloseTo(0.9, 5);
+  });
+
   test('sfx fire on events', async ({ gamePage }) => {
     const result = await gamePage.evaluate((xpBase) => {
       const read = () => JSON.parse(window.render_game_to_text());
