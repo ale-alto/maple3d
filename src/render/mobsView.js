@@ -67,6 +67,7 @@ export class MobsView {
 
     const view = {
       group,
+      barHolder: bar.holder,
       barFg: bar.barFg,
       mixer: null,
       actions: new Map(),
@@ -131,6 +132,8 @@ export class MobsView {
         : mob.facing === 'left'
           ? Math.PI
           : 0;
+      // HP bar always faces the screen: undo the group's facing yaw.
+      view.barHolder.rotation.y = -view.group.rotation.y;
       const frac = Math.max(0, mob.hp / mob.maxHp);
       view.barFg.scale.x = frac || 0.0001;
       view.barFg.position.x = -0.45 * (1 - frac);
