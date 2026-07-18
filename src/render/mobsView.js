@@ -148,6 +148,10 @@ export class MobsView {
       if (!seen.has(id)) {
         view.dead = true;
         this.views.delete(id);
+        // The killing hit removes the mob before a final hp=0 frame arrives,
+        // so drain the bar manually for the death animation.
+        view.barFg.scale.x = 0.0001;
+        view.barFg.position.x = -0.45;
         const hasModel = !!view.mixer;
         if (hasModel) {
           view.currentClip = null;
