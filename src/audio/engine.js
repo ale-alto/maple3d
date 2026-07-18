@@ -9,11 +9,44 @@
 
 import { AUDIO_MASTER_VOL, AUDIO_BGM_VOL, AUDIO_SFX_VOL, SFX_LOG_SIZE } from '../core/constants.js';
 
-// Per-map procedural moods: [tempo bpm, scale semitones from root, root hz]
+// Per-map procedural moods (placeholder tier until Suno drop-ins): a
+// three-voice arrangement — pad chords, music-box melody, soft bass —
+// instead of chiptune arpeggios. Chords/melody are semitone offsets from
+// root; melody null = rest.
 const MOODS = {
-  town: { bpm: 84, notes: [0, 4, 7, 12, 7, 4], root: 220, wave: 'triangle' },
-  field1: { bpm: 108, notes: [0, 7, 4, 12, 9, 7], root: 262, wave: 'triangle' },
-  field2: { bpm: 116, notes: [0, 3, 7, 10, 7, 3], root: 233, wave: 'sawtooth' },
+  town: {
+    bpm: 72,
+    root: 174.61, // F3 — warm
+    chords: [
+      [0, 4, 7], // I
+      [-3, 0, 4], // vi
+      [5, 9, 12], // IV
+      [7, 11, 14], // V
+    ],
+    melody: [12, null, 16, 14, 12, null, 9, null, 7, 9, 12, null, 14, null, 12, null],
+  },
+  field1: {
+    bpm: 96,
+    root: 261.63, // C4 — bright
+    chords: [
+      [0, 4, 7],
+      [7, 11, 14],
+      [-3, 0, 4],
+      [5, 9, 12],
+    ],
+    melody: [12, 14, 16, null, 19, 16, 14, 12, null, 11, 12, 14, null, 16, null, 12],
+  },
+  field2: {
+    bpm: 104,
+    root: 220, // A3 minor — deeper field
+    chords: [
+      [0, 3, 7], // i
+      [-4, 0, 3], // VI
+      [3, 7, 10], // III
+      [-2, 2, 5], // VII
+    ],
+    melody: [12, null, 15, 12, 10, null, 7, null, 8, 10, 12, null, 15, null, 10, null],
+  },
 };
 
 export function createAudioEngine(eventBus) {
@@ -96,10 +129,14 @@ export function createAudioEngine(eventBus) {
 
   const SFX = {
     throw: () => noise({ dur: 0.07, vol: 0.35, freq: 3600 }),
-    hit: () => tone({ freq: 220, freqEnd: 90, wave: 'square', dur: 0.09, vol: 0.4 }),
+    hit: () => {
+      // Rounded thud: triangle drop + soft low noise (no square = no chip).
+      tone({ freq: 240, freqEnd: 90, wave: 'triangle', dur: 0.1, vol: 0.45 });
+      noise({ dur: 0.05, vol: 0.18, freq: 500 });
+    },
     pop: () => {
-      tone({ freq: 500, freqEnd: 120, wave: 'square', dur: 0.16, vol: 0.45 });
-      noise({ dur: 0.1, vol: 0.2, freq: 1200 });
+      tone({ freq: 480, freqEnd: 110, wave: 'sine', dur: 0.18, vol: 0.5 });
+      noise({ dur: 0.12, vol: 0.22, freq: 1000 });
     },
     loot: () => {
       tone({ freq: 1320, dur: 0.07, vol: 0.35 });
@@ -118,7 +155,10 @@ export function createAudioEngine(eventBus) {
       tone({ freq: root * 2 ** (16 / 12), wave: 'triangle', dur: 0.55, vol: 0.45, delay: 0.36 });
       noise({ dur: 0.4, vol: 0.12, freq: 6000, delay: 0.36 });
     },
-    ouch: () => tone({ freq: 160, freqEnd: 70, wave: 'sawtooth', dur: 0.13, vol: 0.4 }),
+    ouch: () => {
+      tone({ freq: 170, freqEnd: 75, wave: 'triangle', dur: 0.13, vol: 0.45 });
+      noise({ dur: 0.06, vol: 0.12, freq: 400 });
+    },
     portal: () => {
       noise({ dur: 0.35, vol: 0.3, freq: 900 });
       tone({ freq: 300, freqEnd: 900, dur: 0.3, vol: 0.2 });
@@ -160,27 +200,89 @@ export function createAudioEngine(eventBus) {
     }
 
     if (!fileSrc) {
-      // Light procedural loop: gentle arpeggio in the map's mood.
+      // Three-voice procedural arrangement (warm, not chiptune): pad
+      // chords through a lowpass, a music-box melody, and a soft bass.
       const mood = MOODS[mapId] ?? MOODS.field1;
       const beat = 60 / mood.bpm;
-      let step = 0;
-      const tick = () => {
-        if (stopped || !ctx || ctx.state !== 'running') return;
-        const semi = mood.notes[step % mood.notes.length];
-        const t0 = ctx.currentTime;
+      const half = beat / 2;
+      const barBeats = 4;
+      const note = (semi) => mood.root * 2 ** (semi / 12);
+
+      // Shared lowpass keeps everything rounded.
+      const warm = ctx.createBiquadFilter();
+      warm.type = 'lowpass';
+      warm.frequency.value = 2400;
+      warm.connect(gain);
+
+      const padVoice = (freq, t0, dur) => {
+        // Two slightly detuned triangles per chord tone = soft ensemble pad.
+        for (const detune of [-4, 4]) {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          osc.detune.value = detune;
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.linearRampToValueAtTime(0.05, t0 + dur * 0.25); // slow swell
+          g.gain.linearRampToValueAtTime(0.035, t0 + dur * 0.8);
+          g.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+          osc.connect(g).connect(warm);
+          osc.start(t0);
+          osc.stop(t0 + dur + 0.05);
+        }
+      };
+
+      const musicBox = (freq, t0) => {
+        // Bell-ish: fundamental + quiet 12th partial, fast attack, long decay.
+        for (const [mult, vol] of [
+          [1, 0.11],
+          [3, 0.02],
+        ]) {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq * mult;
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.linearRampToValueAtTime(vol, t0 + 0.015);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.1);
+          osc.connect(g).connect(warm);
+          osc.start(t0);
+          osc.stop(t0 + 1.2);
+        }
+      };
+
+      const bassVoice = (freq, t0, dur) => {
         const osc = ctx.createOscillator();
         const g = ctx.createGain();
-        osc.type = mood.wave;
-        osc.frequency.value = mood.root * 2 ** (semi / 12);
-        g.gain.setValueAtTime(0.16, t0);
-        g.gain.exponentialRampToValueAtTime(0.001, t0 + beat * 0.9);
-        osc.connect(g).connect(gain);
+        osc.type = 'sine';
+        osc.frequency.value = freq / 2;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(0.09, t0 + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(g).connect(warm);
         osc.start(t0);
-        osc.stop(t0 + beat);
-        step += 1;
+        osc.stop(t0 + dur + 0.05);
       };
-      timer = setInterval(tick, beat * 1000);
-      tick();
+
+      // Schedule one bar at a time, half-beat melody grid.
+      let bar = 0;
+      const scheduleBar = () => {
+        if (stopped || !ctx || ctx.state !== 'running') return;
+        const t0 = ctx.currentTime + 0.05;
+        const chord = mood.chords[bar % mood.chords.length];
+        const barDur = beat * barBeats;
+        for (const semi of chord) padVoice(note(semi), t0, barDur);
+        bassVoice(note(chord[0]), t0, beat * 1.5);
+        bassVoice(note(chord[0]), t0 + beat * 2, beat * 1.5);
+        for (let i = 0; i < barBeats * 2; i++) {
+          const idx = (bar * barBeats * 2 + i) % mood.melody.length;
+          const semi = mood.melody[idx];
+          if (semi !== null) musicBox(note(semi), t0 + i * half);
+        }
+        bar += 1;
+      };
+      timer = setInterval(scheduleBar, beat * barBeats * 1000);
+      scheduleBar();
     }
 
     bgmStop = () => {

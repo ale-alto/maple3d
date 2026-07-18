@@ -45,3 +45,4 @@ Red-then-green on the three automated AC via payload state (muted flag, bgm id, 
 
 - The audio engine must not break headless Playwright (AudioContext may be unavailable/suspended — engine no-ops gracefully; this is also the offline story).
 - Use the add-audio/game-audio skill patterns for the procedural synthesis.
+- 2026-07-18 playtest ("sounds 8-bit, not Maple"): procedural BGM rewritten from oscillator arpeggios to a three-voice arrangement — detuned-triangle pad chords through a lowpass, sine music-box melody with bell decay, soft sine bass; per-map chord progressions (town F-major 72bpm, field1 C-major 96bpm, field2 A-minor 104bpm). Square/saw SFX softened to triangle/sine+noise. **The procedural tier is still a placeholder** — the intended Maple sound is Suno tracks dropped into `public/audio/{town,field1,field2}.mp3` (engine auto-prefers files; generate loopable, whimsical-orchestral pieces in the Maple idiom).
