@@ -142,6 +142,47 @@ export const MOB_TYPES = {
   },
 };
 
+// --- Models (M08, KayKit CC0 packs) ---
+// Side-view yaw: ±(90° − tilt) so characters face their run direction
+// with a slight turn toward the camera (Maple 3/4 charm).
+export const MODEL_YAW_TILT = 0.35;
+export const MODEL_DEFS = {
+  player: {
+    file: '/models/player.glb', // KayKit Rogue_Hooded
+    height: 1.5,
+    clips: {
+      idle: 'Idle',
+      move: 'Running_A',
+      jump: 'Jump_Idle',
+      fall: 'Jump_Idle',
+      crouch: 'Lie_Idle',
+      ladder: 'Idle', // no climb clip in the pack; idle + facing-away reads fine
+      rope: 'Idle',
+      throw: 'Throw',
+    },
+  },
+  npc: {
+    file: '/models/npc_shop.glb', // KayKit Mage — Shopkeeper Nara
+    height: 1.6,
+    clips: { idle: 'Idle' },
+  },
+  blob: {
+    file: '/models/mob_blob.glb', // Skeleton_Minion
+    height: 1.0,
+    clips: { patrol: 'Walking_D_Skeletons', aggro: 'Running_A', die: 'Death_A' },
+  },
+  bruiser: {
+    file: '/models/mob_bruiser.glb', // Skeleton_Warrior
+    height: 1.3,
+    clips: { patrol: 'Walking_D_Skeletons', aggro: 'Running_A', die: 'Death_A' },
+  },
+  spitter: {
+    file: '/models/mob_spitter.glb', // Skeleton_Mage
+    height: 1.15,
+    clips: { patrol: 'Walking_D_Skeletons', aggro: 'Running_A', die: 'Death_A' },
+  },
+};
+
 // --- Audio (M07) ---
 export const AUDIO_MASTER_VOL = 0.8;
 export const AUDIO_BGM_VOL = 0.35;

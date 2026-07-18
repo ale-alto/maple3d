@@ -70,7 +70,22 @@ if (saved) {
 }
 
 let mapViewGroup = buildMapView(scene, gameState.map);
-const playerView = new CharacterView(scene);
+const playerView = new CharacterView(scene, 'player');
+
+// NPC views (M08): CharacterView per map NPC, rebuilt on map change.
+let npcViews = [];
+function buildNpcs(map) {
+  for (const v of npcViews) {
+    v.disposed = true;
+    scene.remove(v.group);
+  }
+  npcViews = (map.npcs ?? []).map((npc) => {
+    const view = new CharacterView(scene, 'npc');
+    view.npcData = npc;
+    return view;
+  });
+}
+buildNpcs(gameState.map);
 const mobsView = new MobsView(scene);
 const fxView = new CombatFxView(scene, eventBus);
 const lootView = new LootView(scene);
@@ -123,6 +138,7 @@ function changeMap(mapId, target) {
 
   disposeMapView(scene, mapViewGroup);
   mapViewGroup = buildMapView(scene, map);
+  buildNpcs(map);
   mobsView.clear();
   remoteView.clear();
   cameraRig = createCameraRig(camera, map);
@@ -257,13 +273,16 @@ function step() {
   }
 }
 
-function draw() {
-  playerView.update(gameState.player);
-  mobsView.sync(gameState.mobs.mobs);
+function draw(dtSec = 0) {
+  playerView.update(gameState.player, dtSec);
+  for (const v of npcViews) {
+    v.update({ x: v.npcData.x, y: v.npcData.y ?? 0, facing: 'right', state: 'idle', attackLockMs: 0 }, dtSec);
+  }
+  mobsView.sync(gameState.mobs.mobs, dtSec);
   mobsView.syncProjectiles(gameState.mobs.projectiles ?? []);
   fxView.sync([...gameState.combat.stars, ...net.remoteStars], simTimeMs);
   lootView.sync(gameState.loot.drops, simTimeMs, net.id);
-  remoteView.sync(net.remoteList(), (r) => net.freshChat(r), (r) => net.freshLevelUp(r));
+  remoteView.sync(net.remoteList(), (r) => net.freshChat(r), (r) => net.freshLevelUp(r), dtSec);
   remoteView.ownBubble(gameState.player, net.myChat, CHAT_SHOW_MS);
   hud.update(gameState, xpToNext);
   renderer.render(scene, camera);
@@ -277,13 +296,14 @@ let accumulator = 0;
 
 renderer.setAnimationLoop((now) => {
   syncSize();
-  accumulator += Math.min(now - lastTime, 250);
+  const frameMs = Math.min(now - lastTime, 250);
+  accumulator += frameMs;
   lastTime = now;
   while (accumulator >= FIXED_STEP_MS) {
     step();
     accumulator -= FIXED_STEP_MS;
   }
-  draw();
+  draw(frameMs / 1000); // real dt drives animation mixers
 });
 
 // --- Agent hooks (tech.md convention) ---
@@ -328,6 +348,7 @@ window.render_game_to_text = () => {
       level: p.level,
       xp: p.xp,
       xpToNext: xpToNext(p.level),
+      clip: playerView.currentClip,
     },
     inventory: { ...gameState.inventory },
     drops: gameState.loot.drops.map((d) => ({
@@ -351,6 +372,7 @@ window.render_game_to_text = () => {
       maxHp: mob.maxHp,
       state: mob.state,
       facing: mob.facing,
+      clip: mobsView.clipOf(mob.id),
     })),
     mobProjectiles: (gameState.mobs.projectiles ?? []).map((s) => ({
       x: round3(s.x),
@@ -368,6 +390,10 @@ window.render_game_to_text = () => {
       lastLevelUpAgoMs: lastLevelUpSimMs === null ? null : Math.round(simTimeMs - lastLevelUpSimMs),
     },
     audio: audio.state(),
+    renderInfo: {
+      calls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+    },
     multiplayer: {
       enabled: net.enabled,
       connected: net.connected,

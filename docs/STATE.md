@@ -4,7 +4,7 @@
 
 ## Last updated
 
-2026-07-14 by Claude (Fable 5) — M01+M02 development session
+2026-07-18 by Claude (Fable 5) — M08 free-asset session
 
 ## Current phase
 
@@ -12,24 +12,24 @@ development
 
 ## Current milestone
 
-M01–M07 done (M07 user-approved 2026-07-18). Next: M08 Meshy GLB assets (docs/milestones/08-meshy-assets.md, status: planned) → M09 deploy → M10 gear → M11 skills.
+M01–M07 done (M07 user-approved 2026-07-18). **M08 (real chibi models) implementation COMPLETE — suite 66/66, live-verified — awaiting user look-playtest to close.** Then: M09 deploy → M10 gear → M11 skills.
 
 ## Last action
 
-M02 combat completed and closed. Movement/attack are 1:1 with the official MSW model — full mapping lives in docs/reference/msw-parity.md (source of truth; don't re-crawl the Nexon docs, they're JS-rendered and painful). Playtest-driven revisions layered onto M01/M02, all regression-locked (suite 26/26):
+M08 implemented on the **free path** (user asked "is there a free model/animation thing" — Meshy's paid credits rejected; KayKit CC0 packs approved with "go"):
 
-- Committed air momentum + subtle AIR_ACCEL steering (the assassin kite); firm landing (no-input touchdown plants); snappier arc (GRAVITY 45, apex ~2.0u preserved)
-- Down jump (Down+Alt through thin platforms); crouch/prone (Down on ground blocks movement, no floor jump)
-- Ladders: direction-aware grabs (fixed top/bottom wiggle), top exit pops onto ledge, rope bottoms drop you off, leap-off requires Alt+direction
-- Grounded attack lock (stand-and-throw); contact knockback (pop away from mob) + 1s i-frames (matches MSW built-in PlayerHit)
-- Stars: classic target-lock model — press locks nearest mob in forward rect (STAR_RANGE 7 × ±STAR_SELECT_HALF_HEIGHT 1.5), star homes to lock, fizzles if lock dies, whiffs hit nothing; platform mobs need level access. (History: 45° free-aim → flat flight → target-lock, all same day, user-corrected)
-- Named state machine in payload: idle/move/crouch/jump/fall/ladder/rope + attackLockMs — the animation contract for the Meshy GLB milestone
+- **Models** (public/models/, ~21MB, CC0, committed directly — LFS deferred): Rogue_Hooded=player (real `Throw` clip), Mage=Nara, Skeleton_Minion/Warrior/Mage=blob/bruiser/spitter. GitHub raw URLs + clip names in docs/milestones/08-meshy-assets.md Notes.
+- **src/render/assetLoader.js** (new): GLTFLoader + SkeletonUtils.clone (regular clone T-poses!), cached promises, `?nomodels=1` gate, null-on-fail → primitive fallback.
+- **CharacterView rewrite**: primitive instantly → async GLB upgrade (auto-scale to MODEL_DEFS height, feet y=0), mixer crossfades from sim state machine, attackLockMs → one-shot Throw (400ms re-trigger gate), climbing = Idle facing away (pack has no climb clip), yaw `dir*(π/2−MODEL_YAW_TILT=0.35)`. `currentClip`='primitive' until loaded; `disposed` flag guards late loads.
+- **MobsView rewrite**: per-type models, patrol=Walking_D_Skeletons / aggro=Running_A, Death_A one-shot on removal (900ms, material fade back half); scale-pop stays as primitive fallback; `clipOf(id)` feeds payload. HP bar repositioned to just over model head (was floating ~0.8u high — caught in live-verify).
+- **main.js**: npcViews (CharacterView('npc') per map.npcs, rebuilt in changeMap), real frame dt → draw(dtSec) → all mixers, payload adds player.clip / mobs[].clip / renderInfo{calls,triangles}.
+- **remotePlayersView**: passes `state`+dtSec through so remote players animate; disposed flag on remove.
+- Tests: tests/e2e/assets.spec.js (4 specs, red committed b64373b) now green; full suite 66/66.
+- Live-verified in pane: player Idle/Running_A/Jump_Idle/Throw all fire, Nara renders as witch-hat mage in town, skeletons patrol/aggro on field2, console clean, 43 draw calls / 16.7k tris.
 
 ## Next step
 
-Start M08 (Meshy GLB assets) via development.md: **requires MESHY_API_KEY from the user before generation can start** (meshyai skill: text→model→auto-rig→animate). Red specs on the payload-assertable AC first (clip names per state, primitive fallback, renderer.info perf budget), then: generate assassin + blob/bruiser/spitter + Nara (chibi, IP-safe originals per gameplan), wire GLTFLoader+AnimationMixer inside CharacterView/MobsView (state machine idle/move/crouch/jump/fall/ladder/rope + attackLockMs → clips; facing = yaw flip), primitives stay as instant-on fallback, GLBs in public/models/ (LFS if >20MB). Suno tracks remain a drop-in upgrade for audio anytime (public/audio/<mapId>.mp3).
-
-M06 systems: party/index.js (room per map, imports src/sim directly — 20Hz tick, 10Hz snapshots, ghost-peer prune, per-killer loot rolls), src/net/networkManager.js (?mp=1 gate, ?mproom= room isolation for tests), src/render/remotePlayersView.js (lerped views + name tags + bubbles), src/ui/chat.js (Enter to talk; keyboard ignores keys while typing), combat/mobs/loot refactors (stepMobs takes players[], stepMobProjectiles extracted, rollDrops/spawnDropsFromItems split, net.sendHit path). Also fixed in passing: respawn granted 2 jumps (pre-single-jump leftover).
+**Gate: user playtests the look** (chibi proportions, animation feel — the one unticked AC). On approval: mark M08 done, then M09 deploy (partykit login `--provider github` — clerk flow dead; client hosting; VITE_MP_HOST; multiplayer-default decision backlog #12).
 
 ## Blockers
 
@@ -37,11 +37,10 @@ none
 
 ## Notes for next session
 
-- Open tuning candidates (non-blocking, in 02-combat.md Notes): MOB_MAX_HP 60 = 8 hits/kill feels tanky; mob respawn camping (softened by knockback). M03's damage scaling will rebalance anyway.
-- Player HP is only visible via red damage numbers until the M03 HUD lands.
-- Test-flake playbook that evolved this session: background rAF frames keep simulating between tool roundtrips — any timing-sensitive assertion must run as ONE synchronous in-page evaluate (see contact damage / star throw / platform-mob specs for the pattern); position-sensitive combat setups should teleport-re-engage rather than rely on sustained contact (knockback breaks overlap).
-- Word "window" (or document/navigator/localStorage) in src/sim comments trips the purity spec regex — phrase comments accordingly. M03's localStorage save code must live OUTSIDE src/sim (localStorage is DOM — put persistence in src/core or main.js, feeding plain objects to/from the sim).
-- Browser pane: screenshots time out on this machine; use gl.readPixels via window.__debug. The pane occasionally kills the dev server — preview_start maple3d-dev to restart. Hidden-tab HMR can lag: after editing source, verify the page actually reloaded before trusting live checks (a stale module produced a ghost bug this session).
-- Controls: arrows move/climb, Alt jump (SINGLE jump only — no double jump as of 2026-07-14; +direction on ladders to leap off; Down+Alt = down-jump), Ctrl attack (rooted ~650ms/throw, slower cadence), Z loot (hold to vacuum drops you walk over), C potion.
-- 2026-07-14 feel fixes (all live-verified, suite 50/50): no double jump (JUMP_VELOCITY 15, apex ~2.5u); hold-Z vacuums loot while walking; attack box centered on player BODY (STAR_SELECT_HALF_HEIGHT 1.1) so platform mobs need level access and jump-to-level connects.
-- 2026-07-14 ATTACK AUTHENTICITY (researched real MapleStory, not MSW — see msw-parity.md "Real-MapleStory combat facts"): **throwing stars are consumable ammo** — inventory.stars, spend 1/attack, empty=no throw, refill via starPack drops (+50) and shop (+50), cap 800, start 100, shown in HUD; **720ms cast** = authentic Fast (4) claw (was 650); homing CONFIRMED authentic (kept). Star ammo touches combat.js (consume), loot.js + shop.js (refill via 'starPack'→inventory.stars), main.js (inventory.stars, setStars hook, stepCombat gets inventory param, save on 'shop:bought'), HUD. Legacy inventory.starPacks removed/migrated.
+- Playtest-tunable M08 items: ladder/rope pose (Idle facing away — no climb clip in the pack; could bob or slow-yaw later), MODEL_YAW_TILT 0.35, mob HP bar heights, Throw one-shot 400ms gate vs 720ms cast.
+- Screenshots WORK in the pane again this session (previous note said they time out — machine-dependent, try screenshot first, fall back to gl.readPixels via __debug).
+- Test-flake playbook (standing): background rAF keeps simulating between tool roundtrips — timing-sensitive assertions must be ONE synchronous in-page evaluate; teleport re-engagement for combat; ?mproom= isolation for parallel MP specs.
+- Word "window"/document/navigator/localStorage in src/sim comments trips the purity spec regex — phrase comments accordingly.
+- Controls: arrows move/climb, Alt jump (single), Ctrl attack (720ms cast, rooted, consumes 1 star), Z loot (hold to vacuum), C potion, Enter chat, M mute, 🔊 audio panel.
+- Suno BGM drop-ins remain anytime upgrade: public/audio/{town,field1,field2}.mp3 auto-preferred over procedural.
+- M06 systems map + earlier history: see git log and docs/milestones/01–07.

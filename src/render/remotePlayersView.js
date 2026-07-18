@@ -48,7 +48,7 @@ export class RemotePlayersView {
     this.ownBubbleText = null;
   }
 
-  sync(list, freshChat, freshLevelUp) {
+  sync(list, freshChat, freshLevelUp, dtSec = 0) {
     const seen = new Set();
     for (const r of list) {
       seen.add(r.id);
@@ -68,13 +68,18 @@ export class RemotePlayersView {
       }
       v.dispX += (r.x - v.dispX) * LERP;
       v.dispY += (r.y - v.dispY) * LERP;
-      v.char.update({
-        x: v.dispX,
-        y: v.dispY,
-        facing: r.facing,
-        grounded: r.state !== 'jump' && r.state !== 'fall',
-        climbing: r.state === 'ladder' || r.state === 'rope',
-      });
+      v.char.update(
+        {
+          x: v.dispX,
+          y: v.dispY,
+          facing: r.facing,
+          state: r.state ?? 'idle',
+          attackLockMs: 0,
+          grounded: r.state !== 'jump' && r.state !== 'fall',
+          climbing: r.state === 'ladder' || r.state === 'rope',
+        },
+        dtSec,
+      );
       // Classic MS: the name tag sits UNDER the character, not overhead.
       v.tag.position.set(v.dispX, v.dispY - 0.35, 0.4);
 
@@ -121,6 +126,7 @@ export class RemotePlayersView {
   }
 
   removeView(id, v) {
+    v.char.disposed = true; // late model loads must not resurrect the group
     this.scene.remove(v.char.group);
     disposeSprite(this.scene, v.tag);
     if (v.bubble) disposeSprite(this.scene, v.bubble);

@@ -4,7 +4,6 @@ import {
   PLATFORM_COLOR,
   LADDER_COLOR,
   PORTAL_COLOR,
-  NPC_COLOR,
 } from '../core/constants.js';
 
 // Builds blockout geometry from pure map data. Real map art is a later
@@ -47,21 +46,8 @@ export function buildMapView(scene, map) {
     group.add(mesh);
   }
 
-  // NPCs: static chibi blockouts.
-  for (const npc of map.npcs ?? []) {
-    const body = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.35, 0.35, 8, 16),
-      new THREE.MeshLambertMaterial({ color: NPC_COLOR }),
-    );
-    body.position.set(npc.x, (npc.y ?? 0) + 0.55, 0);
-    group.add(body);
-    const head = new THREE.Mesh(
-      new THREE.SphereGeometry(0.32, 16, 12),
-      new THREE.MeshLambertMaterial({ color: 0xffe0bd }),
-    );
-    head.position.set(npc.x, (npc.y ?? 0) + 1.22, 0);
-    group.add(head);
-  }
+  // NPCs render via CharacterView (M08) — owned by main.js, not this
+  // static builder.
 
   scene.add(group);
   return group;

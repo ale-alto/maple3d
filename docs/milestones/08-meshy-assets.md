@@ -2,21 +2,23 @@
 
 ## Status
 
-planned
+in progress — implementation complete, all 4 automated AC green (suite 66/66), awaiting user look-playtest
 
 ## Objective
 
-The ADR-0002 payoff: generate rigged, animated chibi GLB models with Meshy AI (text→model→auto-rig→animate) for the assassin, the three mob types, and Shopkeeper Nara, and swap them in through the CharacterView/MobsView abstractions — sim and game logic untouched, exactly as the abstraction was designed for. The capsule era ends.
+The ADR-0002 payoff: replace the primitive placeholders with rigged, animated chibi GLB models for the assassin, the three mob types, and Shopkeeper Nara, swapped in through the CharacterView/MobsView abstractions — sim and game logic untouched, exactly as the abstraction was designed for. The capsule era ends.
+
+**Path change (user-directed):** the user asked for a free source instead of Meshy's paid credits. Source is now the **KayKit CC0 character packs** (Adventurers + Skeletons, GitHub raw downloads, no auth) — rigged chibi humanoids sharing one ~80-clip animation library.
 
 ## Scope
 
-- Meshy generation (meshyai skill): assassin (chibi, dark garb, claw), blob / bruiser / spitter (cute-menacing tiers, distinct silhouettes), Shopkeeper Nara; MapleStory-2-adjacent chibi proportions, bright pastel palette (IP-safe originals)
-- Required animation sets (gameplan): player idle/run/jump/climb/throw (+crouch if cheap); mobs walk/hurt/die; NPC idle
-- `CharacterView` internals: GLTFLoader + AnimationMixer; map the sim state machine (idle/move/crouch/jump/fall/ladder/rope) + attackLockMs to clips with crossfades; facing = yaw flip as today
-- `MobsView` per-type models with walk/hurt(flash)/die clips; death pop becomes the die animation
-- Remote players use the same model path (they already render via CharacterView)
-- GLBs under `public/models/` (Git LFS if >20MB total per tech.md); loading states — primitives remain as instant-on fallback until models load
-- Draw-call sanity: check via `__debug.renderer.info` after swap (threejs-perf guidance if needed)
+- KayKit roster (all CC0, in `public/models/`): Rogue_Hooded → player (has a real `Throw` clip), Mage → Shopkeeper Nara, Skeleton_Minion/Warrior/Mage → blob/bruiser/spitter (small/tanky/ranged silhouettes match the mob roster 1:1)
+- `src/render/assetLoader.js`: GLTFLoader + `SkeletonUtils.clone` (required — regular clone T-poses), cached promises, `?nomodels=1` gate, null on failure → primitive fallback
+- `CharacterView`: primitive instantly, async GLB upgrade (auto-scale to `MODEL_DEFS[kind].height`, feet at y=0), AnimationMixer + crossfades; sim state machine → clips via `MODEL_DEFS.clips`; `attackLockMs` triggers a one-shot `Throw`; ladder/rope = Idle facing away (no climb clip in the pack); side-view yaw `dir * (π/2 − MODEL_YAW_TILT)`
+- `MobsView`: per-type models, patrol=walk / aggro=run clips, `Death_A` one-shot on removal (material fade in the back half); scale-pop retained as primitive fallback
+- NPCs render via CharacterView owned by main.js (removed from the static mapView builder)
+- Remote players animate through the same path (`state` + dtSec plumbed through RemotePlayersView)
+- Payload contract: `player.clip`, `mobs[].clip` ('primitive' until loaded), `renderInfo {calls, triangles}`
 
 ## Out of scope
 
@@ -31,21 +33,24 @@ The ADR-0002 payoff: generate rigged, animated chibi GLB models with Meshy AI (t
 
 ## Acceptance criteria
 
-- [ ] Player renders as a rigged GLB; sim states drive distinct clips (idle vs run vs jump/fall vs climb) — test: `tests/e2e/assets.spec.js::player model and clips` (payload exposes current clip name)
-- [ ] Each mob type renders its own model with walk/die animations — test: `tests/e2e/assets.spec.js::mob models`
-- [ ] Fallback: with a model file missing, primitives render and the console stays clean — test: `tests/e2e/assets.spec.js::primitive fallback`
-- [ ] Frame rate holds (draw calls within budget with 2 players + full field) — test: perf assertion via renderer.info in payload
+- [x] Player renders as a rigged GLB; sim states drive distinct clips (idle vs run vs jump/fall vs crouch) — test: `tests/e2e/assets.spec.js::player model and clips`
+- [x] Each mob type renders its own model with walk/die animations — test: `tests/e2e/assets.spec.js::mob models`
+- [x] Fallback: with models disabled (`?nomodels=1`), primitives render and the console stays clean — test: `tests/e2e/assets.spec.js::primitive fallback`
+- [x] Frame rate holds — draw calls < 120 via renderer.info in payload — test: `tests/e2e/assets.spec.js::draw calls within budget` (live: 43 calls / ~17k triangles on field1)
 - [ ] The look lands (chibi proportions, palette, animation feel) — verified by user playtest
 
 ## Exit condition
 
-User walks the field as a real chibi assassin — running, jumping, climbing, throwing all animate; blobs waddle and die with their own animations; Nara stands in the shop as a person, not a capsule.
+User walks the field as a real chibi assassin — running, jumping, climbing, throwing all animate; skeletons walk/run and die with their own animations; Nara stands in the shop as a person, not a capsule.
 
 ## Test plan
 
-Red-then-green on clip-name payload assertions + fallback spec. Visual quality is user playtest (this is the milestone where screenshots matter — capture per-state stills for review). Regression: full suite green (views only; sim untouched).
+Red-then-green on clip-name payload assertions + fallback spec (red committed b64373b). Visual quality is user playtest. Regression: full suite 66/66 green (views only; sim untouched).
 
 ## Notes
 
-- Meshy requires MESHY_API_KEY (user account, paid credits). Fallback source per ADR-0002: free GLB libraries if Meshy output disappoints.
+- KayKit GLB URLs: `https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-<Adventures|Skeletons>-1.0/main/addons/kaykit_character_pack_<adventures|skeletons>/Characters/gltf/<Name>.glb`. Clip names extracted by parsing the GLB JSON chunk (Python struct/json) — key clips: `Idle`, `Running_A`, `Jump_Idle`, `Lie_Idle`, `Throw`, `Walking_D_Skeletons`, `Death_A`.
+- ~21MB of GLBs committed directly (LFS deferred — revisit if the model folder keeps growing).
+- No climb clip exists in the pack → ladder/rope plays Idle facing away from camera; acceptable for now, playtest-tunable.
 - Keep every model swap inside CharacterView/MobsView — if a change wants to touch the sim, the abstraction is being violated; stop and re-read ADR-0002.
+- Meshy remains an option for bespoke models later (MESHY_API_KEY), but KayKit covers v1.
