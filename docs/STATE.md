@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-**M01–M10 DONE. M11 skills IMPLEMENTED 2026-07-19** (suite 76/76, live-verified) — awaiting user playtest. Live: https://ale-alto.github.io/maple3d/. After M11 closes: v1 COMPLETE — remaining threads are backlog (IP-safe naming #8 before public promo, friend playtest, Suno BGM drop-ins, gear visuals on models).
+**M01–M11 built** (M11 implemented + L7 double-numbers fix; suite 76/76). **DIRECTION CHANGE 2026-07-19: user wants exact 1:1 pre-BB MapleStory mechanics ("no guesswork"), our 3D art only. Full job-ladder fidelity chosen (Rogue@10→Assassin@30→Hermit@70, cap rises).** Spec: docs/reference/ms-v62-mechanics.md (sourced; anything not in it gets researched before coding). Parity ladder: M12 character sheet → M13 jobs → M14 items → M15+ Assassin/Hermit. Live: https://ale-alto.github.io/maple3d/.
 
 ## Last action
 
@@ -29,7 +29,7 @@ M08 implemented on the **free path** (user asked "is there a free model/animatio
 
 ## Next step
 
-Gate: user playtests M11 (level for SP, K to assign, Shift volleys, Alt mid-air flash jump — the assassin identity). On approval → v1 complete; consult backlog for what's next (IP-safe naming pass is the prerequisite for any public promotion). M11 as-built details: docs/milestones/11-skills.md Notes. Key mechanic note: the air-steering clamp changed — it caps steering at max(RUN_SPEED, |vx|) so flash-jump super-speed persists while airborne (movement suite still green).
+Start **M12 character sheet** (docs/milestones/12-character-sheet.md) via development.md. RESEARCH-FIRST items before any code: pre-BB HP/MP-per-level ranges (LazyBui's guide), new-character stat-roll rules, base (unskilled) mastery %. Then red specs → STR/DEX/INT/LUK + 5 AP/level, MIN–MAX damage rolls, L7's LUK×5 basis + real 20-level table, ACC/avoid + MISS, exact EXP table, MP regen 3/10s, S stat window, save v5. NOTE: this deliberately rewrites progression/skills specs (curve + L7 change) — deliberate spec rewrites, never silent. M13 will REMOVE Flash Jump from the early game (returns at Hermit@70); air-steer super-speed cap change stays (it'll serve FJ later). bbb.hidden-street.net 403s WebFetch — read it through the browser pane (get_page_text).
 
 **M10 as-built** (details in docs/milestones/10-gear-itemization.md Notes): src/sim/items.js pure gear module; GEAR_TIERS (Bronze/Steel/Dark Claw, Cloth/Leather/Shadow Garb; stat rolls at drop); MOB_TYPES gearChance/gearTierMax (3%/4.5%/6%, tier caps 1/2/3); playerAttack = level curve + weapon; armor soak min 1; rollDrops appends gear (server rolls it too — same sim import); pickup → inventory.bag (BAG_MAX 24, full bag refuses); save v3 migrates v2; #inv-panel (I key, classic window styling); Nara sells Bronze Claw 80m; HUD ATT chip; __test.grantGear(slot,tier) max-roll hook (emits loot:picked so the open panel repaints); persist on gear:equipped. Push to master auto-deploys the live site.
 
