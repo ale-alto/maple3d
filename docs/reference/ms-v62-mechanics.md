@@ -41,12 +41,19 @@
 - Jobs: Beginner → **Rogue at level 10** (at the Thief instructor; stat
   requirement VERIFY — commonly DEX 25) → **Assassin at 30** → **Hermit
   at 70** → Night Lord at 120.
-- HP/MP per level:
-  - Pre-BB original: random per-level ranges per class (LazyBui's guide —
-    NOT yet verified this session; VERIFY before implementing).
-  - MS Classic World remake (meowdb, closed-test data, may change):
-    class-fixed, Beginner +16 HP/+12 MP, Thief +22 HP/+17 MP; job
-    advancement one-time roll: Thief +200–250 HP, +200–250 MP.
+- HP/MP per level (VERIFIED via open-source emulator levelUp(), matching
+  LazyBui-era lore; uniform random inclusive):
+  - Beginner: HP +12–16, MP +10–12
+  - Thief (Rogue/Assassin/Hermit): HP +20–24, MP +14–16
+  - ALL classes additionally: MP += floor(total INT / 10)
+  - Level-up also grants +5 AP; +3 SP (SP only once job-advanced)
+  - Job advancement one-time roll (emulator changeJob + meowdb agree):
+    Thief +200–250 HP/MP — apply at Rogue advancement
+- New character stat roll: 4 dice, each stat 4–13, total always 25
+  (players rerolled for STR 4 / INT 4; a stat reset equals 4/4/4/4 + 9 AP).
+  Implementation: auto-roll the classic thief roll — STR 4, INT 4,
+  DEX+LUK = 17 split by the dice.
+- Base mastery with no mastery skill: **10%** (0.1 in the min-damage term).
 - MP recovery: base **3 MP per 10 seconds** standing (pre-BB; faster while
   sitting on chairs — n/a for us).
 
