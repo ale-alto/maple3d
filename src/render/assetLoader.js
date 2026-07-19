@@ -37,3 +37,26 @@ export async function loadCharacter(path) {
     return null;
   }
 }
+
+// Static prop (no skeleton): plain clone, with materials cloned per
+// instance so opacity tweaks (owner-protected drop dimming) don't leak
+// across copies. Resolves {model, materials} or null.
+export async function loadProp(path) {
+  if (!modelsEnabled) return null;
+  try {
+    const gltf = await load(path);
+    const model = gltf.scene.clone(true);
+    const materials = [];
+    model.traverse((o) => {
+      if (o.isMesh) {
+        o.material = o.material.clone();
+        o.material.transparent = true;
+        materials.push(o.material);
+      }
+    });
+    return { model, materials };
+  } catch (e) {
+    console.warn(e.message ?? e);
+    return null;
+  }
+}

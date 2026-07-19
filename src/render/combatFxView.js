@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { STAR_COLOR, DAMAGE_NUMBER_MS } from '../core/constants.js';
+import { makeShuriken } from './shuriken.js';
 
 // Stars + floating damage numbers. Numbers are driven off eventBus hits and
 // aged in sim time so advanceTime() verification sees them deterministically.
@@ -27,8 +28,6 @@ export class CombatFxView {
   constructor(scene, eventBus) {
     this.scene = scene;
     this.starViews = new Map(); // star id -> mesh
-    this.starMat = new THREE.MeshBasicMaterial({ color: STAR_COLOR });
-    this.starGeo = new THREE.OctahedronGeometry(0.18);
     this.numbers = []; // {sprite, x, y, value, ageMs}
 
     eventBus.on('mob:hit', ({ x, y, amount }) => this.addNumber(x, y + 1.4, amount, '#ffd24d'));
@@ -48,7 +47,7 @@ export class CombatFxView {
       seen.add(star.id);
       let mesh = this.starViews.get(star.id);
       if (!mesh) {
-        mesh = new THREE.Mesh(this.starGeo, this.starMat);
+        mesh = makeShuriken(0.2, STAR_COLOR);
         this.starViews.set(star.id, mesh);
         this.scene.add(mesh);
       }
@@ -58,6 +57,7 @@ export class CombatFxView {
     for (const [id, mesh] of this.starViews) {
       if (!seen.has(id)) {
         this.scene.remove(mesh);
+        mesh.material.dispose(); // geometry is the shared shuriken cache
         this.starViews.delete(id);
       }
     }
