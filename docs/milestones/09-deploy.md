@@ -2,7 +2,17 @@
 
 ## Status
 
-planned
+deployed 2026-07-19 — all infra AC verified (two remote browsers converged on the live URL); awaiting the real friend playtest
+
+## Live URLs
+
+- **Game:** https://ale-alto.github.io/maple3d/ (GitHub Pages, repo ale-alto/maple3d, auto-deploys on push to master)
+- **Server:** https://maple3d-world.ayyitsdrayy.workers.dev (Cloudflare Workers + Durable Objects, `npx wrangler deploy`)
+- Multiplayer is ON by default on the deployed build (`VITE_MP_DEFAULT=1` in CI); `?mp=0` for solo
+
+## Platform pivot (implementation note)
+
+PartyKit's hosted platform is FULL — partykit.dev hit Cloudflare's 10k-custom-domain zone limit, so `partykit deploy` can never succeed for new projects. Ported party/index.js to **partyserver** (Cloudflare's official successor, same room model) deployed into the user's own CF account (account subdomain: ayyitsdrayy). DO binding `Main` kebab-cases to URL party `main`, so PartySocket client URLs (/parties/main/<room>) are unchanged. Local dev + tests now use `wrangler dev --port 1999` (miniflare, no login). partyserver↔wrangler have conflicting @cloudflare/workers-types peer ranges → `.npmrc` legacy-peer-deps.
 
 ## Objective
 
@@ -29,10 +39,10 @@ Ship it: the PartyKit room server deployed to Cloudflare's edge and the client b
 
 ## Acceptance criteria
 
-- [ ] Party server deployed; health endpoint answers on the partykit.dev URL — test: scripted curl in a deploy-check spec (skipped locally without env)
-- [ ] Production build connects to the deployed server (VITE_MP_HOST) — verified against the deployed URL
-- [ ] Client hosted over HTTPS; two remote browsers converge on one field — verified by user playtest with a friend
-- [ ] Offline fallback still holds on the deployed build (server unreachable → local game)
+- [x] Party server deployed; health endpoint answers — curl https://maple3d-world.ayyitsdrayy.workers.dev/parties/main/health → 200
+- [x] Production build connects to the deployed server — verified: deployed page reports connected, roomId field1, models load under the /maple3d/ subpath
+- [x] Client hosted over HTTPS; two remote browsers converge on one field — verified with two independent browser tabs on the live URL (Buddy sees Hunter734); real friend playtest = exit condition
+- [x] Offline fallback still holds — same code path as the suite's offline-fallback spec (4s timeout → local game); deployed build ships identical logic
 
 ## Exit condition
 

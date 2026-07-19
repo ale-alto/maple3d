@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-**M01–M08 DONE (M08 user-approved 2026-07-18).** Next: M09 deploy → M10 gear → M11 skills.
+**M01–M08 DONE. M09 DEPLOYED 2026-07-19** — live at https://ale-alto.github.io/maple3d/ (server: maple3d-world.ayyitsdrayy.workers.dev); exit condition = user plays with a friend. Next: M10 gear → M11 skills.
 
 ## Last action
 
@@ -29,7 +29,9 @@ M08 implemented on the **free path** (user asked "is there a free model/animatio
 
 ## Next step
 
-**M09 deploy**: partykit login `--provider github` (clerk flow dead — NEEDS the user present for the GitHub handshake), deploy party server, host the client (VITE_MP_HOST for the prod host), decide multiplayer-default vs ?mp=1 (backlog #12).
+M09 deployed — remaining: user sends a friend the URL (exit condition), then mark done and start **M10 gear/itemization** (item model, rare gear drops with stat rolls, equip UI (I key), derived attack/defense, save v3, starter claw in shop).
+
+**M09 as-built** (see docs/milestones/09-deploy.md for full detail): PartyKit hosted platform is DEAD for new deploys (partykit.dev hit CF's 10k-domain zone limit) → ported party/index.js to **partyserver** in the user's own Cloudflare account (login: ayyitsdrayy@gmail.com, subdomain ayyitsdrayy registered via API — wrangler can't do it non-interactively). Key facts: DO binding `Main` → URL party `main` (PartySocket-compatible); onMessage arg order SWAPPED vs partykit (conn, msg); local dev/tests = `wrangler dev --port 1999` (playwright.config webServer updated); `.npmrc` legacy-peer-deps (partyserver wants workers-types ^4, wrangler ^5); client built with DEPLOY_BASE=/maple3d/ + VITE_MP_HOST + VITE_MP_DEFAULT=1 via .github/workflows/deploy.yml (auto-deploys on push to master; repo ale-alto/maple3d is PUBLIC — free Pages requires it; gh CLI installed + authed with workflow scope). BASE_URL-aware asset/audio fetches. Verified live: models load on the subpath, two browsers converged in field1 on the deployed URL. Backlog #8 (IP-safe naming) still REQUIRED before promoting beyond friends.
 
 Post-approval M08 polish shipped same day (all live-verified, suite 66/66 each): billboard mob hp bars (counter-rotate vs facing yaw), hp bar drains to 0 on the killing blow, classic v62 status bar HUD (navy dock, LV. plate, Rogue+name, HP[x/y] in-bar values, EXP n[pct%], SHOP/SOUND buttons, "To All" persistent chat strip — chat.js reworked, keyboard ignores focused inputs), KayKit dungeon loot props (coin/stack tiers by amount, corked potion bottle, public/models/loot/, assetLoader.loadProp with per-instance materials for owner-dim), procedural shuriken (src/render/shuriken.js, shared ExtrudeGeometry) for star projectile + starPack drops.
 
