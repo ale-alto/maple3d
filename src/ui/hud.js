@@ -1,3 +1,5 @@
+import { playerAttack } from '../sim/combat.js';
+
 // Plain-DOM HUD (tech.md: no UI framework), styled after the classic
 // pre-Big-Bang MapleStory status bar: dark navy strip docked to the
 // bottom, "LV." plate with orange digits, job + character name,
@@ -13,6 +15,7 @@ export function createHud(eventBus) {
       <div id="hud-job">Rogue</div>
       <div id="hud-name"></div>
     </div>
+    <div id="hud-att" title="Attack (level + weapon)">ATT 8</div>
     <div class="hud-bars">
       <div class="hud-track hp">
         <div id="hud-hp-fill" class="hud-fill hp"></div>
@@ -72,6 +75,7 @@ export function createHud(eventBus) {
     mpText: root.querySelector('#hud-mp-text'),
     xpFill: root.querySelector('#hud-xp-fill'),
     xpText: root.querySelector('#hud-xp-text'),
+    att: root.querySelector('#hud-att'),
     stars: root.querySelector('#hud-stars'),
     mesos: root.querySelector('#hud-mesos'),
     potions: root.querySelector('#hud-potions'),
@@ -91,6 +95,7 @@ export function createHud(eventBus) {
     update(gameState, xpToNext) {
       const p = gameState.player;
       el.level.textContent = p.level;
+      el.att.textContent = `ATT ${playerAttack(p)}`;
       el.hpFill.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`;
       el.hpText.textContent = `[${p.hp}/${p.maxHp}]`;
       // Classic low-HP blink when under 15%.

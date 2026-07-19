@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented 2026-07-19 — 4 automated AC green (suite 71/71), live-verified; awaiting user playtest (itemization feel)
 
 ## Objective
 
@@ -31,10 +31,10 @@ Turn the M03 "rare gear stub" into real itemization: mobs rarely drop gear (claw
 
 ## Acceptance criteria
 
-- [ ] Gear drops with rolled stats at per-type rates (forced-roll dev hook for the spec) — test: `tests/e2e/gear.spec.js::gear drops with stats`
-- [ ] Equipping a claw raises star damage; better claw = bigger hits — test: `tests/e2e/gear.spec.js::weapon attack applies`
-- [ ] Armor reduces contact damage — test: `tests/e2e/gear.spec.js::defense applies`
-- [ ] I opens the bag; equip/swap works; save v3 round-trips equipment — tests: `::equip ui`, `::equipment persists`
+- [x] Gear drops with rolled stats at per-type rates — `tests/e2e/gear.spec.js::gear drops with stats` (pure-sim rollGear; blob 3%/T1, bruiser 4.5%/T2, spitter 6%/T3)
+- [x] Equipping a claw raises star damage — `::weapon attack applies` (payload player.attack; verified vs actual mob hp delta)
+- [x] Armor reduces contact damage — `::defense applies` (soak = max(1, dmg − defense))
+- [x] I opens the bag; equip/swap/unequip works; save v3 round-trips — `::equip ui`, `::equipment persists`
 - [ ] Itemization feel (drop excitement, stat pacing) — verified by user playtest
 
 ## Exit condition
@@ -48,3 +48,4 @@ Red-then-green per AC (seeded rng + dev hooks keep drops deterministic). Regress
 ## Notes
 
 - Promoted from M03's out-of-scope notes + backlog trail 2026-07-14 (user request).
+- As built: `src/sim/items.js` (makeGear/rollGear/equipFromBag/unequip/soak, GEAR_TIERS in constants — 3 claw + 3 garb tiers, stat = base + [0..roll] rolled at drop), `src/ui/inventoryPanel.js` (#inv-panel, classic ITEM INVENTORY styling), playerAttack in combat.js, save v3 (v2 migrates: empty equipment/bag), Nara sells Bronze Claw (80 mesos, base roll), HUD ATT chip, gear ground-drop = big silver octahedron. Server hit clamp (40) already covers the new max hit (level-15 + max Dark Claw = 36) — unchanged.

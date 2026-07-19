@@ -12,8 +12,10 @@ import {
   STARPACK_SIZE,
   STAR_MAX,
   LOOT_SEED,
+  BAG_MAX,
 } from '../core/constants.js';
 import { mulberry32 } from './rng.js';
+import { rollGear } from './items.js';
 
 export function createLootState() {
   return { drops: [], nextId: 1, rand: mulberry32(LOOT_SEED) };
@@ -37,6 +39,8 @@ export function rollDrops(rand, typeDef) {
   const items = [{ kind: 'mesos', amount: lo + Math.floor(rand() * (hi - lo + 1)) }];
   if (rand() < (typeDef?.potionChance ?? POTION_DROP_CHANCE)) items.push({ kind: 'potion' });
   if (rand() < (typeDef?.starPackChance ?? STARPACK_DROP_CHANCE)) items.push({ kind: 'starPack' });
+  const gear = rollGear(rand, typeDef); // M10: the rare exciting one
+  if (gear) items.push(gear);
   return items;
 }
 
@@ -98,6 +102,7 @@ export function stepLoot(state, map, player, inventory, input, dt, events, myId 
     let bestDist = Infinity;
     for (const d of state.drops) {
       if (d.ownerId && d.ownerId !== myId) continue; // not yours
+      if (d.kind === 'gear' && (inventory.bag?.length ?? 0) >= BAG_MAX) continue; // bag full
       const dist = Math.hypot(d.x - player.x, d.y - player.y);
       if (dist <= PICKUP_RANGE && dist < bestDist) {
         bestDist = dist;
@@ -109,6 +114,8 @@ export function stepLoot(state, map, player, inventory, input, dt, events, myId 
       if (best.kind === 'mesos') inventory.mesos += best.amount;
       else if (best.kind === 'potion') inventory.potions += 1;
       else if (best.kind === 'starPack') inventory.stars = Math.min(STAR_MAX, inventory.stars + STARPACK_SIZE);
+      else if (best.kind === 'gear')
+        inventory.bag.push({ kind: 'gear', gearId: best.gearId, slot: best.slot, name: best.name, tier: best.tier, ...(best.attack !== undefined ? { attack: best.attack } : {}), ...(best.defense !== undefined ? { defense: best.defense } : {}) });
       events?.emit('loot:picked', {
         kind: best.kind,
         amount: best.amount ?? 1,

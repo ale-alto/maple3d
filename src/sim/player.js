@@ -36,6 +36,7 @@ export function createPlayer(map) {
     xp: 0,
     attackLockMs: 0, // MSW ATTACK state: grounded stand-and-throw interval
     state: 'idle', // MSW StateComponent-style named state, for animation
+    equipment: { weapon: null, armor: null }, // M10 gear slots
   };
 }
 

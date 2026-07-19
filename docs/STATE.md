@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-**M01–M08 DONE. M09 DEPLOYED 2026-07-19** — live at https://ale-alto.github.io/maple3d/ (server: maple3d-world.ayyitsdrayy.workers.dev); exit condition = user plays with a friend. Next: M10 gear → M11 skills.
+**M01–M08 DONE. M09 DEPLOYED** (live: https://ale-alto.github.io/maple3d/, friend-playtest pending). **M10 gear IMPLEMENTED 2026-07-19** — suite 71/71, live-verified, awaiting user playtest. Next: M11 skills.
 
 ## Last action
 
@@ -29,7 +29,9 @@ M08 implemented on the **free path** (user asked "is there a free model/animatio
 
 ## Next step
 
-M09 deployed — remaining: user sends a friend the URL (exit condition), then mark done and start **M10 gear/itemization** (item model, rare gear drops with stat rolls, equip UI (I key), derived attack/defense, save v3, starter claw in shop).
+Gates open: (a) M09 friend playtest, (b) M10 gear-feel playtest (grind for a drop, I to equip, hit harder, reload keeps it). On approval → **M11 skills** (skill points, MP spend/regen, Lucky Seven 2-star volley, Flash Jump = Alt mid-air MP-gated, K panel, save v4 — builds on M10's derived-stat layer).
+
+**M10 as-built** (details in docs/milestones/10-gear-itemization.md Notes): src/sim/items.js pure gear module; GEAR_TIERS (Bronze/Steel/Dark Claw, Cloth/Leather/Shadow Garb; stat rolls at drop); MOB_TYPES gearChance/gearTierMax (3%/4.5%/6%, tier caps 1/2/3); playerAttack = level curve + weapon; armor soak min 1; rollDrops appends gear (server rolls it too — same sim import); pickup → inventory.bag (BAG_MAX 24, full bag refuses); save v3 migrates v2; #inv-panel (I key, classic window styling); Nara sells Bronze Claw 80m; HUD ATT chip; __test.grantGear(slot,tier) max-roll hook (emits loot:picked so the open panel repaints); persist on gear:equipped. Push to master auto-deploys the live site.
 
 **M09 as-built** (see docs/milestones/09-deploy.md for full detail): PartyKit hosted platform is DEAD for new deploys (partykit.dev hit CF's 10k-domain zone limit) → ported party/index.js to **partyserver** in the user's own Cloudflare account (login: ayyitsdrayy@gmail.com, subdomain ayyitsdrayy registered via API — wrangler can't do it non-interactively). Key facts: DO binding `Main` → URL party `main` (PartySocket-compatible); onMessage arg order SWAPPED vs partykit (conn, msg); local dev/tests = `wrangler dev --port 1999` (playwright.config webServer updated); `.npmrc` legacy-peer-deps (partyserver wants workers-types ^4, wrangler ^5); client built with DEPLOY_BASE=/maple3d/ + VITE_MP_HOST + VITE_MP_DEFAULT=1 via .github/workflows/deploy.yml (auto-deploys on push to master; repo ale-alto/maple3d is PUBLIC — free Pages requires it; gh CLI installed + authed with workflow scope). BASE_URL-aware asset/audio fetches. Verified live: models load on the subpath, two browsers converged in field1 on the deployed URL. Backlog #8 (IP-safe naming) still REQUIRED before promoting beyond friends.
 

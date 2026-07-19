@@ -11,6 +11,7 @@ export function createShopPanel(gameState, eventBus) {
     <div class="shop-title">Shopkeeper Nara</div>
     <button id="shop-buy-potion">Potion — ${PRICES.potion} mesos</button>
     <button id="shop-buy-starpack">Star pack — ${PRICES.starPack} mesos</button>
+    <button id="shop-buy-claw">Bronze Claw — ${PRICES.claw1} mesos</button>
     <div id="shop-message"></div>
     <button id="shop-close">Close</button>
   `;
@@ -28,6 +29,7 @@ export function createShopPanel(gameState, eventBus) {
 
   panel.querySelector('#shop-buy-potion').addEventListener('click', () => buy('potion'));
   panel.querySelector('#shop-buy-starpack').addEventListener('click', () => buy('starPack'));
+  panel.querySelector('#shop-buy-claw').addEventListener('click', () => buy('claw1'));
   panel.querySelector('#shop-close').addEventListener('click', () => close());
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') close();

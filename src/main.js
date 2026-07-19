@@ -17,9 +17,10 @@ import { loadSave, persist } from './core/save.js';
 import { maps, DEFAULT_MAP } from './sim/maps/index.js';
 import { createPlayer, stepPlayer } from './sim/player.js';
 import { createMobsState, stepMobs, stepMobProjectiles } from './sim/mobs.js';
-import { createCombatState, stepCombat, stepCosmeticStars } from './sim/combat.js';
+import { createCombatState, stepCombat, stepCosmeticStars, playerAttack } from './sim/combat.js';
 import { grantXp, usePotion, xpToNext, maxHpForLevel } from './sim/progression.js';
 import { createLootState, spawnDrops, spawnDropsFromItems, stepLoot } from './sim/loot.js';
+import { makeGear, armorDefense } from './sim/items.js';
 import { createNetwork } from './net/networkManager.js';
 import { createAudioEngine } from './audio/engine.js';
 import { createAudioSettings } from './ui/audioSettings.js';
@@ -34,6 +35,7 @@ import { RemotePlayersView } from './render/remotePlayersView.js';
 import { createCameraRig } from './render/cameraRig.js';
 import { createHud } from './ui/hud.js';
 import { createShopPanel } from './ui/shopPanel.js';
+import { createInventoryPanel } from './ui/inventoryPanel.js';
 import { createChatInput } from './ui/chat.js';
 
 const canvas = document.querySelector('#game');
@@ -45,7 +47,7 @@ gameState.player = createPlayer(gameState.map);
 gameState.mobs = createMobsState(gameState.map);
 gameState.combat = createCombatState();
 gameState.loot = createLootState();
-gameState.inventory = { mesos: 0, potions: STARTING_POTIONS, stars: STARTING_STARS };
+gameState.inventory = { mesos: 0, potions: STARTING_POTIONS, stars: STARTING_STARS, bag: [] };
 gameState.shopOpen = false;
 
 // Restore the character before anything renders.
@@ -63,9 +65,11 @@ if (saved) {
   p.y = saved.player.y;
   p.facing = saved.player.facing;
   p.grounded = false; // physics settles onto whatever is at the saved spot
+  p.equipment = saved.player.equipment ?? { weapon: null, armor: null }; // v3 gear
   // Merge saved inventory; ensure `stars` exists for pre-ammo (v1/early-v2) saves.
   gameState.inventory = { ...gameState.inventory, ...saved.inventory };
   if (typeof gameState.inventory.stars !== 'number') gameState.inventory.stars = STARTING_STARS;
+  if (!Array.isArray(gameState.inventory.bag)) gameState.inventory.bag = [];
   delete gameState.inventory.starPacks; // legacy field
 }
 
@@ -92,6 +96,7 @@ const lootView = new LootView(scene);
 let cameraRig = createCameraRig(camera, gameState.map);
 const hud = createHud(eventBus);
 const shopPanel = createShopPanel(gameState, eventBus);
+createInventoryPanel(gameState, eventBus);
 initKeyboard(window);
 
 // === Audio (M07) ===
@@ -196,7 +201,7 @@ eventBus.on('player:died', () => {
   pendingDeathRespawn = true;
 });
 // Saves: fire on every progression-relevant event + on leaving.
-for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned', 'shop:bought']) {
+for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned', 'shop:bought', 'gear:equipped']) {
   eventBus.on(ev, () => persist(gameState));
 }
 window.addEventListener('beforeunload', () => persist(gameState));
@@ -357,6 +362,9 @@ window.render_game_to_text = () => {
       xp: p.xp,
       xpToNext: xpToNext(p.level),
       clip: playerView.currentClip,
+      attack: playerAttack(p),
+      defense: armorDefense(p.equipment),
+      equipment: p.equipment,
     },
     inventory: { ...gameState.inventory },
     drops: gameState.loot.drops.map((d) => ({
@@ -465,6 +473,11 @@ window.__test = {
   },
   setStars(n) {
     gameState.inventory.stars = n;
+  },
+  grantGear(slot, tier) {
+    // Max-roll piece straight into the bag (specs need determinism).
+    gameState.inventory.bag.push(makeGear(slot, tier, 0.999));
+    eventBus.emit('loot:picked', { kind: 'gear', amount: 1, dropId: null, networked: false });
   },
 };
 window.__debug = { renderer, scene, camera, gameState, eventBus, net };

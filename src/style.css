@@ -291,6 +291,134 @@ body {
   user-select: none;
 }
 
+#hud-att {
+  padding: 3px 8px;
+  background: rgba(12, 18, 42, 0.55);
+  border: 1px solid #131b3d;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #ffc82e;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+
+/* --- Inventory / equip panel (M10) — classic ITEM INVENTORY window --- */
+#inv-panel {
+  position: fixed;
+  right: 16px;
+  top: 64px;
+  width: 250px;
+  padding: 0 0 10px;
+  background: linear-gradient(#eef1f8, #d7dce9);
+  border: 1px solid #7a86a5;
+  border-radius: 8px;
+  box-shadow: 0 6px 22px rgba(10, 16, 40, 0.45);
+  font-family: Tahoma, Verdana, sans-serif;
+  font-size: 10px;
+  color: #223055;
+  user-select: none;
+  z-index: 20;
+}
+.inv-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: linear-gradient(#5a6da8, #33427a);
+  border-radius: 7px 7px 0 0;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 11px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+#inv-close {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #7a1206;
+  border-radius: 4px;
+  background: linear-gradient(#ff7a5c, #b01c0e);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+.inv-equipped {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px 4px;
+}
+.inv-equip-slot {
+  flex: 1;
+  padding: 5px 7px;
+  background: linear-gradient(#c9d0e2, #b4bdd4);
+  border: 1px solid #8a94ad;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.inv-equip-slot:hover {
+  background: linear-gradient(#d8dff0, #c2cbe0);
+}
+.inv-slot-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: #55648c;
+  text-transform: uppercase;
+}
+.inv-slot-item {
+  font-weight: 700;
+  min-height: 12px;
+}
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 6px 10px;
+}
+.inv-cell {
+  min-height: 42px;
+  padding: 3px 2px;
+  background: linear-gradient(#ffffff, #e4e9f4);
+  border: 1px solid #8a94ad;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 9px;
+  color: #223055;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.inv-cell:hover {
+  background: linear-gradient(#fff8dc, #f4e9b8);
+  border-color: #c9a227;
+}
+.inv-cell.empty {
+  background: rgba(255, 255, 255, 0.35);
+  border-style: dashed;
+  cursor: default;
+}
+.inv-cell-name {
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.15;
+}
+.inv-cell-stat {
+  color: #7a6300;
+  font-weight: 700;
+}
+.inv-hint {
+  padding: 0 10px;
+  font-size: 8.5px;
+  color: #55648c;
+}
+
 /* --- Shop panel (M04) --- */
 #shop-panel {
   position: fixed;

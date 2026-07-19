@@ -10,6 +10,8 @@ const KIND_STYLE = {
   mesos: { geo: () => new THREE.OctahedronGeometry(0.16), color: 0xffd24d },
   potion: { geo: () => new THREE.CylinderGeometry(0.1, 0.13, 0.26, 10), color: 0xff5f6d },
   starPack: { geo: () => new THREE.BoxGeometry(0.24, 0.24, 0.24), color: 0x9fb4d8 },
+  // Gear (M10): the rare one gets a bigger, shinier marker.
+  gear: { geo: () => new THREE.OctahedronGeometry(0.24), color: 0xd8e2f4 },
 };
 
 // Meso tiers (drop amounts run ~5–30).
@@ -47,8 +49,9 @@ export class LootView {
       view.primitive = primitive;
       group.add(primitive);
 
-      const file = d.kind === 'mesos' ? mesosFile(d.amount) : '/models/loot/potion.glb';
-      loadProp(file).then((res) => {
+      const file =
+        d.kind === 'mesos' ? mesosFile(d.amount) : d.kind === 'potion' ? '/models/loot/potion.glb' : null;
+      if (file) loadProp(file).then((res) => {
         if (!res || view.dead) return;
         const { model, materials } = res;
         const box = new THREE.Box3().setFromObject(model);

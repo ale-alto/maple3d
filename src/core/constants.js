@@ -110,6 +110,8 @@ export const MOB_TYPES = {
     mesosMax: 14,
     potionChance: 0.3,
     starPackChance: 0.15,
+    gearChance: 0.03,
+    gearTierMax: 1,
     color: 0x8fd14f,
     scale: 1,
   },
@@ -123,6 +125,8 @@ export const MOB_TYPES = {
     mesosMax: 24,
     potionChance: 0.35,
     starPackChance: 0.2,
+    gearChance: 0.045,
+    gearTierMax: 2,
     color: 0x5f8dff,
     scale: 1.25,
   },
@@ -136,11 +140,31 @@ export const MOB_TYPES = {
     mesosMax: 30,
     potionChance: 0.4,
     starPackChance: 0.25,
+    gearChance: 0.06,
+    gearTierMax: 3,
     color: 0xb968ff,
     scale: 1.1,
     ranged: { projectileSpeed: 6, cooldownMs: 2200, range: 6, damage: 8 },
   },
 };
+
+// --- Gear (M10) --- Maple-honest rare drops; stats roll at drop time as
+// base + [0..roll]. Tier index = tier - 1. Level 15 cap: max star hit =
+// STAR_DAMAGE + 14 + claw3 max 14 = 36, inside the server clamp (40).
+export const GEAR_TIERS = {
+  weapon: [
+    { id: 'claw1', name: 'Bronze Claw', tier: 1, attack: 3, roll: 2 },
+    { id: 'claw2', name: 'Steel Claw', tier: 2, attack: 6, roll: 3 },
+    { id: 'claw3', name: 'Dark Claw', tier: 3, attack: 10, roll: 4 },
+  ],
+  armor: [
+    { id: 'garb1', name: 'Cloth Garb', tier: 1, defense: 2, roll: 2 },
+    { id: 'garb2', name: 'Leather Garb', tier: 2, defense: 4, roll: 3 },
+    { id: 'garb3', name: 'Shadow Garb', tier: 3, defense: 7, roll: 4 },
+  ],
+};
+export const BAG_MAX = 24;
+export const STARTER_CLAW_PRICE = 80; // Nara's mesos sink (tier-1, no roll)
 
 // --- Models (M08, KayKit CC0 packs) ---
 // Side-view yaw: ±(90° − tilt) so characters face their run direction

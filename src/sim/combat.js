@@ -20,6 +20,10 @@ import {
 } from '../core/constants.js';
 import { damageMob } from './mobs.js';
 import { starDamageForLevel, applyDeathPenalty } from './progression.js';
+import { weaponAttack, soak } from './items.js';
+
+// Derived attack (M10): level curve + equipped claw.
+export const playerAttack = (player) => starDamageForLevel(player.level) + weaponAttack(player.equipment);
 
 export function createCombatState() {
   return { stars: [], cooldownMs: 0, nextStarId: 1 };
@@ -90,8 +94,8 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
       const dy = target.y + MOB_HEIGHT / 2 - star.y;
       const dist = Math.hypot(dx, dy);
       if (dist <= Math.max(step, 0.3)) {
-        if (net) net.sendHit(target.id, starDamageForLevel(player.level));
-        else damageMob(mobsState, target, starDamageForLevel(player.level), events);
+        if (net) net.sendHit(target.id, playerAttack(player));
+        else damageMob(mobsState, target, playerAttack(player), events);
         return false;
       }
       star.vx = (dx / dist) * STAR_SPEED;
@@ -113,7 +117,8 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
   // Damage + knockback away from sourceX (MSW HitEvent FeedbackAction);
   // death penalty/heal here, WHERE the player wakes up (town, per the
   // gameplan) is the orchestrator's job via the player:died event.
-  function hurtPlayer(amount, sourceX) {
+  function hurtPlayer(rawAmount, sourceX) {
+    const amount = soak(rawAmount, player.equipment); // armor soaks (M10)
     player.hp -= amount;
     player.invulnMs = INVULN_MS;
     const kbDir = Math.sign(player.x - sourceX) || (player.facing === 'right' ? -1 : 1);
