@@ -71,9 +71,19 @@ test.describe('M11 skills', () => {
       window.advanceTime(60);
       kb('keyup', 'Shift', 'ShiftLeft');
       const inFlight = read().projectiles.length;
+      // Classic L7 shows TWO damage numbers, stacked apart — poll the fx
+      // payload while the stars land.
+      let numbers = [];
+      for (let t = 0; t < 30 && numbers.length < 2; t++) {
+        window.advanceTime(50);
+        const fx = read().fx.damageNumbers;
+        if (fx.length > numbers.length) numbers = fx;
+      }
       window.advanceTime(1200);
       const after = read();
       return {
+        numberCount: numbers.length,
+        numberYs: numbers.map((n) => n.y),
         attack: before.player.attack,
         mpBefore: before.player.mp,
         starsBefore: before.inventory.stars,
@@ -84,6 +94,8 @@ test.describe('M11 skills', () => {
       };
     });
     expect(result.inFlight).toBe(2); // the volley
+    expect(result.numberCount).toBe(2); // two damage numbers, classic L7
+    expect(Math.abs(result.numberYs[0] - result.numberYs[1])).toBeGreaterThan(0.3); // visibly stacked
     expect(result.starsBefore - result.starsAfter).toBe(2);
     // MP spent (regen may add a sliver back during the flight).
     expect(result.mpBefore - result.mpAfter).toBeGreaterThanOrEqual(SKILLS.luckySeven.mpCost - 2);

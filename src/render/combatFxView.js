@@ -35,6 +35,13 @@ export class CombatFxView {
   }
 
   addNumber(x, y, value, color) {
+    // Classic L7: volley hits land as SEPARATE numbers — stack any number
+    // that would overlap a fresh one (same spot, still young) upward.
+    for (const n of this.numbers) {
+      if (n.ageMs < 350 && Math.abs(n.x - x) < 0.8 && Math.abs(n.y - y) < 0.55) {
+        y = n.y + 0.55;
+      }
+    }
     const sprite = makeNumberSprite(value, color);
     sprite.position.set(x, y, 0.5);
     this.scene.add(sprite);
