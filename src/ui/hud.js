@@ -100,7 +100,7 @@ export function createHud(eventBus) {
       el.hpText.textContent = `[${p.hp}/${p.maxHp}]`;
       // Classic low-HP blink when under 15%.
       el.hpFill.classList.toggle('low', p.hp / p.maxHp <= 0.15);
-      const mp = p.mp ?? 30;
+      const mp = Math.floor(p.mp ?? 30);
       const maxMp = p.maxMp ?? 30;
       el.mpFill.style.width = `${Math.max(0, (mp / maxMp) * 100)}%`;
       el.mpText.textContent = `[${mp}/${maxMp}]`;

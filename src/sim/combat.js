@@ -21,6 +21,7 @@ import {
 import { damageMob } from './mobs.js';
 import { starDamageForLevel, applyDeathPenalty } from './progression.js';
 import { weaponAttack, soak } from './items.js';
+import { luckySevenParams } from './skills.js';
 
 // Derived attack (M10): level curve + equipped claw.
 export const playerAttack = (player) => starDamageForLevel(player.level) + weaponAttack(player.equipment);
@@ -43,7 +44,10 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
   // Throwing stars are consumable ammo — no stars, no throw (classic MS).
   combat.cooldownMs = Math.max(0, combat.cooldownMs - ms);
   const hasAmmo = !inventory || inventory.stars > 0;
-  if (input.attack && combat.cooldownMs === 0 && !player.climbing && hasAmmo) {
+  // Lucky Seven (M11): Shift with the skill + MP + 2 stars = a 2-star
+  // volley; otherwise the press falls back to a basic throw.
+  const l7 = input.skill ? luckySevenParams(player, inventory) : null;
+  if ((input.attack || input.skill) && combat.cooldownMs === 0 && !player.climbing && hasAmmo) {
     // Classic MS: lock the nearest mob inside the forward attack box at
     // press time. The box is centered on the player's BODY (rises with a
     // jump) and is ~one character tall, so a mob straight above is out of
@@ -64,18 +68,26 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
         target = mob;
       }
     }
-    const star = {
-      id: combat.nextStarId++,
-      x: player.x,
-      y: throwY,
-      vx: dir * STAR_SPEED,
-      vy: 0,
-      targetId: target ? target.id : null,
-      traveled: 0,
-    };
-    combat.stars.push(star);
-    if (net) net.sendThrow(star); // party members see the throw
-    if (inventory) inventory.stars -= 1; // spend the star
+    const volley = l7 ? 2 : 1;
+    for (let i = 0; i < volley; i++) {
+      const star = {
+        id: combat.nextStarId++,
+        x: player.x - dir * i * 0.35, // second star trails the first
+        y: throwY + i * 0.18,
+        vx: dir * STAR_SPEED,
+        vy: 0,
+        targetId: target ? target.id : null,
+        traveled: 0,
+        mult: l7 ? l7.mult : 1,
+      };
+      combat.stars.push(star);
+      if (net) net.sendThrow(star); // party members see the throw
+      if (inventory) inventory.stars -= 1; // spend the star
+    }
+    if (l7) {
+      player.mp -= l7.mpCost;
+      events?.emit('skill:luckyseven', { mp: player.mp });
+    }
     combat.cooldownMs = ATTACK_COOLDOWN_MS;
     // MSW ATTACK state: grounded throws are stand-and-throw; air throws
     // stay free (that's the kite).
@@ -94,8 +106,9 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
       const dy = target.y + MOB_HEIGHT / 2 - star.y;
       const dist = Math.hypot(dx, dy);
       if (dist <= Math.max(step, 0.3)) {
-        if (net) net.sendHit(target.id, playerAttack(player));
-        else damageMob(mobsState, target, playerAttack(player), events);
+        const damage = Math.round(playerAttack(player) * (star.mult ?? 1));
+        if (net) net.sendHit(target.id, damage);
+        else damageMob(mobsState, target, damage, events);
         return false;
       }
       star.vx = (dx / dist) * STAR_SPEED;

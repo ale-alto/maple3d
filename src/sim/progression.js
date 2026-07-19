@@ -11,7 +11,9 @@ import {
   STAR_DAMAGE,
   DAMAGE_PER_LEVEL,
   POTION_HEAL,
+  SP_PER_LEVEL,
 } from '../core/constants.js';
+import { maxMpForLevel } from './skills.js';
 
 export const xpToNext = (level) => Math.round(XP_BASE * XP_GROWTH ** (level - 1));
 export const maxHpForLevel = (level) => PLAYER_MAX_HP + (level - 1) * HP_PER_LEVEL;
@@ -26,6 +28,9 @@ export function grantXp(p, amount, events) {
     p.level += 1;
     p.maxHp = maxHpForLevel(p.level);
     p.hp = p.maxHp; // classic Maple: level-up full heal
+    p.maxMp = maxMpForLevel(p.level);
+    p.mp = p.maxMp; // full MP restore too
+    p.sp = (p.sp ?? 0) + SP_PER_LEVEL; // M11 skill points
     events?.emit('player:levelup', { level: p.level });
   }
   if (p.level >= LEVEL_CAP) p.xp = 0;

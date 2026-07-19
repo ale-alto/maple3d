@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-**M01–M10 DONE** (M10 user-approved 2026-07-19; live: https://ale-alto.github.io/maple3d/ — M09 friend-playtest still pending informally). Next: **M11 skills** (the last planned milestone).
+**M01–M10 DONE. M11 skills IMPLEMENTED 2026-07-19** (suite 76/76, live-verified) — awaiting user playtest. Live: https://ale-alto.github.io/maple3d/. After M11 closes: v1 COMPLETE — remaining threads are backlog (IP-safe naming #8 before public promo, friend playtest, Suno BGM drop-ins, gear visuals on models).
 
 ## Last action
 
@@ -29,7 +29,7 @@ M08 implemented on the **free path** (user asked "is there a free model/animatio
 
 ## Next step
 
-Start **M11 skills** on user "go" (docs/milestones/11-skills.md): skill points, MP spend/regen, Lucky Seven 2-star volley, Flash Jump = Alt mid-air MP-gated (the authentic return of the removed double jump), K panel, save v4 — builds on M10's derived-stat layer.
+Gate: user playtests M11 (level for SP, K to assign, Shift volleys, Alt mid-air flash jump — the assassin identity). On approval → v1 complete; consult backlog for what's next (IP-safe naming pass is the prerequisite for any public promotion). M11 as-built details: docs/milestones/11-skills.md Notes. Key mechanic note: the air-steering clamp changed — it caps steering at max(RUN_SPEED, |vx|) so flash-jump super-speed persists while airborne (movement suite still green).
 
 **M10 as-built** (details in docs/milestones/10-gear-itemization.md Notes): src/sim/items.js pure gear module; GEAR_TIERS (Bronze/Steel/Dark Claw, Cloth/Leather/Shadow Garb; stat rolls at drop); MOB_TYPES gearChance/gearTierMax (3%/4.5%/6%, tier caps 1/2/3); playerAttack = level curve + weapon; armor soak min 1; rollDrops appends gear (server rolls it too — same sim import); pickup → inventory.bag (BAG_MAX 24, full bag refuses); save v3 migrates v2; #inv-panel (I key, classic window styling); Nara sells Bronze Claw 80m; HUD ATT chip; __test.grantGear(slot,tier) max-roll hook (emits loot:picked so the open panel repaints); persist on gear:equipped. Push to master auto-deploys the live site.
 

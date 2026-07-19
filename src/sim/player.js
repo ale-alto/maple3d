@@ -15,7 +15,9 @@ import {
   LADDER_JUMP_VX,
   LADDER_JUMP_VY,
   PLAYER_MAX_HP,
+  PLAYER_MAX_MP,
 } from '../core/constants.js';
+import { flashJumpParams } from './skills.js';
 
 export function createPlayer(map) {
   return {
@@ -37,6 +39,10 @@ export function createPlayer(map) {
     attackLockMs: 0, // MSW ATTACK state: grounded stand-and-throw interval
     state: 'idle', // MSW StateComponent-style named state, for animation
     equipment: { weapon: null, armor: null }, // M10 gear slots
+    mp: PLAYER_MAX_MP, // M11 skills
+    maxMp: PLAYER_MAX_MP,
+    sp: 0,
+    skills: { luckySeven: 0, flashJump: 0 },
   };
 }
 
@@ -161,8 +167,11 @@ export function stepPlayer(p, map, input, dt, events) {
       else p.vx -= Math.sign(p.vx) * decel;
     }
   } else if (move !== 0) {
+    // Steering never ADDS speed past the run cap, but it must not bleed
+    // super-speed either (flash jump bursts past RUN_SPEED by design).
+    const cap = Math.max(RUN_SPEED, Math.abs(p.vx));
     p.vx += move * AIR_ACCEL * dt;
-    p.vx = Math.max(-RUN_SPEED, Math.min(RUN_SPEED, p.vx));
+    p.vx = Math.max(-cap, Math.min(cap, p.vx));
   }
 
   // --- Down jump (MSW DownJump): Down+jump on a thin platform drops
@@ -179,6 +188,20 @@ export function stepPlayer(p, map, input, dt, events) {
       p.vy = 0;
       p.dropThrough = plat; // ignored by landing until we're clearly below
       events?.emit('player:downjump', {});
+    }
+  }
+
+  // --- Flash Jump (M11): Alt mid-air with the skill learned + MP — a
+  // horizontal burst, NOT a second jump (MAX_JUMPS stays 1). ---
+  if (!jumpConsumed && input.jump && !p.grounded && !p.climbing) {
+    jumpConsumed = true;
+    const fj = flashJumpParams(p);
+    if (fj) {
+      const dir = p.facing === 'right' ? 1 : -1;
+      p.vx = dir * fj.vx;
+      p.vy = Math.max(p.vy, fj.vy);
+      p.mp -= fj.mpCost;
+      events?.emit('skill:flashjump', { mp: p.mp });
     }
   }
 

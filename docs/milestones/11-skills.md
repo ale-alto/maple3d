@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented 2026-07-19 — 5 automated AC green (suite 76/76), live-verified; awaiting user playtest (skill feel)
 
 ## Objective
 
@@ -30,11 +30,11 @@ The assassin kit grows up: a small skill system with skill points from level-ups
 
 ## Acceptance criteria
 
-- [ ] Level-ups grant skill points; K assigns them — test: `tests/e2e/skills.spec.js::skill points and assignment`
-- [ ] Lucky Seven throws a 2-star volley, spends MP + 2 stars, out-damages basic per volley — test: `::lucky seven volley`
-- [ ] Without MP (or the skill), attacks stay basic — test: `::mp gates skills`
-- [ ] Flash Jump: Alt mid-air with the skill learned + MP bursts horizontally; without it, mid-air Alt still does nothing — test: `::flash jump`
-- [ ] Save v4 round-trips skills/MP — test: `::skills persist`
+- [x] Level-ups grant skill points; K assigns them — `tests/e2e/skills.spec.js::skill points and assignment` (+3 SP/level, 1 SP/skill level)
+- [x] Lucky Seven throws a 2-star volley, spends MP + 2 stars, out-damages basic — `::lucky seven volley` (per-star = attack × mult, L1 0.7 → L5 1.0)
+- [x] Without MP (or the skill), attacks stay basic — `::mp gates skills` (Shift falls back to a single throw)
+- [x] Flash Jump: Alt mid-air, skill + MP gated — `::flash jump` (vx 9 burst; unskilled mid-air Alt still inert, single-jump rule re-asserted)
+- [x] Save v4 round-trips skills/MP — `::skills persist` (v3 migrates with retroactive SP)
 - [ ] Skill feel (L7 punch, flash jump rhythm — the assassin identity) — verified by user playtest
 
 ## Exit condition
@@ -48,3 +48,4 @@ Red-then-green per AC. Flash Jump spec explicitly re-asserts the single-jump rul
 ## Notes
 
 - Promoted from backlog #4 (2026-07-14, user request). Flash jump returning as a SKILL is the resolution of the double-jump removal — authentic on both ends.
+- As built: `src/sim/skills.js` (assignSkillPoint, stepMp regen 1.5/s, luckySevenParams/flashJumpParams affordability), SKILLS/SP_PER_LEVEL/MP_* in constants; L7 on Shift inside stepCombat (volley loop, star.mult, falls back to basic); FJ inside stepPlayer (before the grounded-jump block; air-steer cap now preserves super-speed instead of snapping to RUN_SPEED); level-up = +3 SP + full MP restore; save v4 (v3 migrates with retroactive SP = 3×(level−1)); `src/ui/skillPanel.js` (K, classic window); __test.setMp + setXp grants retroactive SP/MP. Max L7 star = 36 ≤ server clamp 40 — unchanged.

@@ -11,6 +11,8 @@ let lootHeld = false; // Z: held-to-loot (vacuums drops you walk over)
 let lootQueue = 0; // Z: edge, so a quick tap still registers between steps
 let potionQueue = 0; // C
 let muteQueue = 0; // M
+let skillHeld = false; // Shift: Lucky Seven (M11), held = auto-volley
+let skillQueue = 0;
 
 const KEYS = {
   ArrowLeft: 'left',
@@ -49,6 +51,10 @@ export function initKeyboard(target) {
     } else if (e.key === 'm' || e.key === 'M') {
       if (!e.repeat) muteQueue += 1;
       e.preventDefault();
+    } else if (e.key === 'Shift') {
+      if (!e.repeat) skillQueue += 1;
+      skillHeld = true;
+      e.preventDefault();
     }
   });
 
@@ -65,6 +71,9 @@ export function initKeyboard(target) {
     } else if (e.key === 'z' || e.key === 'Z') {
       lootHeld = false;
       e.preventDefault();
+    } else if (e.key === 'Shift') {
+      skillHeld = false;
+      e.preventDefault();
     }
   });
 
@@ -79,6 +88,8 @@ export function initKeyboard(target) {
     potionQueue = 0;
     muteQueue = 0;
     upPressQueue = 0;
+    skillHeld = false;
+    skillQueue = 0;
   });
 }
 
@@ -97,5 +108,7 @@ export function readInput() {
   if (mute) muteQueue -= 1;
   const upPressed = upPressQueue > 0;
   if (upPressed) upPressQueue -= 1;
-  return { ...held, jump, attack, loot, potion, mute, upPressed };
+  const skill = skillHeld || skillQueue > 0;
+  if (skillQueue > 0) skillQueue -= 1;
+  return { ...held, jump, attack, loot, potion, mute, upPressed, skill };
 }

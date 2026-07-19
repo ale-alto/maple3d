@@ -166,6 +166,32 @@ export const GEAR_TIERS = {
 export const BAG_MAX = 24;
 export const STARTER_CLAW_PRICE = 80; // Nara's mesos sink (tier-1, no roll)
 
+// --- Skills (M11) --- Classic assassin kit: +3 SP per level-up, 1 SP per
+// skill level. Lucky Seven: 2-star volley, per-star damage = attack * mult.
+// Flash Jump: Alt mid-air horizontal burst, MP cost falls as it levels
+// (single jump stays the rule — this is a skill, not a second jump).
+export const SP_PER_LEVEL = 3;
+export const PLAYER_MAX_MP = 30;
+export const MP_PER_LEVEL = 5;
+export const MP_REGEN_PER_SEC = 1.5;
+export const SKILLS = {
+  luckySeven: {
+    name: 'Lucky Seven',
+    maxLevel: 5,
+    mpCost: 8,
+    mult: [0.7, 0.775, 0.85, 0.925, 1.0],
+    desc: 'Throw 2 stars at the locked target (Shift)',
+  },
+  flashJump: {
+    name: 'Flash Jump',
+    maxLevel: 5,
+    mpCost: [13, 12, 11, 10, 9],
+    vx: 9,
+    vy: 4,
+    desc: 'Alt mid-air: burst forward',
+  },
+};
+
 // --- Models (M08, KayKit CC0 packs) ---
 // Side-view yaw: ±(90° − tilt) so characters face their run direction
 // with a slight turn toward the camera (Maple 3/4 charm).

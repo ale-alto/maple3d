@@ -419,6 +419,102 @@ body {
   color: #55648c;
 }
 
+/* --- Skill panel (M11) — classic SKILLS window --- */
+#skill-panel {
+  position: fixed;
+  left: 16px;
+  top: 64px;
+  width: 260px;
+  padding: 0 0 10px;
+  background: linear-gradient(#eef1f8, #d7dce9);
+  border: 1px solid #7a86a5;
+  border-radius: 8px;
+  box-shadow: 0 6px 22px rgba(10, 16, 40, 0.45);
+  font-family: Tahoma, Verdana, sans-serif;
+  font-size: 10px;
+  color: #223055;
+  user-select: none;
+  z-index: 20;
+}
+.skill-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: linear-gradient(#5a6da8, #33427a);
+  border-radius: 7px 7px 0 0;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 11px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+#skill-close {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #7a1206;
+  border-radius: 4px;
+  background: linear-gradient(#ff7a5c, #b01c0e);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+.skill-sp-row {
+  padding: 7px 10px 3px;
+  font-weight: 700;
+}
+#skill-sp {
+  color: #7a6300;
+  font-weight: 800;
+}
+.skill-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 5px 10px 0;
+  padding: 6px 8px;
+  background: linear-gradient(#ffffff, #e4e9f4);
+  border: 1px solid #8a94ad;
+  border-radius: 6px;
+}
+.skill-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.skill-name {
+  font-weight: 800;
+}
+.skill-desc {
+  font-size: 8.5px;
+  color: #55648c;
+}
+.skill-level {
+  font-weight: 800;
+  color: #33427a;
+  font-variant-numeric: tabular-nums;
+}
+.skill-add {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #145c1e;
+  border-radius: 5px;
+  background: linear-gradient(#7ede8e, #35b34a 50%, #1e8630);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+.skill-add:disabled {
+  filter: grayscale(1);
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* --- Shop panel (M04) --- */
 #shop-panel {
   position: fixed;

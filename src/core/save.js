@@ -7,6 +7,9 @@ const KEY = 'maple3d-save';
 // v1 (M03): { v, player, inventory }
 // v2 (M04): + mapId
 // v3 (M10): + player.equipment {weapon, armor}, inventory.bag []
+// v4 (M11): + player.mp/sp/skills (retroactive SP for pre-skill saves)
+import { SP_PER_LEVEL } from './constants.js';
+
 export function loadSave() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -21,7 +24,19 @@ export function loadSave() {
         inventory: { ...data.inventory, bag: [] },
       };
     }
-    if (data.v !== 3) return null;
+    if (data.v === 3) {
+      data = {
+        ...data,
+        v: 4,
+        player: {
+          ...data.player,
+          mp: null, // null = fill to max on load
+          sp: SP_PER_LEVEL * ((data.player.level ?? 1) - 1), // retroactive
+          skills: { luckySeven: 0, flashJump: 0 },
+        },
+      };
+    }
+    if (data.v !== 4) return null;
     return data;
   } catch {
     return null;
@@ -34,7 +49,7 @@ export function persist(gameState) {
     localStorage.setItem(
       KEY,
       JSON.stringify({
-        v: 3,
+        v: 4,
         mapId: gameState.mapId,
         player: {
           level: p.level,
@@ -44,6 +59,9 @@ export function persist(gameState) {
           y: p.y,
           facing: p.facing,
           equipment: p.equipment,
+          mp: Math.round(p.mp),
+          sp: p.sp,
+          skills: p.skills,
         },
         inventory: gameState.inventory,
       }),

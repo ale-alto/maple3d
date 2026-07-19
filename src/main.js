@@ -10,6 +10,7 @@ import {
   CAMERA_SWING_MS,
   CAMERA_SWING_ZOOM,
   CAMERA_Z,
+  SP_PER_LEVEL,
 } from './core/constants.js';
 import { eventBus } from './core/eventBus.js';
 import { gameState } from './core/gameState.js';
@@ -21,6 +22,7 @@ import { createCombatState, stepCombat, stepCosmeticStars, playerAttack } from '
 import { grantXp, usePotion, xpToNext, maxHpForLevel } from './sim/progression.js';
 import { createLootState, spawnDrops, spawnDropsFromItems, stepLoot } from './sim/loot.js';
 import { makeGear, armorDefense } from './sim/items.js';
+import { stepMp, maxMpForLevel } from './sim/skills.js';
 import { createNetwork } from './net/networkManager.js';
 import { createAudioEngine } from './audio/engine.js';
 import { createAudioSettings } from './ui/audioSettings.js';
@@ -36,6 +38,7 @@ import { createCameraRig } from './render/cameraRig.js';
 import { createHud } from './ui/hud.js';
 import { createShopPanel } from './ui/shopPanel.js';
 import { createInventoryPanel } from './ui/inventoryPanel.js';
+import { createSkillPanel } from './ui/skillPanel.js';
 import { createChatInput } from './ui/chat.js';
 
 const canvas = document.querySelector('#game');
@@ -66,6 +69,10 @@ if (saved) {
   p.facing = saved.player.facing;
   p.grounded = false; // physics settles onto whatever is at the saved spot
   p.equipment = saved.player.equipment ?? { weapon: null, armor: null }; // v3 gear
+  p.maxMp = maxMpForLevel(p.level); // v4 skills
+  p.mp = saved.player.mp == null ? p.maxMp : Math.min(saved.player.mp, p.maxMp);
+  p.sp = saved.player.sp ?? 0;
+  p.skills = { luckySeven: 0, flashJump: 0, ...saved.player.skills };
   // Merge saved inventory; ensure `stars` exists for pre-ammo (v1/early-v2) saves.
   gameState.inventory = { ...gameState.inventory, ...saved.inventory };
   if (typeof gameState.inventory.stars !== 'number') gameState.inventory.stars = STARTING_STARS;
@@ -97,6 +104,7 @@ let cameraRig = createCameraRig(camera, gameState.map);
 const hud = createHud(eventBus);
 const shopPanel = createShopPanel(gameState, eventBus);
 createInventoryPanel(gameState, eventBus);
+createSkillPanel(gameState, eventBus);
 initKeyboard(window);
 
 // === Audio (M07) ===
@@ -201,7 +209,7 @@ eventBus.on('player:died', () => {
   pendingDeathRespawn = true;
 });
 // Saves: fire on every progression-relevant event + on leaving.
-for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned', 'shop:bought', 'gear:equipped']) {
+for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned', 'shop:bought', 'gear:equipped', 'skill:assigned']) {
   eventBus.on(ev, () => persist(gameState));
 }
 window.addEventListener('beforeunload', () => persist(gameState));
@@ -225,6 +233,7 @@ function step() {
   if (gameState.shopOpen && (input.left || input.right || input.jump)) shopPanel.close();
 
   stepPlayer(gameState.player, gameState.map, input, dt, eventBus);
+  stepMp(gameState.player, dt); // slow MP regen (M11)
 
   if (net.connected) {
     // Server-owned mobs: apply the latest room snapshot; between
@@ -365,6 +374,10 @@ window.render_game_to_text = () => {
       attack: playerAttack(p),
       defense: armorDefense(p.equipment),
       equipment: p.equipment,
+      mp: Math.floor(p.mp),
+      maxMp: p.maxMp,
+      sp: p.sp,
+      skills: { ...p.skills },
     },
     inventory: { ...gameState.inventory },
     drops: gameState.loot.drops.map((d) => ({
@@ -460,7 +473,13 @@ window.__test = {
     p.xp = xp;
     p.maxHp = maxHpForLevel(level);
     p.hp = p.maxHp;
+    p.maxMp = maxMpForLevel(level);
+    p.mp = p.maxMp;
+    p.sp = SP_PER_LEVEL * (level - 1); // retroactive, like the v3→v4 migration
     eventBus.emit('player:xp', { amount: 0 }); // triggers a save
+  },
+  setMp(n) {
+    gameState.player.mp = n;
   },
   gotoMap(mapId) {
     changeMap(mapId, 'spawn');
