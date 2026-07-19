@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-**M01–M08 DONE. M09 DEPLOYED** (live: https://ale-alto.github.io/maple3d/, friend-playtest pending). **M10 gear IMPLEMENTED 2026-07-19** — suite 71/71, live-verified, awaiting user playtest. Next: M11 skills.
+**M01–M10 DONE** (M10 user-approved 2026-07-19; live: https://ale-alto.github.io/maple3d/ — M09 friend-playtest still pending informally). Next: **M11 skills** (the last planned milestone).
 
 ## Last action
 
@@ -29,7 +29,7 @@ M08 implemented on the **free path** (user asked "is there a free model/animatio
 
 ## Next step
 
-Gates open: (a) M09 friend playtest, (b) M10 gear-feel playtest (grind for a drop, I to equip, hit harder, reload keeps it). On approval → **M11 skills** (skill points, MP spend/regen, Lucky Seven 2-star volley, Flash Jump = Alt mid-air MP-gated, K panel, save v4 — builds on M10's derived-stat layer).
+Start **M11 skills** on user "go" (docs/milestones/11-skills.md): skill points, MP spend/regen, Lucky Seven 2-star volley, Flash Jump = Alt mid-air MP-gated (the authentic return of the removed double jump), K panel, save v4 — builds on M10's derived-stat layer.
 
 **M10 as-built** (details in docs/milestones/10-gear-itemization.md Notes): src/sim/items.js pure gear module; GEAR_TIERS (Bronze/Steel/Dark Claw, Cloth/Leather/Shadow Garb; stat rolls at drop); MOB_TYPES gearChance/gearTierMax (3%/4.5%/6%, tier caps 1/2/3); playerAttack = level curve + weapon; armor soak min 1; rollDrops appends gear (server rolls it too — same sim import); pickup → inventory.bag (BAG_MAX 24, full bag refuses); save v3 migrates v2; #inv-panel (I key, classic window styling); Nara sells Bronze Claw 80m; HUD ATT chip; __test.grantGear(slot,tier) max-roll hook (emits loot:picked so the open panel repaints); persist on gear:equipped. Push to master auto-deploys the live site.
 

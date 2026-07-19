@@ -2,7 +2,7 @@
 
 ## Status
 
-implemented 2026-07-19 — 4 automated AC green (suite 71/71), live-verified; awaiting user playtest (itemization feel)
+done — user-approved 2026-07-19 (suite 71/71, live-verified)
 
 ## Objective
 
@@ -35,7 +35,7 @@ Turn the M03 "rare gear stub" into real itemization: mobs rarely drop gear (claw
 - [x] Equipping a claw raises star damage — `::weapon attack applies` (payload player.attack; verified vs actual mob hp delta)
 - [x] Armor reduces contact damage — `::defense applies` (soak = max(1, dmg − defense))
 - [x] I opens the bag; equip/swap/unequip works; save v3 round-trips — `::equip ui`, `::equipment persists`
-- [ ] Itemization feel (drop excitement, stat pacing) — verified by user playtest
+- [x] Itemization feel (drop excitement, stat pacing) — user-approved 2026-07-19
 
 ## Exit condition
 
