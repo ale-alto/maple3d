@@ -12,7 +12,7 @@ development
 
 ## Current milestone
 
-M01–M07 done (M07 user-approved 2026-07-18). **M08 (real chibi models) implementation COMPLETE — suite 66/66, live-verified — awaiting user look-playtest to close.** Then: M09 deploy → M10 gear → M11 skills.
+**M01–M08 DONE (M08 user-approved 2026-07-18).** Next: M09 deploy → M10 gear → M11 skills.
 
 ## Last action
 
@@ -29,7 +29,9 @@ M08 implemented on the **free path** (user asked "is there a free model/animatio
 
 ## Next step
 
-**Gate: user playtests the look** (chibi proportions, animation feel — the one unticked AC). On approval: mark M08 done, then M09 deploy (partykit login `--provider github` — clerk flow dead; client hosting; VITE_MP_HOST; multiplayer-default decision backlog #12).
+**M09 deploy**: partykit login `--provider github` (clerk flow dead — NEEDS the user present for the GitHub handshake), deploy party server, host the client (VITE_MP_HOST for the prod host), decide multiplayer-default vs ?mp=1 (backlog #12).
+
+Post-approval M08 polish shipped same day (all live-verified, suite 66/66 each): billboard mob hp bars (counter-rotate vs facing yaw), hp bar drains to 0 on the killing blow, classic v62 status bar HUD (navy dock, LV. plate, Rogue+name, HP[x/y] in-bar values, EXP n[pct%], SHOP/SOUND buttons, "To All" persistent chat strip — chat.js reworked, keyboard ignores focused inputs), KayKit dungeon loot props (coin/stack tiers by amount, corked potion bottle, public/models/loot/, assetLoader.loadProp with per-instance materials for owner-dim), procedural shuriken (src/render/shuriken.js, shared ExtrudeGeometry) for star projectile + starPack drops.
 
 ## Blockers
 

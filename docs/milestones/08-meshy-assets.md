@@ -2,7 +2,7 @@
 
 ## Status
 
-in progress — implementation complete, all 4 automated AC green (suite 66/66), awaiting user look-playtest
+done — user-approved 2026-07-18 after playtest-driven polish (billboard hp bars, kill-drain to 0, classic v62 status bar HUD, KayKit loot props + procedural shuriken)
 
 ## Objective
 
@@ -37,7 +37,7 @@ The ADR-0002 payoff: replace the primitive placeholders with rigged, animated ch
 - [x] Each mob type renders its own model with walk/die animations — test: `tests/e2e/assets.spec.js::mob models`
 - [x] Fallback: with models disabled (`?nomodels=1`), primitives render and the console stays clean — test: `tests/e2e/assets.spec.js::primitive fallback`
 - [x] Frame rate holds — draw calls < 120 via renderer.info in payload — test: `tests/e2e/assets.spec.js::draw calls within budget` (live: 43 calls / ~17k triangles on field1)
-- [ ] The look lands (chibi proportions, palette, animation feel) — verified by user playtest
+- [x] The look lands (chibi proportions, palette, animation feel) — verified by user playtest ("ok", 2026-07-18)
 
 ## Exit condition
 
