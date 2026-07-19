@@ -14,79 +14,212 @@ body {
   height: 100vh;
 }
 
-/* --- HUD (plain DOM, M03) --- */
+/* --- HUD: classic pre-Big-Bang MapleStory status bar (M03, reskinned) --- */
 #hud {
   position: fixed;
-  left: 50%;
-  bottom: 12px;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 46px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 8px 14px;
-  background: rgba(20, 24, 38, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 10px;
-  font-family: system-ui, sans-serif;
-  font-size: 12px;
-  color: #e8ecf5;
+  gap: 12px;
+  padding: 0 10px;
+  background: linear-gradient(#c3c7d0, #9599a3 45%, #7e828c 90%, #6d717b);
+  border-top: 1px solid #40434b;
+  box-shadow: inset 0 2px 0 #e6e8ee, inset 0 1px 0 #ffffff;
+  font-family: Tahoma, Verdana, sans-serif;
+  font-size: 10px;
+  color: #1c1e24;
   user-select: none;
   z-index: 10;
 }
 #hud-level {
-  font-weight: 700;
-  font-size: 14px;
-  color: #ffd24d;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 10px 5px;
+  background: linear-gradient(#3a4a7c, #26335c 55%, #1b2545);
+  border: 1px solid #121a33;
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
   white-space: nowrap;
+}
+.hud-lv-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #aebbdd;
+}
+#hud-lv-num {
+  font-size: 17px;
+  font-weight: 800;
+  font-family: Verdana, Tahoma, sans-serif;
+  color: #ffc82e;
+  text-shadow: 0 1px 0 #5c3d00, 0 0 4px rgba(255, 200, 46, 0.45);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 .hud-bars {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
 }
 .hud-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.hud-bar.exp {
+  flex: 1.4;
 }
 .hud-label {
-  width: 20px;
-  font-weight: 600;
-  opacity: 0.85;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
 }
+.hud-label.hp { color: #a01620; }
+.hud-label.mp { color: #1d3fa0; }
+.hud-label.exp { color: #7a6300; }
 .hud-track {
-  width: 170px;
-  height: 9px;
-  background: rgba(0, 0, 0, 0.55);
-  border-radius: 5px;
+  position: relative;
+  flex: 1;
+  min-width: 60px;
+  height: 14px;
+  background: linear-gradient(#41444d, #565a64);
+  border: 1px solid #33363e;
+  border-radius: 7px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.5);
   overflow: hidden;
 }
 .hud-fill {
   height: 100%;
-  border-radius: 5px;
+  border-radius: 6px 0 0 6px;
   transition: width 120ms linear;
 }
 .hud-fill.hp {
-  background: #ff5f6d;
+  background: linear-gradient(#ff9aa2, #e8323f 50%, #b3121f);
+}
+.hud-fill.hp.low {
+  animation: hud-hp-blink 0.7s steps(2, start) infinite;
+}
+@keyframes hud-hp-blink {
+  0% { filter: brightness(1); }
+  100% { filter: brightness(1.9); }
 }
 .hud-fill.mp {
-  background: #5f8dff;
+  background: linear-gradient(#9db8ff, #3f6ee0 50%, #27479f);
 }
 .hud-fill.xp {
-  background: #ffd24d;
+  background: linear-gradient(#fff0a8, #f4c520 50%, #c79f0a);
+}
+/* Segment ticks over the fill, like the classic notched bars. */
+.hud-notches {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 13px,
+    rgba(0, 0, 0, 0.28) 13px,
+    rgba(0, 0, 0, 0.28) 14px
+  );
+  pointer-events: none;
 }
 .hud-value {
-  min-width: 52px;
-  text-align: right;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.85), 0 0 2px rgba(0, 0, 0, 0.6);
   font-variant-numeric: tabular-nums;
-  opacity: 0.9;
+  white-space: nowrap;
+  pointer-events: none;
 }
 #hud-items {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   white-space: nowrap;
-  opacity: 0.95;
 }
-.hud-hint {
-  opacity: 0.55;
+.hud-slot {
+  position: relative;
+  min-width: 34px;
+  height: 32px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(#84878f, #6d7078);
+  border: 1px solid #4c4f57;
+  border-radius: 5px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.hud-slot-key {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  font-size: 8px;
+  font-weight: 700;
+  color: #e8eaef;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+.hud-slot-count {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+.hud-slot-icon.star {
+  font-size: 16px;
+  color: #dde2ec;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+  transform: translateY(-3px);
+}
+.hud-slot-icon.potion {
+  width: 11px;
+  height: 15px;
+  transform: translateY(-2px);
+  background: linear-gradient(#ffb35c, #e86a12 60%, #b34c05);
+  border: 1px solid #7a3403;
+  border-radius: 4px 4px 5px 5px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.hud-slot-icon.potion::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  width: 5px;
+  height: 4px;
+  background: #caa66e;
+  border: 1px solid #7a3403;
+  border-radius: 2px;
+  transform: translate(0, -4px);
+}
+.hud-slot.mesos {
+  min-width: 48px;
+}
+.hud-slot-icon.coin {
+  width: 13px;
+  height: 13px;
+  margin-right: 14px;
+  transform: translateY(-2px);
+  background: radial-gradient(circle at 35% 30%, #ffe98c, #f4c520 55%, #a87f06);
+  border: 1px solid #7a5c04;
+  border-radius: 50%;
+  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.3);
 }
 
 /* --- Shop panel (M04) --- */
@@ -186,12 +319,11 @@ body {
   opacity: 0.55;
 }
 
-/* --- Chat input (M06) --- */
+/* --- Chat input (M06) — bottom-left above the status bar, classic spot --- */
 #chat-input {
   position: fixed;
-  left: 50%;
-  bottom: 86px;
-  transform: translateX(-50%);
+  left: 8px;
+  bottom: 52px;
   width: 320px;
   padding: 8px 12px;
   border: 1px solid rgba(255, 255, 255, 0.25);
