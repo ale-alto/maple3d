@@ -13,11 +13,14 @@ export const modelsEnabled = !new URLSearchParams(window.location.search).has('n
 
 function load(path) {
   if (!cache.has(path)) {
+    // Resolve '/models/…' against the deploy base (GitHub Pages serves
+    // the app under /<repo>/, not the domain root).
+    const url = import.meta.env.BASE_URL + path.replace(/^\//, '');
     cache.set(
       path,
       new Promise((resolve, reject) => {
-        loader.load(path, resolve, undefined, (err) =>
-          reject(new Error(`model load failed: ${path} — ${err?.message ?? err}`)),
+        loader.load(url, resolve, undefined, (err) =>
+          reject(new Error(`model load failed: ${url} — ${err?.message ?? err}`)),
         );
       }),
     );

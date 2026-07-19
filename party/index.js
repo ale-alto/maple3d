@@ -1,7 +1,11 @@
-// PartyKit room server — one room per map (room.id === mapId).
-// Runs the SAME headless mob sim as the client (src/sim is pure by rule,
-// which is exactly what makes this import legal). Owns: mob state,
-// presence fanout, per-killer loot rolls, chat relay.
+// Room server — one Durable Object per map (server name === mapId).
+// Ported from PartyKit to partyserver (Cloudflare's successor) when the
+// hosted partykit.dev platform hit its global domain limit; runs in the
+// user's own Cloudflare account via wrangler. Same headless mob sim as
+// the client (src/sim is pure by rule, which makes this import legal).
+// Owns: mob state, presence fanout, per-killer loot rolls, chat relay.
+
+import { Server, routePartykitRequest } from 'partyserver';
 
 import { maps } from '../src/sim/maps/index.js';
 import { createMobsState, stepMobs, stepMobProjectiles, damageMob } from '../src/sim/mobs.js';
@@ -15,16 +19,17 @@ const MAX_DAMAGE = 40; // loose validation: > any legit star hit
 const MAX_CHAT = 120;
 const MAX_MSG_BYTES = 2048;
 
-export default class MapRoom {
-  constructor(room) {
-    this.room = room;
-    // Room id is "<mapId>" or "<mapId>~<instance>" (tests isolate rooms
-    // with a suffix). Unknown map (e.g. the health probe): peers-only.
-    this.mapId = room.id.split('~')[0];
+// Binding name "Main" kebab-cases to URL party "main" — PartySocket's
+// default, so client URLs (/parties/main/<room>) are unchanged.
+export class Main extends Server {
+  onStart() {
+    // Server name is "<mapId>" or "<mapId>~<instance>" (tests isolate
+    // rooms with a suffix). Unknown map (e.g. the health probe): peers-only.
+    this.mapId = this.name.split('~')[0];
     this.map = maps[this.mapId] ?? null;
     this.mobs = this.map ? createMobsState(this.map) : null;
     this.peers = new Map(); // conn.id -> {id, name, x, y, facing, state, level}
-    this.rand = mulberry32(LOOT_SEED ^ hashCode(room.id));
+    this.rand = mulberry32(LOOT_SEED ^ hashCode(this.name));
     this.nextDropId = 1;
     this.interval = null;
     this.tickCount = 0;
@@ -33,9 +38,9 @@ export default class MapRoom {
     this.bus = {
       emit: (event, payload) => {
         if (event === 'mob:hit') {
-          this.broadcast({ t: 'mob-hit', mobId: payload.id, amount: payload.amount, x: payload.x, y: payload.y, attackerId: this.attacker });
+          this.send({ t: 'mob-hit', mobId: payload.id, amount: payload.amount, x: payload.x, y: payload.y, attackerId: this.attacker });
         } else if (event === 'mob:died') {
-          this.broadcast({ t: 'mob-died', mobId: payload.id, x: payload.x, y: payload.y, type: payload.type, killerId: this.attacker });
+          this.send({ t: 'mob-died', mobId: payload.id, x: payload.x, y: payload.y, type: payload.type, killerId: this.attacker });
           // Classic MS loot rule: EVERYONE sees the drops; only the killer
           // may pick them up. Server-assigned dropIds give every client the
           // same identity, so pickups can be removed everywhere.
@@ -44,15 +49,15 @@ export default class MapRoom {
               ...item,
               dropId: `d${this.nextDropId++}`,
             }));
-            this.broadcast({ t: 'loot', items, x: payload.x, y: payload.y, ownerId: this.attacker });
+            this.send({ t: 'loot', items, x: payload.x, y: payload.y, ownerId: this.attacker });
           }
         }
       },
     };
   }
 
-  broadcast(obj, excludeIds) {
-    this.room.broadcast(JSON.stringify(obj), excludeIds);
+  send(obj, excludeIds) {
+    this.broadcast(JSON.stringify(obj), excludeIds);
   }
 
   startTicking() {
@@ -74,15 +79,15 @@ export default class MapRoom {
     stepMobProjectiles(this.mobs, this.map, dt);
     this.tickCount += 1;
     if (this.tickCount % SNAPSHOT_EVERY === 0) {
-      this.broadcast({ t: 'mobs', mobs: this.mobs.mobs, projectiles: this.mobs.projectiles });
+      this.send({ t: 'mobs', mobs: this.mobs.mobs, projectiles: this.mobs.projectiles });
     }
     // Ghost-peer prune (1 Hz): hard-killed sockets may never fire onClose.
     if (this.tickCount % 20 === 0) {
-      const live = new Set([...this.room.getConnections()].map((c) => c.id));
+      const live = new Set([...this.getConnections()].map((c) => c.id));
       for (const id of this.peers.keys()) {
         if (!live.has(id)) {
           this.peers.delete(id);
-          this.broadcast({ t: 'peer-left', id });
+          this.send({ t: 'peer-left', id });
         }
       }
       if (this.peers.size === 0) this.onEmpty();
@@ -103,11 +108,12 @@ export default class MapRoom {
         projectiles: this.mobs ? this.mobs.projectiles : [],
       }),
     );
-    this.broadcast({ t: 'peer', p: this.peers.get(conn.id) }, [conn.id]);
+    this.send({ t: 'peer', p: this.peers.get(conn.id) }, [conn.id]);
     this.startTicking();
   }
 
-  onMessage(raw, sender) {
+  // partyserver argument order: (connection, message).
+  onMessage(sender, raw) {
     if (typeof raw !== 'string' || raw.length > MAX_MSG_BYTES) return;
     let msg;
     try {
@@ -124,7 +130,7 @@ export default class MapRoom {
       peer.facing = msg.p.facing === 'left' ? 'left' : 'right';
       peer.state = String(msg.p.state ?? 'idle').slice(0, 16);
       peer.level = Number(msg.p.level) || 1;
-      this.broadcast({ t: 'peer', p: peer }, [sender.id]);
+      this.send({ t: 'peer', p: peer }, [sender.id]);
     } else if (msg.t === 'hit' && this.mobs) {
       const mob = this.mobs.mobs.find((m) => m.id === msg.mobId);
       const damage = Math.min(Math.max(1, Number(msg.damage) || 0), MAX_DAMAGE);
@@ -135,14 +141,14 @@ export default class MapRoom {
       }
     } else if (msg.t === 'chat') {
       const text = String(msg.text ?? '').slice(0, MAX_CHAT);
-      if (text) this.broadcast({ t: 'chat', id: sender.id, text });
+      if (text) this.send({ t: 'chat', id: sender.id, text });
     } else if (msg.t === 'loot-picked' && msg.dropId) {
       // Relay removal to everyone else (sender already removed locally).
-      this.broadcast({ t: 'loot-picked', dropId: String(msg.dropId) }, [sender.id]);
+      this.send({ t: 'loot-picked', dropId: String(msg.dropId) }, [sender.id]);
     } else if (msg.t === 'throw' && msg.star) {
       // Cosmetic relay: everyone sees the throw; damage still arrives
       // only via validated 'hit' messages.
-      this.broadcast(
+      this.send(
         {
           t: 'throw',
           id: sender.id,
@@ -160,7 +166,7 @@ export default class MapRoom {
 
   onClose(conn) {
     this.peers.delete(conn.id);
-    this.broadcast({ t: 'peer-left', id: conn.id });
+    this.send({ t: 'peer-left', id: conn.id });
     if (this.peers.size === 0) this.onEmpty();
   }
 
@@ -176,6 +182,12 @@ export default class MapRoom {
     return new Response('ok', { status: 200 });
   }
 }
+
+export default {
+  fetch(request, env) {
+    return routePartykitRequest(request, env) ?? new Response('Not found', { status: 404 });
+  },
+};
 
 function hashCode(str) {
   let h = 0;

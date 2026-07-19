@@ -29,3 +29,7 @@ playwright-report/
 *.njsproj
 *.sln
 *.sw?
+
+# Wrangler dev state
+.wrangler/
+.env

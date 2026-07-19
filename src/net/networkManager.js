@@ -11,7 +11,11 @@ const LEVELUP_SHOW_MS = 2000;
 
 export function createNetwork(eventBus) {
   const params = new URLSearchParams(window.location.search);
-  const enabled = params.has('mp');
+  // Deployed builds set VITE_MP_DEFAULT=1 → shared world by default,
+  // with ?mp=0 as the solo escape hatch. Dev/tests stay opt-in (?mp=1).
+  const enabled =
+    params.get('mp') !== '0' &&
+    (params.has('mp') || import.meta.env.VITE_MP_DEFAULT === '1');
   const host =
     params.get('mphost') ||
     import.meta.env.VITE_MP_HOST ||

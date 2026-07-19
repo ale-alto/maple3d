@@ -209,7 +209,7 @@ export function createAudioEngine(eventBus) {
     let fileSrc = null;
 
     try {
-      const res = await fetch(`/audio/${mapId}.mp3`);
+      const res = await fetch(`${import.meta.env.BASE_URL}audio/${mapId}.mp3`);
       if (res.ok && res.headers.get('content-type')?.includes('audio')) {
         const buf = await ctx.decodeAudioData(await res.arrayBuffer());
         if (stopped) return;

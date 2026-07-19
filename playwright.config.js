@@ -35,7 +35,7 @@ export default defineConfig({
       timeout: 30000,
     },
     {
-      command: 'npx partykit dev --port 1999',
+      command: 'npx wrangler dev --port 1999',
       url: 'http://127.0.0.1:1999/parties/main/health',
       reuseExistingServer: !process.env.CI,
       timeout: 60000,
