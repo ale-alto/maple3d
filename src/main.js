@@ -104,6 +104,14 @@ eventBus.on('map:changed', ({ mapId }) => audio.setBgm(mapId));
 const net = createNetwork(eventBus);
 const remoteView = new RemotePlayersView(scene);
 createChatInput((text) => net.sendChat(text));
+hud.setIdentity(net.name);
+
+// Status-bar SHOP button: same interaction as pressing Up near Nara.
+eventBus.on('ui:shopButton', () => {
+  const p = gameState.player;
+  const npc = gameState.map.npcs?.find((n) => Math.abs(n.x - p.x) <= NPC_RANGE);
+  if (npc) shopPanel.open();
+});
 const CHAT_SHOW_MS = 4000;
 let presenceStep = 0;
 

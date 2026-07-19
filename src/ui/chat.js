@@ -1,24 +1,26 @@
-// Minimal chat input: Enter opens the box, Enter sends, Escape closes.
-// The keyboard module ignores game keys while an input is focused.
+// Classic chat strip: "To All" channel chip + an always-visible input
+// docked above the status bar. Enter focuses it, Enter sends, Escape
+// blurs. The keyboard module ignores game keys while an input is focused.
 
 export function createChatInput(onSend) {
+  const bar = document.createElement('div');
+  bar.id = 'chat-bar';
+  bar.innerHTML = `<span id="chat-channel">To All</span>`;
+
   const input = document.createElement('input');
   input.id = 'chat-input';
   input.type = 'text';
   input.maxLength = 120;
-  input.placeholder = 'Say something… (Enter)';
-  input.style.display = 'none';
-  document.body.appendChild(input);
+  bar.appendChild(input);
+  document.body.appendChild(bar);
 
   function close() {
     input.value = '';
-    input.style.display = 'none';
     input.blur();
   }
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && input.style.display === 'none') {
-      input.style.display = 'block';
+    if (e.key === 'Enter' && document.activeElement !== input) {
       input.focus();
       e.preventDefault();
     }
