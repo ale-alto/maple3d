@@ -123,6 +123,31 @@ Per level 1–20: MP cost / damage% (× 2 stars):
 | Potions | 20 HP generic | real item values (Red 50, Orange 150 … verify table) |
 | Star ammo | generic stars | per-star-type WA (Subi etc. — verify) |
 
+## 9. Items (bbb equipment pages + meowdb item-db, read 2026-07-20)
+
+Our item NAMES stay original (skin is ours); the numbers below are the
+documented values our tiers map onto.
+
+- **Claw ladder** (WA, level req, stat reqs, shop buy price):
+  - Lv 10: WA 10, roll range 8–12, speed Normal(6), buy 3,000 (the shop
+    starter); Lv-10 alternates WA 12 (DEX 25/LUK 25) and WA 14, Fast(4)
+  - Lv 15: WA 12, roll 12–15, Fast, DEX 30/LUK 35, buy 20,000
+  - Lv 20: WA 14, roll 13–16, Fast, DEX 40/LUK 50, buy 30,000
+  - Lv 25: WA 16, roll 14–19, Faster(3), DEX 50/LUK 65, buy 60,000
+  - Lv 30: WA 18, roll 17–21, Fast, DEX 60/LUK 80, buy 250,000
+- **Throwing stars** (WA ladder): 15, 17, 19, 21, 23, 25 (knives), 27
+  (top tier; one aggregator lists 29 — meowdb's item db says W.ATK+27,
+  adopted). Top tier: 800 per slot, recharge 0.9 mesos/star. Basic tier:
+  recharge 0.3/star (cheapest); slot cap 500 UNVERIFIED (classic lore) —
+  flag in code. Stars are equipment: total WA = claw WA + star WA; no
+  claw equipped = star WA only.
+- **Potions** (heal, NPC buy price — sell is half, pattern verified on
+  Red 25/50, Blue 100/200, Mana Elixir 310/620):
+  - Red Potion: 50 HP, buy 50 · Orange: 150 HP, buy 160 (sell 80
+    verified) · White: 300 HP, buy 320 (sell 160 verified)
+  - Blue Potion: 100 MP, buy 200 · Mana Elixir: 300 MP, buy 620
+  - Slot cap 100 for all of the above.
+
 ## Sources
 
 - bbb.hidden-street.net (BeforeBigBang library) — L7 + FJ tables read 2026-07-19 (browser pane; 403s server fetches)
