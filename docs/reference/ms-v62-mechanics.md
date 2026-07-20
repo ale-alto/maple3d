@@ -80,12 +80,31 @@ Per level 1–20: MP cost / damage% (× 2 stars):
 - Distance grows with level ("jumps a certain distance" — distance values
   are not documented numerically; tune to feel, this is presentation).
 
-## 7. Rogue 1st-job skill set (for the jobs milestone — tables TO FETCH)
+## 7. Rogue 1st-job skill set (bbb tables, read 2026-07-20)
 
-Nimble Body (passive acc/avoid), Keen Eyes (star range), Disorder,
-Dark Sight, Double Stab (dagger), Lucky Seven. Assassin 2nd job: Claw
-Mastery, Claw Booster, Haste, Drain, Critical Throw. Fetch each table
-from bbb before implementing.
+- **Job advancement**: Beginner → Rogue at level 10 (DEX 25 requirement,
+  classic). One-time bonus roll (emulator changeJob, first-job case):
+  **HP +100–150, MP +25–50**, plus **+1 SP**. Beginners earn NO SP
+  (levels 1–9); +3 SP per level once job-advanced. 2nd-job advancement
+  (Assassin) rolls +200–250 — for M15.
+- **Nimble Body** (passive, master 20): accuracy +lv, avoid +lv.
+- **Keen Eyes** (passive, master 8, prereq Nimble Body 3): throwing
+  range +25 px per level (max +200). Unit conversion: our base star
+  range 7 units ≡ the ~400 px classic throw range → 1 unit = 57.14 px,
+  so +25 px = +0.4375 units/level (presentation conversion, not a
+  mechanic guess).
+- **Disorder** (supportive, master 20): MP 5,5,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,10;
+  enemy weapon attack AND weapon def −lv; duration (s):
+  7,9,11,13,15,20,22,24,29,31,33,38,40,42,47,49,51,56,58,60.
+  Cannot reapply while the target is already disordered.
+- **Dark Sight** (supportive, master 20, prereq Disorder 3): MP = 25 − lv;
+  duration = 10·lv seconds; speed penalty −30,−28,…,−8 (levels 1–12
+  = 32−2lv) then −7…−1 (13–19 = 20−lv), 0 at 20. Hidden: enemies
+  don't attack/aggro you, you can't attack; other movement free.
+- **Double Stab** is the dagger line — omitted until daggers exist
+  (documented deviation; assassins never used it).
+- Assassin 2nd job (M15, tables to fetch): Claw Mastery, Claw Booster,
+  Haste, Drain, Critical Throw.
 
 ## 8. Known gaps: current sim vs this spec
 
