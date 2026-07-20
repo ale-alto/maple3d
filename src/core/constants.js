@@ -151,6 +151,60 @@ export const MOB_TYPES = {
     scale: 1.1,
     ranged: { projectileSpeed: 6, cooldownMs: 2200, range: 6, damage: 8 },
   },
+  // --- M17 content tiers (our designs; the FORMULAS they feed are the
+  // sourced part). The 30→70 grind lives here. ---
+  stalker: {
+    maxHp: 420,
+    speed: 2.0,
+    aggroSpeed: 3.2,
+    contactDamage: 45,
+    xp: 120,
+    mesosMin: 40,
+    mesosMax: 80,
+    potionChance: 0.35,
+    starPackChance: 0.2,
+    gearChance: 0.05,
+    gearTierMax: 4,
+    level: 22,
+    avoid: 8,
+    color: 0x3d4a5c,
+    scale: 1.15,
+  },
+  ravager: {
+    maxHp: 1300,
+    speed: 0.9,
+    aggroSpeed: 2.4,
+    contactDamage: 95,
+    xp: 420,
+    mesosMin: 90,
+    mesosMax: 160,
+    potionChance: 0.4,
+    starPackChance: 0.25,
+    gearChance: 0.06,
+    gearTierMax: 5,
+    level: 38,
+    avoid: 14,
+    color: 0x7a2f2f,
+    scale: 1.5,
+  },
+  wraith: {
+    maxHp: 2900,
+    speed: 1.3,
+    aggroSpeed: 1.3,
+    contactDamage: 150,
+    xp: 1150,
+    mesosMin: 150,
+    mesosMax: 260,
+    potionChance: 0.45,
+    starPackChance: 0.3,
+    gearChance: 0.07,
+    gearTierMax: 5,
+    level: 52,
+    avoid: 22,
+    color: 0x4b3d6e,
+    scale: 1.3,
+    ranged: { projectileSpeed: 7.5, cooldownMs: 1900, range: 7, damage: 120 },
+  },
 };
 
 // --- Gear (M10; M14 real ladder — reference §9) --- Our names, the
@@ -162,6 +216,8 @@ export const GEAR_TIERS = {
     { id: 'claw1', name: 'Bronze Claw', tier: 1, wa: 10, roll: [8, 12], levelReq: 10, price: 3000 },
     { id: 'claw2', name: 'Steel Claw', tier: 2, wa: 12, roll: [12, 15], levelReq: 15, price: 20000 },
     { id: 'claw3', name: 'Dark Claw', tier: 3, wa: 14, roll: [13, 16], levelReq: 20, price: 30000 },
+    { id: 'claw4', name: 'Night Claw', tier: 4, wa: 16, roll: [14, 19], levelReq: 25, price: 60000 },
+    { id: 'claw5', name: 'Shadow Claw', tier: 5, wa: 18, roll: [17, 21], levelReq: 30, price: 250000 },
   ],
   armor: [
     { id: 'garb1', name: 'Cloth Garb', tier: 1, defense: 2, roll: 2 },
@@ -306,6 +362,18 @@ export const SKILLS = {
     job: 'hermit',
     desc: 'Passive: potions recover more',
   },
+  mesoUp: {
+    name: 'Meso Up',
+    maxLevel: 20,
+    job: 'hermit',
+    desc: 'Richer meso drops for a while (E)',
+  },
+  shadowWeb: {
+    name: 'Shadow Web',
+    maxLevel: 20,
+    job: 'hermit',
+    desc: 'Web the lane — rooted mobs stand still (R)',
+  },
 };
 export const JOB3_ADV_LEVEL = 70; // Hermit — +1 SP, no pool roll (§11)
 // Keen Eyes px→world-unit conversion: base range 7u ≡ ~400 px classic
@@ -371,6 +439,22 @@ export const MODEL_DEFS = {
   spitter: {
     file: '/models/mob_spitter.glb', // Skeleton_Mage
     height: 1.15,
+    clips: { patrol: 'Walking_D_Skeletons', aggro: 'Running_A', die: 'Death_A' },
+  },
+  // M17 tiers reuse the skeleton crew at meaner scales.
+  stalker: {
+    file: '/models/mob_blob.glb', // Skeleton_Minion, grown up
+    height: 1.25,
+    clips: { patrol: 'Walking_D_Skeletons', aggro: 'Running_A', die: 'Death_A' },
+  },
+  ravager: {
+    file: '/models/mob_bruiser.glb', // Skeleton_Warrior, hulking
+    height: 1.7,
+    clips: { patrol: 'Walking_D_Skeletons', aggro: 'Running_A', die: 'Death_A' },
+  },
+  wraith: {
+    file: '/models/mob_spitter.glb', // Skeleton_Mage, elder
+    height: 1.45,
     clips: { patrol: 'Walking_D_Skeletons', aggro: 'Running_A', die: 'Death_A' },
   },
 };

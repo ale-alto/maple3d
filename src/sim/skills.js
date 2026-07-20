@@ -210,6 +210,29 @@ export function shadowPartnerParams(player) {
   return { mpCost, pct: pct / 100, durationMs };
 }
 
+// Meso Up: richer meso drops — MP 45/50/55/60 by band; +3·lv% (≤10)
+// then +2/lv to +50%; duration 20+5·lv s. (Our mesos always drop, so
+// the documented drop-rate % maps onto the drop AMOUNT — conversion.)
+export function mesoUpParams(player) {
+  const lv = player.skills?.mesoUp ?? 0;
+  if (lv <= 0) return null;
+  const mpCost = lv <= 5 ? 45 : lv <= 10 ? 50 : lv <= 15 ? 55 : 60;
+  if (player.mp < mpCost) return null;
+  const pct = lv <= 10 ? 3 * lv : 30 + 2 * (lv - 10);
+  return { mpCost, mult: 1 + pct / 100, durationMs: (20 + 5 * lv) * 1000 };
+}
+
+// Shadow Web: roots up to 6 mobs, (40+2·lv)% success each, 5–8 s by
+// band; MP 10/14/18/22.
+export function shadowWebParams(player) {
+  const lv = player.skills?.shadowWeb ?? 0;
+  if (lv <= 0) return null;
+  const mpCost = lv <= 5 ? 10 : lv <= 10 ? 14 : lv <= 15 ? 18 : 22;
+  if (player.mp < mpCost) return null;
+  const durationSec = lv <= 5 ? 5 : lv <= 10 ? 6 : lv <= 15 ? 7 : 8;
+  return { mpCost, chance: (40 + 2 * lv) / 100, durationMs: durationSec * 1000, maxTargets: 6 };
+}
+
 // Alchemist: fixed-amount potion recovery multiplier.
 export function alchemistMult(player) {
   const lv = player.skills?.alchemist ?? 0;

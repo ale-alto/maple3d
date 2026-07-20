@@ -97,7 +97,7 @@ if (saved) {
   p.skills = {
     nimbleBody: 0, keenEyes: 0, disorder: 0, darkSight: 0, luckySeven: 0,
     clawMastery: 0, criticalThrow: 0, endure: 0, clawBooster: 0, haste: 0, drain: 0,
-    avenger: 0, flashJump: 0, shadowPartner: 0, alchemist: 0,
+    avenger: 0, flashJump: 0, shadowPartner: 0, alchemist: 0, mesoUp: 0, shadowWeb: 0,
     ...saved.player.skills,
   };
   if (saved.player.stats) p.stats = saved.player.stats; // v5 sheet
@@ -210,7 +210,8 @@ eventBus.on('mob:died', ({ x, y, type }) => {
   if (net.connected) return;
   const def = MOB_TYPES[type] ?? MOB_TYPES.blob;
   grantXp(gameState.player, def.xp ?? XP_PER_MOB, eventBus);
-  spawnDrops(gameState.loot, gameState.map, x, y, eventBus, def);
+  const p = gameState.player;
+  spawnDrops(gameState.loot, gameState.map, x, y, eventBus, def, p.mesoUpMs > 0 ? p.mesoUpMult : 1);
 });
 eventBus.on('net:mob-died', ({ type, killerId }) => {
   if (killerId === net.id) {
@@ -417,6 +418,7 @@ window.render_game_to_text = () => {
       boosterMs: Math.round(p.boosterMs ?? 0),
       hasteMs: Math.round(p.hasteMs ?? 0),
       shadowMs: Math.round(p.shadowMs ?? 0),
+      mesoUpMs: Math.round(p.mesoUpMs ?? 0),
       attackCooldownMs: p.boosterMs > 0 ? BOOSTED_COOLDOWN_MS : ATTACK_COOLDOWN_MS,
       stats: { ...p.stats },
       ap: p.ap,
@@ -451,6 +453,7 @@ window.render_game_to_text = () => {
       facing: mob.facing,
       clip: mobsView.clipOf(mob.id),
       disordered: mob.disorderMs > 0,
+      rooted: mob.rootMs > 0,
     })),
     mobProjectiles: (gameState.mobs.projectiles ?? []).map((s) => ({
       x: round3(s.x),

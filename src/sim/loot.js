@@ -68,8 +68,12 @@ export function spawnDropsFromItems(state, map, x, y, items, events, ownerId = n
   events?.emit('loot:dropped', { count: items.length, x, y });
 }
 
-export function spawnDrops(state, map, x, y, events, typeDef) {
-  spawnDropsFromItems(state, map, x, y, rollDrops(state.rand, typeDef), events);
+// mesoMult (M17): Meso Up enriches meso amounts on local kills.
+export function spawnDrops(state, map, x, y, events, typeDef, mesoMult = 1) {
+  const items = rollDrops(state.rand, typeDef).map((it) =>
+    it.kind === 'mesos' && mesoMult !== 1 ? { ...it, amount: Math.ceil(it.amount * mesoMult) } : it,
+  );
+  spawnDropsFromItems(state, map, x, y, items, events);
 }
 
 // myId (M06): the local player's network id, for loot-protection checks;

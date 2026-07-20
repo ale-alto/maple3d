@@ -66,6 +66,8 @@ export function createPlayer(map) {
       flashJump: 0,
       shadowPartner: 0,
       alchemist: 0,
+      mesoUp: 0,
+      shadowWeb: 0,
     },
     hiddenMs: 0, // Dark Sight remaining
     hiddenSpeedMult: 1,
@@ -76,6 +78,8 @@ export function createPlayer(map) {
     endureMs: 0,
     shadowMs: 0, // Shadow Partner remaining (M16)
     shadowPct: 0,
+    mesoUpMs: 0, // Meso Up remaining (M17)
+    mesoUpMult: 1,
   };
 }
 
@@ -190,6 +194,7 @@ export function stepPlayer(p, map, input, dt, events) {
   p.boosterMs = Math.max(0, (p.boosterMs ?? 0) - dt * 1000);
   p.hasteMs = Math.max(0, (p.hasteMs ?? 0) - dt * 1000);
   p.shadowMs = Math.max(0, (p.shadowMs ?? 0) - dt * 1000);
+  p.mesoUpMs = Math.max(0, (p.mesoUpMs ?? 0) - dt * 1000);
   let runSpeed = RUN_SPEED;
   if (p.hiddenMs > 0) runSpeed *= p.hiddenSpeedMult;
   if (p.hasteMs > 0) runSpeed *= p.hasteSpeedMult;

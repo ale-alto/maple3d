@@ -35,6 +35,8 @@ import {
   drainParams,
   avengerParams,
   shadowPartnerParams,
+  mesoUpParams,
+  shadowWebParams,
 } from './skills.js';
 import { basicRange, l7Range, thiefAccuracy, hitChance } from './stats.js';
 import { BASE_MASTERY, MOB_TYPES, STAR_TYPES, BOOSTED_COOLDOWN_MS } from '../core/constants.js';
@@ -227,6 +229,32 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
       player.shadowPct = spp.pct;
       player.mp -= spp.mpCost;
       events?.emit('skill:shadowpartner', { durationMs: spp.durationMs });
+    }
+  }
+
+  // --- Meso Up (E, M17): richer meso drops for the duration. ---
+  if (input.mesoUp && !(player.mesoUpMs > 0)) {
+    const mu = mesoUpParams(player);
+    if (mu) {
+      player.mesoUpMs = mu.durationMs;
+      player.mesoUpMult = mu.mult;
+      player.mp -= mu.mpCost;
+      events?.emit('skill:mesoup', { durationMs: mu.durationMs });
+    }
+  }
+
+  // --- Shadow Web (R, M17): root the forward lane. ---
+  if (input.shadowWeb && !hidden && !player.climbing) {
+    const sw = shadowWebParams(player);
+    if (sw) {
+      const targets = selectTargets().slice(0, sw.maxTargets);
+      if (targets.length > 0) {
+        player.mp -= sw.mpCost;
+        for (const t of targets) {
+          if (combat.rand() < sw.chance) t.rootMs = sw.durationMs;
+        }
+        events?.emit('skill:shadowweb', { targets: targets.length });
+      }
     }
   }
 

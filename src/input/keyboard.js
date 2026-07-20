@@ -21,6 +21,8 @@ let hasteQueue = 0; // H: Haste
 let drainQueue = 0; // A: Drain
 let avengerQueue = 0; // Q: Avenger (M16)
 let shadowQueue = 0; // W: Shadow Partner
+let mesoUpQueue = 0; // E: Meso Up (M17)
+let webQueue = 0; // R: Shadow Web
 
 const KEYS = {
   ArrowLeft: 'left',
@@ -87,6 +89,12 @@ export function initKeyboard(target) {
     } else if (e.key === 'w' || e.key === 'W') {
       if (!e.repeat) shadowQueue += 1;
       e.preventDefault();
+    } else if (e.key === 'e' || e.key === 'E') {
+      if (!e.repeat) mesoUpQueue += 1;
+      e.preventDefault();
+    } else if (e.key === 'r' || e.key === 'R') {
+      if (!e.repeat) webQueue += 1;
+      e.preventDefault();
     }
   });
 
@@ -130,6 +138,8 @@ export function initKeyboard(target) {
     drainQueue = 0;
     avengerQueue = 0;
     shadowQueue = 0;
+    mesoUpQueue = 0;
+    webQueue = 0;
   });
 }
 
@@ -166,9 +176,13 @@ export function readInput() {
   if (avenger) avengerQueue -= 1;
   const shadowPartner = shadowQueue > 0;
   if (shadowPartner) shadowQueue -= 1;
+  const mesoUp = mesoUpQueue > 0;
+  if (mesoUp) mesoUpQueue -= 1;
+  const shadowWeb = webQueue > 0;
+  if (shadowWeb) webQueue -= 1;
   return {
     ...held, jump, attack, loot, potion, mute, upPressed, skill,
     disorder, darkSight, bluePotion, booster, haste, drainAttack,
-    avenger, shadowPartner,
+    avenger, shadowPartner, mesoUp, shadowWeb,
   };
 }

@@ -25,6 +25,9 @@ export const field2 = {
     { x: 13.5, y: 2.0, patrolX1: 11.5, patrolX2: 15.5, type: 'spitter' },
     { x: -9.5, y: 2.2, patrolX1: -11.5, patrolX2: -7.5, type: 'spitter' },
   ],
-  portals: [{ id: 'toField1', x: -17, y: 0, targetMap: 'field1', targetPortal: 'toField2' }],
+  portals: [
+    { id: 'toField1', x: -17, y: 0, targetMap: 'field1', targetPortal: 'toField2' },
+    { id: 'toField3', x: 17, y: 0, targetMap: 'field3', targetPortal: 'toField2' },
+  ],
   npcs: [],
 };
