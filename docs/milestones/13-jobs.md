@@ -2,7 +2,7 @@
 
 ## Status
 
-implemented 2026-07-20 — all 7 automated AC green (suite 88/88), live-verified; awaiting user playtest
+done — user-approved 2026-07-20 (suite 88/88, live-verified)
 
 ## Objective
 
@@ -46,7 +46,7 @@ Flash Jump leaves the early game (it returns at Hermit, M15+).
 - [x] Dark Sight: no aggro/damage, no attacking, −30 speed at L1, 10s/level — `::dark sight`
 - [x] Disorder: attack −level for the duration; no reapply while active — `::disorder`
 - [x] Save v6 migration: FJ refunded, SP recomputed, job by level — `::v5 migration refunds flash jump and recomputes SP`
-- [ ] Feel check — user playtest (D = Disorder, V = Dark Sight)
+- [x] Feel check — user-approved 2026-07-20
 
 ## Exit condition
 

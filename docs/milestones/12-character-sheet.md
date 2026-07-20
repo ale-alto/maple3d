@@ -2,7 +2,7 @@
 
 ## Status
 
-implemented 2026-07-19 — all 6 automated AC green (suite 81/81), live-verified; awaiting user playtest
+done — user-approved 2026-07-20 (suite green, live-verified)
 
 ## Objective
 
@@ -39,7 +39,7 @@ accuracy/avoid with visible MISSes, the exact EXP table, real MP regen
 - [x] Misses per the hit formula — `::accuracy misses and hits deterministically at the extremes` (spitter avoid 4 = the gating mob)
 - [x] EXP table matches §4 exactly — `::formulas...` spot checks; progression.spec rewritten to expToNext
 - [x] MP regen 3/10 s tick; save v5 round-trips — `::mp regen ticks and save v5 round-trips`
-- [ ] Feel check — user playtest
+- [x] Feel check — user-approved 2026-07-20
 
 ## Roadmap context (the parity ladder)
 
