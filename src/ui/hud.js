@@ -1,4 +1,4 @@
-import { playerAttack } from '../sim/combat.js';
+import { attackRange } from '../sim/combat.js';
 
 // Plain-DOM HUD (tech.md: no UI framework), styled after the classic
 // pre-Big-Bang MapleStory status bar: dark navy strip docked to the
@@ -95,7 +95,8 @@ export function createHud(eventBus) {
     update(gameState, xpToNext) {
       const p = gameState.player;
       el.level.textContent = p.level;
-      el.att.textContent = `ATT ${playerAttack(p)}`;
+      const range = attackRange(p);
+      el.att.textContent = `ATT ${range.min}~${range.max}`;
       el.hpFill.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`;
       el.hpText.textContent = `[${p.hp}/${p.maxHp}]`;
       // Classic low-HP blink when under 15%.

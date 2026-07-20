@@ -8,7 +8,10 @@ const KEY = 'maple3d-save';
 // v2 (M04): + mapId
 // v3 (M10): + player.equipment {weapon, armor}, inventory.bag []
 // v4 (M11): + player.mp/sp/skills (retroactive SP for pre-skill saves)
-import { SP_PER_LEVEL } from './constants.js';
+// v5 (M12): + player.stats/ap/maxHp/maxMp (pools are path-dependent now)
+import { SP_PER_LEVEL, AP_PER_LEVEL, STAT_ROLL_SEED } from './constants.js';
+import { rollNewStats, expectedPools } from '../sim/stats.js';
+import { mulberry32 } from '../sim/rng.js';
 
 export function loadSave() {
   try {
@@ -36,7 +39,26 @@ export function loadSave() {
         },
       };
     }
-    if (data.v !== 4) return null;
+    if (data.v === 4) {
+      // Character-sheet migration: fresh classic dice, all historical AP
+      // unspent (the player allocates), pools from the documented
+      // mid-range accumulation.
+      const level = data.player.level ?? 1;
+      const pools = expectedPools(level);
+      data = {
+        ...data,
+        v: 5,
+        player: {
+          ...data.player,
+          stats: rollNewStats(mulberry32(STAT_ROLL_SEED)),
+          ap: AP_PER_LEVEL * (level - 1),
+          maxHp: pools.hp,
+          maxMp: pools.mp,
+          mp: null, // fill to max on load
+        },
+      };
+    }
+    if (data.v !== 5) return null;
     return data;
   } catch {
     return null;
@@ -49,12 +71,14 @@ export function persist(gameState) {
     localStorage.setItem(
       KEY,
       JSON.stringify({
-        v: 4,
+        v: 5,
         mapId: gameState.mapId,
         player: {
           level: p.level,
           xp: p.xp,
           hp: p.hp,
+          maxHp: p.maxHp,
+          maxMp: p.maxMp,
           x: p.x,
           y: p.y,
           facing: p.facing,
@@ -62,6 +86,8 @@ export function persist(gameState) {
           mp: Math.round(p.mp),
           sp: p.sp,
           skills: p.skills,
+          stats: p.stats,
+          ap: p.ap,
         },
         inventory: gameState.inventory,
       }),

@@ -1,23 +1,21 @@
-// Headless progression sim: XP curve, level-ups, death penalty, potions.
-// Pure logic on plain objects (tech.md sim purity rule).
+// Headless progression sim: real pre-BB XP curve, level-ups with rolled
+// pool gains, death penalty, potions. Pure logic on plain objects.
+// Every number sourced — docs/reference/ms-v62-mechanics.md.
 
 import {
-  XP_BASE,
-  XP_GROWTH,
   LEVEL_CAP,
-  HP_PER_LEVEL,
   DEATH_XP_PENALTY,
-  PLAYER_MAX_HP,
-  STAR_DAMAGE,
-  DAMAGE_PER_LEVEL,
   POTION_HEAL,
   SP_PER_LEVEL,
+  AP_PER_LEVEL,
 } from '../core/constants.js';
-import { maxMpForLevel } from './skills.js';
+import { expToNext, levelUpGains } from './stats.js';
+import { mulberry32 } from './rng.js';
 
-export const xpToNext = (level) => Math.round(XP_BASE * XP_GROWTH ** (level - 1));
-export const maxHpForLevel = (level) => PLAYER_MAX_HP + (level - 1) * HP_PER_LEVEL;
-export const starDamageForLevel = (level) => STAR_DAMAGE + (level - 1) * DAMAGE_PER_LEVEL;
+export const xpToNext = expToNext; // exact piecewise table (§4)
+
+// Deterministic per-boot gain dice (sim stays reproducible for specs).
+const gainRand = mulberry32(9137);
 
 export function grantXp(p, amount, events) {
   if (p.level >= LEVEL_CAP) return;
@@ -26,11 +24,16 @@ export function grantXp(p, amount, events) {
   while (p.level < LEVEL_CAP && p.xp >= xpToNext(p.level)) {
     p.xp -= xpToNext(p.level);
     p.level += 1;
-    p.maxHp = maxHpForLevel(p.level);
-    p.hp = p.maxHp; // classic Maple: level-up full heal
-    p.maxMp = maxMpForLevel(p.level);
-    p.mp = p.maxMp; // full MP restore too
-    p.sp = (p.sp ?? 0) + SP_PER_LEVEL; // M11 skill points
+    // Beginner gains below 10; thief-tier from 10 up (Rogue tier — the
+    // formal job advancement is M13).
+    const tier = p.level >= 10 ? 'thief' : 'beginner';
+    const gains = levelUpGains(gainRand, tier, p.stats?.int ?? 4);
+    p.maxHp += gains.hp;
+    p.maxMp += gains.mp;
+    p.hp = p.maxHp; // classic level-up full restore
+    p.mp = p.maxMp;
+    p.ap = (p.ap ?? 0) + AP_PER_LEVEL;
+    p.sp = (p.sp ?? 0) + SP_PER_LEVEL;
     events?.emit('player:levelup', { level: p.level });
   }
   if (p.level >= LEVEL_CAP) p.xp = 0;
@@ -38,6 +41,7 @@ export function grantXp(p, amount, events) {
 
 // Maple-honest but forgiving (gameplan): lose a small slice of the current
 // level's requirement, never dipping below the level's start.
+// (Real per-death % table is still unresearched — flagged in the reference.)
 export function applyDeathPenalty(p, events) {
   const loss = Math.floor(xpToNext(p.level) * DEATH_XP_PENALTY);
   if (loss <= 0) return;

@@ -14,10 +14,13 @@ import {
   LADDER_GRAB_RANGE,
   LADDER_JUMP_VX,
   LADDER_JUMP_VY,
-  PLAYER_MAX_HP,
-  PLAYER_MAX_MP,
+  PLAYER_START_HP,
+  PLAYER_START_MP,
+  STAT_ROLL_SEED,
 } from '../core/constants.js';
 import { flashJumpParams } from './skills.js';
+import { rollNewStats } from './stats.js';
+import { mulberry32 } from './rng.js';
 
 export function createPlayer(map) {
   return {
@@ -31,16 +34,20 @@ export function createPlayer(map) {
     facing: 'right',
     jumpsLeft: MAX_JUMPS,
     dropThrough: null,
-    hp: PLAYER_MAX_HP,
-    maxHp: PLAYER_MAX_HP,
+    hp: PLAYER_START_HP,
+    maxHp: PLAYER_START_HP,
     invulnMs: 0,
     level: 1,
     xp: 0,
+    // M12 character sheet: deterministic classic dice (STR 4 / INT 4).
+    stats: rollNewStats(mulberry32(STAT_ROLL_SEED)),
+    ap: 0,
     attackLockMs: 0, // MSW ATTACK state: grounded stand-and-throw interval
     state: 'idle', // MSW StateComponent-style named state, for animation
     equipment: { weapon: null, armor: null }, // M10 gear slots
-    mp: PLAYER_MAX_MP, // M11 skills
-    maxMp: PLAYER_MAX_MP,
+    mp: PLAYER_START_MP, // M11 skills; M12 real pools
+    maxMp: PLAYER_START_MP,
+    mpRegenMs: 0, // 10s regen tick accumulator
     sp: 0,
     skills: { luckySeven: 0, flashJump: 0 },
   };

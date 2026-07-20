@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures/game-test.js';
-import { SKILLS, SP_PER_LEVEL, RUN_SPEED } from '../../src/core/constants.js';
+import { SKILLS, SP_PER_LEVEL, RUN_SPEED, BASE_WA } from '../../src/core/constants.js';
+import { l7Range } from '../../src/sim/stats.js';
 
 // M11 contract: player.mp/maxMp/sp/skills in the payload; +SP_PER_LEVEL
 // skill points per level-up (__test.setXp grants retroactively); K toggles
@@ -84,7 +85,8 @@ test.describe('M11 skills', () => {
       return {
         numberCount: numbers.length,
         numberYs: numbers.map((n) => n.y),
-        attack: before.player.attack,
+        stats: before.player.stats,
+        basicRange: before.player.damageRange,
         mpBefore: before.player.mp,
         starsBefore: before.inventory.stars,
         inFlight,
@@ -97,11 +99,15 @@ test.describe('M11 skills', () => {
     expect(result.numberCount).toBe(2); // two damage numbers, classic L7
     expect(Math.abs(result.numberYs[0] - result.numberYs[1])).toBeGreaterThan(0.3); // visibly stacked
     expect(result.starsBefore - result.starsAfter).toBe(2);
-    // MP spent (regen may add a sliver back during the flight).
-    expect(result.mpBefore - result.mpAfter).toBeGreaterThanOrEqual(SKILLS.luckySeven.mpCost - 2);
-    const perStar = Math.round(result.attack * SKILLS.luckySeven.mult[0]);
-    expect(result.hpDelta).toBe(2 * perStar);
-    expect(result.hpDelta).toBeGreaterThan(result.attack); // out-damages basic
+    // Real table: level 1 costs 8 MP (regen may add a sliver back mid-flight).
+    expect(result.mpBefore - result.mpAfter).toBeGreaterThanOrEqual(SKILLS.luckySeven.mpCost[0] - 2);
+    // Both stars rolled inside L7's own LUK×5/×2.5 basis at 58%.
+    const r = l7Range(result.stats, BASE_WA, SKILLS.luckySeven.pct[0] / 100);
+    expect(result.hpDelta).toBeGreaterThanOrEqual(2 * Math.max(1, Math.floor(r.min)));
+    expect(result.hpDelta).toBeLessThanOrEqual(2 * Math.ceil(r.max));
+    // Expected volley damage beats the expected basic throw.
+    const basicMid = (result.basicRange.min + result.basicRange.max) / 2;
+    expect(r.min + r.max).toBeGreaterThan(basicMid); // 2 stars vs 1, midpoints
   });
 
   test('mp gates skills', async ({ gamePage }) => {

@@ -60,6 +60,9 @@ test.describe('M05 field2', () => {
         window.dispatchEvent(new KeyboardEvent(t, { key: k, bubbles: true }));
       window.__test.gotoMap('field2');
       window.advanceTime(200);
+      // Level 3 first: on the exact pre-BB curve level 1 needs only 15 xp,
+      // so a 16-xp bruiser kill would level up and wrap the counter.
+      window.__test.setXp(3, 0);
       // Kill a ground bruiser: stand outside its patrol edge, lock on.
       // (Index and object from ONE read — JSON payloads never share refs.)
       const spawns = read().map.mobSpawns;

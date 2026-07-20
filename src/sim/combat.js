@@ -19,15 +19,27 @@ import {
   PLAYER_HEIGHT,
 } from '../core/constants.js';
 import { damageMob } from './mobs.js';
-import { starDamageForLevel, applyDeathPenalty } from './progression.js';
+import { applyDeathPenalty } from './progression.js';
 import { weaponAttack, soak } from './items.js';
 import { luckySevenParams } from './skills.js';
+import { basicRange, l7Range, thiefAccuracy, hitChance } from './stats.js';
+import { BASE_WA, BASE_MASTERY, MOB_TYPES } from '../core/constants.js';
+import { mulberry32 } from './rng.js';
 
-// Derived attack (M10): level curve + equipped claw.
-export const playerAttack = (player) => starDamageForLevel(player.level) + weaponAttack(player.equipment);
+// M12: total weapon attack — interim base loadout + equipped claw
+// (M14 brings the real per-item WA tables).
+export const totalWa = (player) => BASE_WA + weaponAttack(player.equipment);
+
+// Basic-attack damage range for the character sheet / HUD / payload.
+export function attackRange(player) {
+  const r = basicRange(player.stats, totalWa(player), BASE_MASTERY);
+  return { min: Math.round(r.min), max: Math.round(r.max) };
+}
+
+const rollIn = (rand, r) => Math.max(1, Math.round(r.min + rand() * (r.max - r.min)));
 
 export function createCombatState() {
-  return { stars: [], cooldownMs: 0, nextStarId: 1 };
+  return { stars: [], cooldownMs: 0, nextStarId: 1, rand: mulberry32(4321) };
 }
 
 // Feet-anchored AABB overlap (x = center, y = feet).
@@ -68,8 +80,26 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
         target = mob;
       }
     }
+    // Damage + hit resolve at press time (classic): each star rolls its
+    // own damage in the documented range, and its own hit check against
+    // the target's avoid.
+    const wa = totalWa(player);
+    const acc = thiefAccuracy(player.stats);
     const volley = l7 ? 2 : 1;
     for (let i = 0; i < volley; i++) {
+      let damage = 0;
+      let miss = false;
+      if (target) {
+        const def = MOB_TYPES[target.type] ?? {};
+        const chance = hitChance(acc, def.avoid ?? 1, (def.level ?? 1) - player.level);
+        miss = combat.rand() >= chance;
+        if (!miss) {
+          const range = l7
+            ? l7Range(player.stats, wa, l7.pct)
+            : basicRange(player.stats, wa, BASE_MASTERY);
+          damage = rollIn(combat.rand, range);
+        }
+      }
       const star = {
         id: combat.nextStarId++,
         x: player.x - dir * i * 0.35, // second star trails the first
@@ -78,7 +108,8 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
         vy: 0,
         targetId: target ? target.id : null,
         traveled: 0,
-        mult: l7 ? l7.mult : 1,
+        damage,
+        miss,
       };
       combat.stars.push(star);
       if (net) net.sendThrow(star); // party members see the throw
@@ -106,9 +137,13 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
       const dy = target.y + MOB_HEIGHT / 2 - star.y;
       const dist = Math.hypot(dx, dy);
       if (dist <= Math.max(step, 0.3)) {
-        const damage = Math.round(playerAttack(player) * (star.mult ?? 1));
-        if (net) net.sendHit(target.id, damage);
-        else damageMob(mobsState, target, damage, events);
+        if (star.miss) {
+          events?.emit('mob:missed', { x: target.x, y: target.y });
+        } else if (net) {
+          net.sendHit(target.id, star.damage);
+        } else {
+          damageMob(mobsState, target, star.damage, events);
+        }
         return false;
       }
       star.vx = (dx / dist) * STAR_SPEED;

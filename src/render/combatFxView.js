@@ -31,6 +31,7 @@ export class CombatFxView {
     this.numbers = []; // {sprite, x, y, value, ageMs}
 
     eventBus.on('mob:hit', ({ x, y, amount }) => this.addNumber(x, y + 1.4, amount, '#ffd24d'));
+    eventBus.on('mob:missed', ({ x, y }) => this.addNumber(x, y + 1.4, 'MISS', '#9fb4d8'));
     eventBus.on('player:hit', ({ x, y, amount }) => this.addNumber(x, y + 2.0, amount, '#ff6b6b'));
   }
 

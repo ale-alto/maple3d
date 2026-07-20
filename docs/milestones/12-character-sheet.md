@@ -2,7 +2,7 @@
 
 ## Status
 
-planned (first milestone of the 1:1 parity ladder — user directive 2026-07-19: exact MapleStory mechanics, our art)
+implemented 2026-07-19 — all 6 automated AC green (suite 81/81), live-verified; awaiting user playtest
 
 ## Objective
 
@@ -33,12 +33,12 @@ accuracy/avoid with visible MISSes, the exact EXP table, real MP regen
 
 ## Acceptance criteria
 
-- [ ] AP: +5 per level, allocation via S window — `stats.spec.js::ap allocation`
-- [ ] Star damage = documented formula, rolls within [MIN, MAX] — `::damage rolls`
-- [ ] L7 uses LUK×5/×2.5 basis and its real per-level % — `::l7 basis`
-- [ ] Misses happen vs high-avoid mobs per the hit formula — `::accuracy`
-- [ ] EXP table matches §4 exactly for levels 1–30 — `::exp table`
-- [ ] MP regen 3/10 s; save v5 round-trips — `::regen and save`
+- [x] AP: +5 per level, allocation via S window — `stats.spec.js::ap allocation`
+- [x] Star damage = documented formula, rolls within [MIN, MAX] — `::damage rolls within the documented range` (+ node-side `::formulas match the reference doc`)
+- [x] L7 uses LUK×5/×2.5 basis and its real 20-level table — skills.spec rewritten deliberately (volley rolls inside l7Range at 58%, MP 8)
+- [x] Misses per the hit formula — `::accuracy misses and hits deterministically at the extremes` (spitter avoid 4 = the gating mob)
+- [x] EXP table matches §4 exactly — `::formulas...` spot checks; progression.spec rewritten to expToNext
+- [x] MP regen 3/10 s tick; save v5 round-trips — `::mp regen ticks and save v5 round-trips`
 - [ ] Feel check — user playtest
 
 ## Roadmap context (the parity ladder)

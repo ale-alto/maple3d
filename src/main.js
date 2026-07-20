@@ -11,6 +11,7 @@ import {
   CAMERA_SWING_ZOOM,
   CAMERA_Z,
   SP_PER_LEVEL,
+  AP_PER_LEVEL,
 } from './core/constants.js';
 import { eventBus } from './core/eventBus.js';
 import { gameState } from './core/gameState.js';
@@ -18,11 +19,12 @@ import { loadSave, persist } from './core/save.js';
 import { maps, DEFAULT_MAP } from './sim/maps/index.js';
 import { createPlayer, stepPlayer } from './sim/player.js';
 import { createMobsState, stepMobs, stepMobProjectiles } from './sim/mobs.js';
-import { createCombatState, stepCombat, stepCosmeticStars, playerAttack } from './sim/combat.js';
-import { grantXp, usePotion, xpToNext, maxHpForLevel } from './sim/progression.js';
+import { createCombatState, stepCombat, stepCosmeticStars, attackRange } from './sim/combat.js';
+import { grantXp, usePotion, xpToNext } from './sim/progression.js';
 import { createLootState, spawnDrops, spawnDropsFromItems, stepLoot } from './sim/loot.js';
 import { makeGear, armorDefense } from './sim/items.js';
-import { stepMp, maxMpForLevel } from './sim/skills.js';
+import { stepMp } from './sim/skills.js';
+import { expectedPools, thiefAccuracy } from './sim/stats.js';
 import { createNetwork } from './net/networkManager.js';
 import { createAudioEngine } from './audio/engine.js';
 import { createAudioSettings } from './ui/audioSettings.js';
@@ -39,6 +41,7 @@ import { createHud } from './ui/hud.js';
 import { createShopPanel } from './ui/shopPanel.js';
 import { createInventoryPanel } from './ui/inventoryPanel.js';
 import { createSkillPanel } from './ui/skillPanel.js';
+import { createStatPanel } from './ui/statPanel.js';
 import { createChatInput } from './ui/chat.js';
 
 const canvas = document.querySelector('#game');
@@ -62,17 +65,19 @@ if (saved) {
   gameState.mobs = createMobsState(gameState.map);
   p.level = saved.player.level;
   p.xp = saved.player.xp;
-  p.maxHp = maxHpForLevel(p.level);
+  p.maxHp = saved.player.maxHp ?? expectedPools(p.level).hp; // v5 pools
   p.hp = Math.min(saved.player.hp, p.maxHp);
   p.x = saved.player.x;
   p.y = saved.player.y;
   p.facing = saved.player.facing;
   p.grounded = false; // physics settles onto whatever is at the saved spot
   p.equipment = saved.player.equipment ?? { weapon: null, armor: null }; // v3 gear
-  p.maxMp = maxMpForLevel(p.level); // v4 skills
+  p.maxMp = saved.player.maxMp ?? expectedPools(p.level).mp;
   p.mp = saved.player.mp == null ? p.maxMp : Math.min(saved.player.mp, p.maxMp);
   p.sp = saved.player.sp ?? 0;
   p.skills = { luckySeven: 0, flashJump: 0, ...saved.player.skills };
+  if (saved.player.stats) p.stats = saved.player.stats; // v5 sheet
+  p.ap = saved.player.ap ?? 0;
   // Merge saved inventory; ensure `stars` exists for pre-ammo (v1/early-v2) saves.
   gameState.inventory = { ...gameState.inventory, ...saved.inventory };
   if (typeof gameState.inventory.stars !== 'number') gameState.inventory.stars = STARTING_STARS;
@@ -105,6 +110,7 @@ const hud = createHud(eventBus);
 const shopPanel = createShopPanel(gameState, eventBus);
 createInventoryPanel(gameState, eventBus);
 createSkillPanel(gameState, eventBus);
+createStatPanel(gameState, eventBus);
 initKeyboard(window);
 
 // === Audio (M07) ===
@@ -209,7 +215,7 @@ eventBus.on('player:died', () => {
   pendingDeathRespawn = true;
 });
 // Saves: fire on every progression-relevant event + on leaving.
-for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned', 'shop:bought', 'gear:equipped', 'skill:assigned']) {
+for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned', 'shop:bought', 'gear:equipped', 'skill:assigned', 'stat:assigned']) {
   eventBus.on(ev, () => persist(gameState));
 }
 window.addEventListener('beforeunload', () => persist(gameState));
@@ -371,7 +377,10 @@ window.render_game_to_text = () => {
       xp: p.xp,
       xpToNext: xpToNext(p.level),
       clip: playerView.currentClip,
-      attack: playerAttack(p),
+      damageRange: attackRange(p),
+      accuracy: +thiefAccuracy(p.stats).toFixed(2),
+      stats: { ...p.stats },
+      ap: p.ap,
       defense: armorDefense(p.equipment),
       equipment: p.equipment,
       mp: Math.floor(p.mp),
@@ -471,15 +480,21 @@ window.__test = {
     const p = gameState.player;
     p.level = level;
     p.xp = xp;
-    p.maxHp = maxHpForLevel(level);
+    const pools = expectedPools(level); // dev hook: mid-range accumulation
+    p.maxHp = pools.hp;
     p.hp = p.maxHp;
-    p.maxMp = maxMpForLevel(level);
+    p.maxMp = pools.mp;
     p.mp = p.maxMp;
-    p.sp = SP_PER_LEVEL * (level - 1); // retroactive, like the v3→v4 migration
+    p.sp = SP_PER_LEVEL * (level - 1); // retroactive, like save migrations
+    p.ap = AP_PER_LEVEL * (level - 1);
     eventBus.emit('player:xp', { amount: 0 }); // triggers a save
   },
   setMp(n) {
     gameState.player.mp = n;
+    gameState.player.mpRegenMs = 0; // deterministic tick phase for specs
+  },
+  setStats(str, dex, int, luk) {
+    gameState.player.stats = { str, dex, int, luk };
   },
   gotoMap(mapId) {
     changeMap(mapId, 'spawn');

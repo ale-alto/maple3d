@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/game-test.js';
-import { GEAR_TIERS, STAR_DAMAGE } from '../../src/core/constants.js';
+import { GEAR_TIERS } from '../../src/core/constants.js';
 import { rollGear } from '../../src/sim/items.js';
 import { mulberry32 } from '../../src/sim/rng.js';
 
@@ -65,8 +65,8 @@ test.describe('M10 gear', () => {
         return before - after;
       };
 
+      const baseRange = read().player.damageRange;
       const baseDelta = hitMob();
-      const baseAttack = read().player.attack;
 
       window.__test.grantGear('weapon', 1);
       const item = read().inventory.bag[0];
@@ -79,15 +79,18 @@ test.describe('M10 gear', () => {
       key('keydown', 'i', 'KeyI');
       key('keyup', 'i', 'KeyI');
 
-      const armedAttack = read().player.attack;
+      const armedRange = read().player.damageRange;
       const armedDelta = hitMob();
-      return { baseDelta, baseAttack, item, equipped, armedAttack, armedDelta };
+      return { baseRange, baseDelta, item, equipped, armedRange, armedDelta };
     });
-    expect(result.baseAttack).toBe(STAR_DAMAGE); // level-1 fresh character
-    expect(result.baseDelta).toBe(result.baseAttack);
+    // M12: weapon attack multiplies through the WA term — a claw widens
+    // the whole documented damage range, and rolls land inside it.
+    expect(result.baseDelta).toBeGreaterThanOrEqual(Math.floor(result.baseRange.min));
+    expect(result.baseDelta).toBeLessThanOrEqual(Math.ceil(result.baseRange.max));
     expect(result.equipped?.gearId).toBe(result.item.gearId);
-    expect(result.armedAttack).toBe(STAR_DAMAGE + result.item.attack);
-    expect(result.armedDelta).toBe(result.armedAttack);
+    expect(result.armedRange.max).toBeGreaterThan(result.baseRange.max);
+    expect(result.armedDelta).toBeGreaterThanOrEqual(Math.floor(result.armedRange.min));
+    expect(result.armedDelta).toBeLessThanOrEqual(Math.ceil(result.armedRange.max));
   });
 
   test('defense applies', async ({ gamePage }) => {

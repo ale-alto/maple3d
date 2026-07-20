@@ -1,11 +1,6 @@
 import { test, expect, state } from '../fixtures/game-test.js';
-import {
-  XP_PER_MOB,
-  XP_BASE,
-  XP_GROWTH,
-  HP_PER_LEVEL,
-  DEATH_XP_PENALTY,
-} from '../../src/core/constants.js';
+import { XP_PER_MOB, DEATH_XP_PENALTY } from '../../src/core/constants.js';
+import { expToNext } from '../../src/sim/stats.js';
 
 // M03 contract additions:
 //   player.level / player.xp / player.xpToNext
@@ -39,7 +34,7 @@ test.describe('M03 progression', () => {
     const before = await state(gamePage);
     expect(before.player.level).toBe(1);
     expect(before.player.xp).toBe(0);
-    expect(before.player.xpToNext).toBe(XP_BASE);
+    expect(before.player.xpToNext).toBe(expToNext(1)); // exact pre-BB curve
 
     const after = await gamePage.evaluate(killMob0Atomic);
     expect(after.player.xp).toBe(XP_PER_MOB);
@@ -48,16 +43,18 @@ test.describe('M03 progression', () => {
 
   test('level up', async ({ gamePage }) => {
     // Sit 4 xp short of level 2, then one kill overflows the bar.
-    await gamePage.evaluate((xp) => window.__test.setXp(1, xp), XP_BASE - 4);
+    await gamePage.evaluate((xp) => window.__test.setXp(1, xp), expToNext(1) - 4);
     const before = await state(gamePage);
     const maxHpBefore = before.player.maxHp;
 
     const after = await gamePage.evaluate(killMob0Atomic);
     expect(after.player.level).toBe(2);
     expect(after.player.xp).toBe(XP_PER_MOB - 4); // remainder carries over
-    expect(after.player.xpToNext).toBe(Math.round(XP_BASE * XP_GROWTH));
-    expect(after.player.maxHp).toBe(maxHpBefore + HP_PER_LEVEL);
-    expect(after.player.hp).toBe(after.player.maxHp); // level-up full heal
+    expect(after.player.xpToNext).toBe(expToNext(2));
+    // Beginner-tier level-up gain rolls 12–16 HP (sourced ranges).
+    expect(after.player.maxHp - maxHpBefore).toBeGreaterThanOrEqual(12);
+    expect(after.player.maxHp - maxHpBefore).toBeLessThanOrEqual(16);
+    expect(after.player.hp).toBe(after.player.maxHp); // level-up full restore
     expect(after.fx.lastLevelUpAgoMs).not.toBeNull();
   });
 
@@ -76,7 +73,7 @@ test.describe('M03 progression', () => {
       }
       return read().player.xp;
     }, 10);
-    expect(died).toBe(10 - Math.floor(XP_BASE * DEATH_XP_PENALTY));
+    expect(died).toBe(10 - Math.floor(expToNext(1) * DEATH_XP_PENALTY));
 
     const floored = await gamePage.evaluate(() => {
       const read = () => JSON.parse(window.render_game_to_text());

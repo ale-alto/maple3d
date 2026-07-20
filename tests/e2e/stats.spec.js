@@ -117,26 +117,34 @@ test.describe('M12 character sheet', () => {
       window.__test.gotoMap('field1');
       window.advanceTime(100);
       window.__test.setStars(100);
-      window.__test.setStats(4, 30, 4, 60); // plenty of accuracy
+      // Enough accuracy to always hit, low enough LUK not to one-shot.
+      window.__test.setStats(4, 30, 4, 20);
       const range = read().player.damageRange;
 
+      // Read each roll off the damage-number fx (deaths don't hide rolls).
       const deltas = [];
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 8 && deltas.length < 5; i++) {
         const mob = read().mobs[0];
-        if (!mob) break;
+        if (!mob) {
+          window.advanceTime(500); // wait out a respawn
+          continue;
+        }
         window.__test.setPlayerPos(mob.x - 3, mob.y);
         kb('keydown', 'ArrowRight', 'ArrowRight');
         window.advanceTime(30);
         kb('keyup', 'ArrowRight', 'ArrowRight');
-        const before = read().mobs.find((m) => m.id === mob.id)?.hp;
         kb('keydown', 'Control', 'ControlLeft');
         window.advanceTime(60);
-        kb('keyup', 'ControlLeft', 'ControlLeft');
         kb('keyup', 'Control', 'ControlLeft');
-        window.advanceTime(1100);
-        const after = read().mobs.find((m) => m.id === mob.id)?.hp;
-        if (before !== undefined && after !== undefined && before !== after)
-          deltas.push(before - after);
+        for (let t = 0; t < 24; t++) {
+          window.advanceTime(50);
+          const hit = read().fx.damageNumbers.find((n) => typeof n.value === 'number');
+          if (hit) {
+            deltas.push(hit.value);
+            window.advanceTime(900); // let the number expire before the next
+            break;
+          }
+        }
       }
       return { range, deltas };
     });
@@ -157,12 +165,13 @@ test.describe('M12 character sheet', () => {
       const read = () => JSON.parse(window.render_game_to_text());
       const kb = (t, k, code) =>
         window.dispatchEvent(new KeyboardEvent(t, { key: k, code, bubbles: true }));
-      window.__test.gotoMap('field1');
+      // Spitters are the high-avoid, higher-level mobs — the miss target.
+      window.__test.gotoMap('field2');
       window.advanceTime(100);
       window.__test.setStars(100);
 
       const throwOnce = () => {
-        const mob = read().mobs[0];
+        const mob = read().mobs.find((m) => m.type === 'spitter');
         window.__test.setPlayerPos(mob.x - 3, mob.y);
         kb('keydown', 'ArrowRight', 'ArrowRight');
         window.advanceTime(30);

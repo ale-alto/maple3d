@@ -112,6 +112,8 @@ export const MOB_TYPES = {
     starPackChance: 0.15,
     gearChance: 0.03,
     gearTierMax: 1,
+    level: 2, // our mobs, our stats — the HIT FORMULA is the sourced part
+    avoid: 1,
     color: 0x8fd14f,
     scale: 1,
   },
@@ -127,6 +129,8 @@ export const MOB_TYPES = {
     starPackChance: 0.2,
     gearChance: 0.045,
     gearTierMax: 2,
+    level: 5,
+    avoid: 1.3,
     color: 0x5f8dff,
     scale: 1.25,
   },
@@ -142,6 +146,8 @@ export const MOB_TYPES = {
     starPackChance: 0.25,
     gearChance: 0.06,
     gearTierMax: 3,
+    level: 8,
+    avoid: 4, // hard to hit under-leveled — classic accuracy gating
     color: 0xb968ff,
     scale: 1.1,
     ranged: { projectileSpeed: 6, cooldownMs: 2200, range: 6, damage: 8 },
@@ -166,20 +172,17 @@ export const GEAR_TIERS = {
 export const BAG_MAX = 24;
 export const STARTER_CLAW_PRICE = 80; // Nara's mesos sink (tier-1, no roll)
 
-// --- Skills (M11) --- Classic assassin kit: +3 SP per level-up, 1 SP per
-// skill level. Lucky Seven: 2-star volley, per-star damage = attack * mult.
-// Flash Jump: Alt mid-air horizontal burst, MP cost falls as it levels
-// (single jump stays the rule — this is a skill, not a second jump).
+// --- Skills (M11, M12: real pre-BB tables — ms-v62-mechanics.md §5) ---
+// +3 SP per level-up, 1 SP per skill level. Lucky Seven: bbb table,
+// master 20, per-star % of the LUK×5 basis. Flash Jump keeps interim
+// values until M13 moves it to its authentic Hermit slot.
 export const SP_PER_LEVEL = 3;
-export const PLAYER_MAX_MP = 30;
-export const MP_PER_LEVEL = 5;
-export const MP_REGEN_PER_SEC = 1.5;
 export const SKILLS = {
   luckySeven: {
     name: 'Lucky Seven',
-    maxLevel: 5,
-    mpCost: 8,
-    mult: [0.7, 0.775, 0.85, 0.925, 1.0],
+    maxLevel: 20,
+    mpCost: [8, 8, 8, 8, 9, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16],
+    pct: [58, 62, 66, 70, 76, 80, 84, 90, 94, 100, 104, 110, 114, 120, 124, 130, 134, 140, 144, 150],
     desc: 'Throw 2 stars at the locked target (Shift)',
   },
   flashJump: {
@@ -191,6 +194,19 @@ export const SKILLS = {
     desc: 'Alt mid-air: burst forward',
   },
 };
+
+// --- Character sheet (M12, all sourced — ms-v62-mechanics.md §1–4) ---
+export const AP_PER_LEVEL = 5;
+export const BASE_MASTERY = 0.1; // unskilled mastery (Claw Mastery is M15)
+// Interim total weapon attack until M14's real item tables: a typical
+// early-rogue loadout (claw 15 WA + stars 15 WA). Equipped claw `attack`
+// adds on top for now.
+export const BASE_WA = 30;
+export const PLAYER_START_HP = 50; // level-1 beginner pools
+export const PLAYER_START_MP = 5;
+export const MP_REGEN_AMOUNT = 3; // base recovery: 3 MP per 10 s standing
+export const MP_REGEN_INTERVAL_MS = 10000;
+export const STAT_ROLL_SEED = 20260719; // deterministic dice for fresh boots
 
 // --- Models (M08, KayKit CC0 packs) ---
 // Side-view yaw: ±(90° − tilt) so characters face their run direction
