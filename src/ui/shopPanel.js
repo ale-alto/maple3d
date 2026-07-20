@@ -4,6 +4,7 @@
 
 import { PRICES, tryBuy, tryRecharge } from '../sim/shop.js';
 import { STAR_TYPES } from '../core/constants.js';
+import { starCapOf } from '../sim/skills.js';
 
 export function createShopPanel(gameState, eventBus) {
   const panel = document.createElement('div');
@@ -35,12 +36,11 @@ export function createShopPanel(gameState, eventBus) {
   panel.querySelector('#shop-buy-claw').addEventListener('click', () => buy('claw1'));
   panel.querySelector('#shop-recharge').addEventListener('click', () => {
     const inv = gameState.inventory;
-    const type = STAR_TYPES[inv.starType] ?? STAR_TYPES.steel;
-    if (tryRecharge(inv, eventBus)) {
-      message.textContent = `Recharged to ${type.cap}!`;
+    const cap = starCapOf(gameState.player, inv);
+    if (tryRecharge(inv, eventBus, cap)) {
+      message.textContent = `Recharged to ${cap}!`;
     } else {
-      message.textContent =
-        inv.stars >= type.cap ? 'Stars are already full.' : 'Not enough mesos…';
+      message.textContent = inv.stars >= cap ? 'Stars are already full.' : 'Not enough mesos…';
     }
   });
   panel.querySelector('#shop-close').addEventListener('click', () => close());

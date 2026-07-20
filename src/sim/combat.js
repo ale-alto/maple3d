@@ -27,9 +27,15 @@ import {
   darkSightParams,
   nimbleBodyBonus,
   starRangeOf,
+  masteryOf,
+  masteryAccBonus,
+  critParams,
+  clawBoosterParams,
+  hasteParams,
+  drainParams,
 } from './skills.js';
 import { basicRange, l7Range, thiefAccuracy, hitChance } from './stats.js';
-import { BASE_MASTERY, MOB_TYPES, STAR_TYPES } from '../core/constants.js';
+import { BASE_MASTERY, MOB_TYPES, STAR_TYPES, BOOSTED_COOLDOWN_MS } from '../core/constants.js';
 import { mulberry32 } from './rng.js';
 
 // M14: total weapon attack the documented way — claw WA + equipped star
@@ -38,8 +44,9 @@ export const totalWa = (player, inventory) =>
   weaponAttack(player.equipment) + (STAR_TYPES[inventory?.starType] ?? STAR_TYPES.steel).wa;
 
 // Basic-attack damage range for the character sheet / HUD / payload.
+// Claw Mastery lifts the mastery term (M15).
 export function attackRange(player, inventory) {
-  const r = basicRange(player.stats, totalWa(player, inventory), BASE_MASTERY);
+  const r = basicRange(player.stats, totalWa(player, inventory), masteryOf(player));
   return { min: Math.round(r.min), max: Math.round(r.max) };
 }
 
@@ -89,16 +96,25 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
   }
 
   const hidden = (player.hiddenMs ?? 0) > 0; // Dark Sight: can't attack
-  if ((input.attack || input.skill) && combat.cooldownMs === 0 && !player.climbing && hasAmmo && !hidden) {
+  const drain = input.drainAttack ? drainParams(player) : null;
+  if (
+    (input.attack || input.skill || (input.drainAttack && drain)) &&
+    combat.cooldownMs === 0 &&
+    !player.climbing &&
+    hasAmmo &&
+    !hidden
+  ) {
     const dir = player.facing === 'right' ? 1 : -1;
     const throwY = player.y + STAR_THROW_HEIGHT;
     const target = selectTarget();
     // Damage + hit resolve at press time (classic): each star rolls its
     // own damage in the documented range, and its own hit check against
-    // the target's avoid. Nimble Body feeds accuracy.
+    // the target's avoid. Nimble Body + Claw Mastery feed accuracy;
+    // Critical Throw rolls per star (M15).
     const wa = totalWa(player, inventory);
-    const acc = thiefAccuracy(player.stats) + nimbleBodyBonus(player);
-    const volley = l7 ? 2 : 1;
+    const acc = thiefAccuracy(player.stats) + nimbleBodyBonus(player) + masteryAccBonus(player);
+    const crit = critParams(player);
+    const volley = l7 && !drain ? 2 : 1;
     for (let i = 0; i < volley; i++) {
       let damage = 0;
       let miss = false;
@@ -107,10 +123,12 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
         const chance = hitChance(acc, def.avoid ?? 1, (def.level ?? 1) - player.level);
         miss = combat.rand() >= chance;
         if (!miss) {
-          const range = l7
+          let range = l7 && !drain
             ? l7Range(player.stats, wa, l7.pct)
-            : basicRange(player.stats, wa, BASE_MASTERY);
+            : basicRange(player.stats, wa, masteryOf(player));
           damage = rollIn(combat.rand, range);
+          if (drain) damage = Math.round(damage * drain.pct);
+          if (crit && combat.rand() < crit.chance) damage = Math.round(damage * crit.mult);
         }
       }
       const star = {
@@ -123,16 +141,21 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
         traveled: 0,
         damage,
         miss,
+        drainAbsorb: drain ? drain.absorb : 0,
       };
       combat.stars.push(star);
       if (net) net.sendThrow(star); // party members see the throw
       if (inventory) inventory.stars -= 1; // spend the star
     }
-    if (l7) {
+    if (l7 && !drain) {
       player.mp -= l7.mpCost;
       events?.emit('skill:luckyseven', { mp: player.mp });
     }
-    combat.cooldownMs = ATTACK_COOLDOWN_MS;
+    if (drain) {
+      player.mp -= drain.mpCost;
+      events?.emit('skill:drain', { mp: player.mp });
+    }
+    combat.cooldownMs = player.boosterMs > 0 ? BOOSTED_COOLDOWN_MS : ATTACK_COOLDOWN_MS;
     // MSW ATTACK state: grounded throws are stand-and-throw; air throws
     // stay free (that's the kite).
     if (player.grounded) player.attackLockMs = ATTACK_LOCK_MS;
@@ -148,6 +171,29 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
       player.hiddenSpeedMult = ds.speedMult;
       player.mp -= ds.mpCost;
       events?.emit('skill:darksight', { durationMs: ds.durationMs });
+    }
+  }
+
+  // --- Claw Booster (B, M15): pay HP+MP for faster cadence. ---
+  if (input.booster && !hidden && !(player.boosterMs > 0)) {
+    const cb = clawBoosterParams(player);
+    if (cb) {
+      player.boosterMs = cb.durationMs;
+      player.hp -= cb.cost;
+      player.mp -= cb.cost;
+      events?.emit('skill:booster', { durationMs: cb.durationMs });
+    }
+  }
+
+  // --- Haste (H, M15): speed/jump buff. ---
+  if (input.haste && !(player.hasteMs > 0)) {
+    const h = hasteParams(player);
+    if (h) {
+      player.hasteMs = h.durationMs;
+      player.hasteSpeedMult = h.speedMult;
+      player.hasteJumpMult = h.jumpMult;
+      player.mp -= h.mpCost;
+      events?.emit('skill:haste', { durationMs: h.durationMs });
     }
   }
 
@@ -180,10 +226,19 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
       if (dist <= Math.max(step, 0.3)) {
         if (star.miss) {
           events?.emit('mob:missed', { x: target.x, y: target.y });
-        } else if (net) {
-          net.sendHit(target.id, star.damage);
         } else {
-          damageMob(mobsState, target, star.damage, events);
+          if (net) net.sendHit(target.id, star.damage);
+          else damageMob(mobsState, target, star.damage, events);
+          // Drain (M15): absorb a slice of the damage as HP, capped at
+          // maxHp/2 per hit and the target's own maxHp.
+          if (star.drainAbsorb > 0) {
+            const heal = Math.min(
+              Math.floor(star.damage * star.drainAbsorb),
+              Math.floor(player.maxHp / 2),
+              target.maxHp,
+            );
+            player.hp = Math.min(player.maxHp, player.hp + heal);
+          }
         }
         return false;
       }

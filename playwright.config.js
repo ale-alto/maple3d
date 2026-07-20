@@ -27,6 +27,10 @@ export default defineConfig({
   // Two servers: Vite, plus the PartyKit room server for multiplayer specs.
   // Single-player specs never pass ?mp=1, so they stay pure-local even with
   // the party server up (deterministic advanceTime stepping).
+  // Real-time multiplayer specs (live wrangler server, parallel pages)
+  // can time out under machine load — one retry absorbs the transient
+  // flake without masking deterministic failures.
+  retries: 1,
   webServer: [
     {
       command: 'npm run dev',

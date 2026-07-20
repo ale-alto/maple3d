@@ -16,6 +16,9 @@ let skillQueue = 0;
 let disorderQueue = 0; // D: Disorder (M13)
 let darkSightQueue = 0; // V: Dark Sight (M13)
 let bluePotionQueue = 0; // X: Blue Potion (M14)
+let boosterQueue = 0; // B: Claw Booster (M15)
+let hasteQueue = 0; // H: Haste
+let drainQueue = 0; // A: Drain
 
 const KEYS = {
   ArrowLeft: 'left',
@@ -67,6 +70,15 @@ export function initKeyboard(target) {
     } else if (e.key === 'x' || e.key === 'X') {
       if (!e.repeat) bluePotionQueue += 1;
       e.preventDefault();
+    } else if (e.key === 'b' || e.key === 'B') {
+      if (!e.repeat) boosterQueue += 1;
+      e.preventDefault();
+    } else if (e.key === 'h' || e.key === 'H') {
+      if (!e.repeat) hasteQueue += 1;
+      e.preventDefault();
+    } else if (e.key === 'a' || e.key === 'A') {
+      if (!e.repeat) drainQueue += 1;
+      e.preventDefault();
     }
   });
 
@@ -105,6 +117,9 @@ export function initKeyboard(target) {
     disorderQueue = 0;
     darkSightQueue = 0;
     bluePotionQueue = 0;
+    boosterQueue = 0;
+    hasteQueue = 0;
+    drainQueue = 0;
   });
 }
 
@@ -131,5 +146,14 @@ export function readInput() {
   if (darkSight) darkSightQueue -= 1;
   const bluePotion = bluePotionQueue > 0;
   if (bluePotion) bluePotionQueue -= 1;
-  return { ...held, jump, attack, loot, potion, mute, upPressed, skill, disorder, darkSight, bluePotion };
+  const booster = boosterQueue > 0;
+  if (booster) boosterQueue -= 1;
+  const haste = hasteQueue > 0;
+  if (haste) hasteQueue -= 1;
+  const drainAttack = drainQueue > 0;
+  if (drainAttack) drainQueue -= 1;
+  return {
+    ...held, jump, attack, loot, potion, mute, upPressed, skill,
+    disorder, darkSight, bluePotion, booster, haste, drainAttack,
+  };
 }

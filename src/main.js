@@ -1,6 +1,8 @@
 import './style.css';
 import {
   FIXED_STEP_MS,
+  ATTACK_COOLDOWN_MS,
+  BOOSTED_COOLDOWN_MS,
   XP_PER_MOB,
   MOB_TYPES,
   STARTING_POTIONS,
@@ -23,7 +25,15 @@ import { createCombatState, stepCombat, stepCosmeticStars, attackRange } from '.
 import { grantXp, usePotion, useBluePotion, xpToNext } from './sim/progression.js';
 import { createLootState, spawnDrops, spawnDropsFromItems, stepLoot } from './sim/loot.js';
 import { makeGear, armorDefense } from './sim/items.js';
-import { stepMp, tryAdvanceJob, starRangeOf, nimbleBodyBonus } from './sim/skills.js';
+import {
+  stepMp,
+  stepEndure,
+  tryAdvanceJob,
+  starRangeOf,
+  nimbleBodyBonus,
+  masteryAccBonus,
+  starCapOf,
+} from './sim/skills.js';
 import { mulberry32 } from './sim/rng.js';
 import { expectedPools, thiefAccuracy } from './sim/stats.js';
 import { createNetwork } from './net/networkManager.js';
@@ -84,7 +94,11 @@ if (saved) {
   p.maxMp = saved.player.maxMp ?? expectedPools(p.level).mp;
   p.mp = saved.player.mp == null ? p.maxMp : Math.min(saved.player.mp, p.maxMp);
   p.sp = saved.player.sp ?? 0;
-  p.skills = { nimbleBody: 0, keenEyes: 0, disorder: 0, darkSight: 0, luckySeven: 0, ...saved.player.skills };
+  p.skills = {
+    nimbleBody: 0, keenEyes: 0, disorder: 0, darkSight: 0, luckySeven: 0,
+    clawMastery: 0, criticalThrow: 0, endure: 0, clawBooster: 0, haste: 0, drain: 0,
+    ...saved.player.skills,
+  };
   if (saved.player.stats) p.stats = saved.player.stats; // v5 sheet
   p.ap = saved.player.ap ?? 0;
   p.job = saved.player.job ?? 'beginner'; // v6 jobs
@@ -254,6 +268,7 @@ function step() {
 
   stepPlayer(gameState.player, gameState.map, input, dt, eventBus);
   stepMp(gameState.player, dt); // slow MP regen (M11)
+  stepEndure(gameState.player, dt); // ladder/rope recovery (M15)
 
   if (net.connected) {
     // Server-owned mobs: apply the latest room snapshot; between
@@ -393,10 +408,14 @@ window.render_game_to_text = () => {
       xpToNext: xpToNext(p.level),
       clip: playerView.currentClip,
       damageRange: attackRange(p, gameState.inventory),
-      accuracy: +(thiefAccuracy(p.stats) + nimbleBodyBonus(p)).toFixed(2),
+      accuracy: +(thiefAccuracy(p.stats) + nimbleBodyBonus(p) + masteryAccBonus(p)).toFixed(2),
       starRange: +starRangeOf(p).toFixed(4),
+      starCap: starCapOf(p, gameState.inventory),
       job: p.job,
       hidden: p.hiddenMs > 0,
+      boosterMs: Math.round(p.boosterMs ?? 0),
+      hasteMs: Math.round(p.hasteMs ?? 0),
+      attackCooldownMs: p.boosterMs > 0 ? BOOSTED_COOLDOWN_MS : ATTACK_COOLDOWN_MS,
       stats: { ...p.stats },
       ap: p.ap,
       defense: armorDefense(p.equipment),

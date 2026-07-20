@@ -48,10 +48,27 @@ export function createPlayer(map) {
     maxMp: PLAYER_START_MP,
     mpRegenMs: 0, // 10s regen tick accumulator
     sp: 0,
-    job: 'beginner', // M13: advance to rogue at the trainer (10, DEX 25)
-    skills: { nimbleBody: 0, keenEyes: 0, disorder: 0, darkSight: 0, luckySeven: 0 },
+    job: 'beginner', // M13: advance at the trainer (rogue@10, assassin@30)
+    skills: {
+      nimbleBody: 0,
+      keenEyes: 0,
+      disorder: 0,
+      darkSight: 0,
+      luckySeven: 0,
+      clawMastery: 0,
+      criticalThrow: 0,
+      endure: 0,
+      clawBooster: 0,
+      haste: 0,
+      drain: 0,
+    },
     hiddenMs: 0, // Dark Sight remaining
     hiddenSpeedMult: 1,
+    boosterMs: 0, // Claw Booster remaining (M15)
+    hasteMs: 0, // Haste remaining
+    hasteSpeedMult: 1,
+    hasteJumpMult: 1,
+    endureMs: 0,
   };
 }
 
@@ -161,9 +178,13 @@ export function stepPlayer(p, map, input, dt, events) {
   const move = (input.right ? 1 : 0) - (input.left ? 1 : 0);
   if (move !== 0) p.facing = move > 0 ? 'right' : 'left';
   p.attackLockMs = Math.max(0, p.attackLockMs - dt * 1000);
-  // Dark Sight countdown + its documented speed penalty (M13).
+  // Buff countdowns: Dark Sight speed penalty (M13), Booster/Haste (M15).
   p.hiddenMs = Math.max(0, (p.hiddenMs ?? 0) - dt * 1000);
-  const runSpeed = p.hiddenMs > 0 ? RUN_SPEED * p.hiddenSpeedMult : RUN_SPEED;
+  p.boosterMs = Math.max(0, (p.boosterMs ?? 0) - dt * 1000);
+  p.hasteMs = Math.max(0, (p.hasteMs ?? 0) - dt * 1000);
+  let runSpeed = RUN_SPEED;
+  if (p.hiddenMs > 0) runSpeed *= p.hiddenSpeedMult;
+  if (p.hasteMs > 0) runSpeed *= p.hasteSpeedMult;
   if (p.grounded) {
     if (input.down) {
       // MSW ActionCrouch: crouch/prone stops instantly and blocks the run.
@@ -208,7 +229,7 @@ export function stepPlayer(p, map, input, dt, events) {
 
   // --- Jump (single only; no double jump) ---
   if (!jumpConsumed && input.jump && p.grounded && p.jumpsLeft > 0) {
-    p.vy = JUMP_VELOCITY;
+    p.vy = JUMP_VELOCITY * (p.hasteMs > 0 ? p.hasteJumpMult : 1); // Haste (M15)
     p.jumpsLeft -= 1;
     p.grounded = false;
     events?.emit('player:jumped', {});

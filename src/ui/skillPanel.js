@@ -29,16 +29,21 @@ export function createSkillPanel(gameState, eventBus) {
 
   function render() {
     const p = gameState.player;
+    const rank = { beginner: 0, rogue: 1, assassin: 2 }[p.job] ?? 0;
     panel.querySelector('#skill-sp').textContent =
-      p.job === 'beginner' ? 'advance to Rogue first' : p.sp;
+      rank === 0 ? 'advance to Rogue first' : p.sp;
     for (const [id, def] of Object.entries(SKILLS)) {
       panel.querySelector(`.skill-level[data-skill="${id}"]`).textContent =
         `${p.skills[id] ?? 0}/${def.maxLevel}`;
       const btn = panel.querySelector(`.skill-add[data-skill="${id}"]`);
       const prereqMet = !def.prereq || (p.skills[def.prereq[0]] ?? 0) >= def.prereq[1];
-      btn.disabled =
-        p.job === 'beginner' || p.sp <= 0 || !prereqMet || (p.skills[id] ?? 0) >= def.maxLevel;
-      btn.title = prereqMet ? 'Spend 1 SP' : `Needs ${SKILLS[def.prereq[0]].name} ${def.prereq[1]}`;
+      const rankMet = rank >= (def.job === 'assassin' ? 2 : 1);
+      btn.disabled = !rankMet || p.sp <= 0 || !prereqMet || (p.skills[id] ?? 0) >= def.maxLevel;
+      btn.title = !rankMet
+        ? 'Requires the next job advancement'
+        : prereqMet
+          ? 'Spend 1 SP'
+          : `Needs ${SKILLS[def.prereq[0]].name} ${def.prereq[1]}`;
     }
   }
 

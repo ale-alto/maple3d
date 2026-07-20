@@ -148,6 +148,28 @@ documented values our tiers map onto.
   - Blue Potion: 100 MP, buy 200 · Mana Elixir: 300 MP, buy 620
   - Slot cap 100 for all of the above.
 
+## 10. Assassin 2nd-job kit (bbb class page, read 2026-07-20)
+
+- **Advancement**: level 30 (the marble-collection quest is omitted —
+  documented deviation; our trainer advances directly). Pool roll
+  (emulator 2nd-job thief case): HP +200–250, MP +150–200; +1 SP.
+- **Claw Mastery** (passive, master 20): mastery% = 10 + 5·ceil(lv/2)
+  (15% at 1–2 … 60% at 19–20); accuracy +lv; star slot cap +10·lv.
+- **Critical Throw** (passive, master 30, prereq CM 3): crit chance
+  (20+lv)%, crit damage (110+3·lv)% per star.
+- **Endure** (passive, master 20): on ropes/ladders only — extra
+  HP +(20+4·lv), MP +2·lv every (30−lv) seconds.
+- **Claw Booster** (supportive, master 20, prereq CM 5): costs
+  (30−lv) HP AND MP; claw attack speed +2 stages for 10·lv seconds
+  (Fast(4) 720 ms → Faster(2) ≈ 600 ms per the classic delay table).
+- **Haste** (supportive, master 20): MP 15 (lv ≤10) / 30 (11+);
+  Speed +2·lv, Jump +lv for 10·lv s (speed/jump are the 100-base
+  stats — we map speed% onto run speed and jump% onto jump velocity;
+  party-wide in the real game, self-only for now — deviation noted).
+- **Drain** (attack, master 30, prereq Endure 3): MP 12; one star at
+  (100+2·lv)% damage, absorbing (15+lv)% of damage dealt as HP,
+  capped at maxHp/2 per hit and the target's maxHp.
+
 ## Sources
 
 - bbb.hidden-street.net (BeforeBigBang library) — L7 + FJ tables read 2026-07-19 (browser pane; 403s server fetches)

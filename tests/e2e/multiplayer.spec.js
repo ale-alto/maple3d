@@ -169,9 +169,11 @@ test.describe('M06 multiplayer', () => {
     await waitConnected(a.page);
     await waitConnected(b.page);
 
-    // B stands clear; A kills a mob.
+    // B stands clear; A kills a mob (stat boost: fresh chars on real
+    // formulas kill too slowly for real-time server specs).
     await b.page.evaluate(() => window.__test.setPlayerPos(-18, 0));
     await a.page.evaluate(() => {
+      window.__test.setStats(4, 30, 4, 60);
       const sp0 = JSON.parse(window.render_game_to_text()).map.mobSpawns[0];
       window.__test.setPlayerPos(sp0.patrolX1 - 1.5, sp0.y);
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
@@ -239,9 +241,10 @@ test.describe('M06 multiplayer', () => {
     await waitConnected(a.page);
     await waitConnected(b.page);
 
-    // A kills a mob; both sides see the drops.
+    // A kills a mob; both sides see the drops. (Stat boost for kill speed.)
     await b.page.evaluate(() => window.__test.setPlayerPos(-18, 0));
     await a.page.evaluate(() => {
+      window.__test.setStats(4, 30, 4, 60);
       const sp0 = JSON.parse(window.render_game_to_text()).map.mobSpawns[0];
       window.__test.setPlayerPos(sp0.patrolX1 - 1.5, sp0.y);
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));

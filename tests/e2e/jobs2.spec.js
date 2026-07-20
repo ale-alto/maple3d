@@ -90,10 +90,10 @@ test.describe('M15 assassin', () => {
       window.__test.setStars(400);
       const range = read().player.damageRange;
       const hits = [];
-      for (let i = 0; i < 10 && hits.length < 8; i++) {
+      for (let i = 0; i < 24 && hits.length < 8; i++) {
         const mob = read().mobs[0];
         if (!mob) {
-          window.advanceTime(500);
+          window.advanceTime(1500); // wait out respawns (crits one-shot blobs)
           continue;
         }
         window.__test.setPlayerPos(mob.x - 3, mob.y);

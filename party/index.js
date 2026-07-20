@@ -15,7 +15,7 @@ import { mulberry32 } from '../src/sim/rng.js';
 
 const TICK_MS = 50; // 20 Hz sim
 const SNAPSHOT_EVERY = 2; // mobs snapshot at 10 Hz
-const MAX_DAMAGE = 400; // loose validation: > any legit L7 star hit (M12 formulas)
+const MAX_DAMAGE = 4000; // loose validation: > any legit crit L7 hit at cap 70 (M15)
 const MAX_CHAT = 120;
 const MAX_MSG_BYTES = 2048;
 

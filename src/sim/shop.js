@@ -28,15 +28,17 @@ export function tryBuy(inventory, kind, events) {
   return true;
 }
 
-// Recharge the equipped star type to its cap: per-star price × missing.
-export function tryRecharge(inventory, events) {
+// Recharge the equipped star type to its cap (Claw Mastery raises the
+// cap): per-star price × missing.
+export function tryRecharge(inventory, events, cap = null) {
   const type = STAR_TYPES[inventory.starType] ?? STAR_TYPES.steel;
-  const missing = type.cap - inventory.stars;
+  const fullCap = cap ?? type.cap;
+  const missing = fullCap - inventory.stars;
   if (missing <= 0) return false;
   const cost = Math.ceil(missing * type.rechargePerStar);
   if (inventory.mesos < cost) return false;
   inventory.mesos -= cost;
-  inventory.stars = type.cap;
+  inventory.stars = fullCap;
   events?.emit('shop:bought', { kind: 'recharge', price: cost });
   return true;
 }

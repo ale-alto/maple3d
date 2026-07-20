@@ -86,7 +86,7 @@ export const DAMAGE_NUMBER_MS = 800; // damage number lifetime
 export const XP_PER_MOB = 8;
 export const XP_BASE = 20; // xp to go from level 1 -> 2
 export const XP_GROWTH = 1.4; // per-level multiplier
-export const LEVEL_CAP = 15;
+export const LEVEL_CAP = 70; // M15: room for the Assassin era (Hermit gate at 70)
 export const DEATH_XP_PENALTY = 0.05; // fraction of xpToNext lost on death
 export const HP_PER_LEVEL = 5;
 export const DAMAGE_PER_LEVEL = 1; // star damage bonus per level above 1
@@ -230,17 +230,66 @@ export const SKILLS = {
     pct: [58, 62, 66, 70, 76, 80, 84, 90, 94, 100, 104, 110, 114, 120, 124, 130, 134, 140, 144, 150],
     desc: 'Throw 2 stars at the locked target (Shift)',
   },
+  // --- Assassin 2nd job (M15, reference §10) ---
+  clawMastery: {
+    name: 'Claw Mastery',
+    maxLevel: 20,
+    passive: true,
+    job: 'assassin',
+    desc: 'Passive: star mastery, accuracy, bigger star slots',
+  },
+  criticalThrow: {
+    name: 'Critical Throw',
+    maxLevel: 30,
+    passive: true,
+    job: 'assassin',
+    prereq: ['clawMastery', 3],
+    desc: 'Passive: stars can critically strike',
+  },
+  endure: {
+    name: 'Endure',
+    maxLevel: 20,
+    passive: true,
+    job: 'assassin',
+    desc: 'Passive: recover HP/MP on ropes and ladders',
+  },
+  clawBooster: {
+    name: 'Claw Booster',
+    maxLevel: 20,
+    job: 'assassin',
+    prereq: ['clawMastery', 5],
+    desc: 'Throw faster for a while — costs HP and MP (B)',
+  },
+  haste: {
+    name: 'Haste',
+    maxLevel: 20,
+    job: 'assassin',
+    desc: 'Move and jump like the wind (H)',
+  },
+  drain: {
+    name: 'Drain',
+    maxLevel: 30,
+    mpCost: 12,
+    job: 'assassin',
+    prereq: ['endure', 3],
+    desc: 'A vampiric star: absorb damage as HP (A)',
+  },
 };
 // Keen Eyes px→world-unit conversion: base range 7u ≡ ~400 px classic
 // throw range → +25 px/level = +0.4375 u/level (presentation mapping).
 export const KEEN_EYES_UNIT_PER_LEVEL = 0.4375;
 
-// Job advancement (reference §7): Rogue at 10 with DEX 25; one-time
-// pool roll + 1 SP (+3/level catch-up if advancing late).
+// Job advancement (reference §7/§10): Rogue at 10 (DEX 25), Assassin at
+// 30; one-time pool rolls + 1 SP (+3/level catch-up if advancing late).
 export const JOB_ADV_LEVEL = 10;
 export const JOB_ADV_DEX = 25;
 export const JOB_ADV_HP = [100, 150];
 export const JOB_ADV_MP = [25, 50];
+export const JOB2_ADV_LEVEL = 30;
+export const JOB2_ADV_HP = [200, 250];
+export const JOB2_ADV_MP = [150, 200];
+// Claw Booster: attack speed +2 stages — Fast(4) 720ms → Faster(2) 600ms.
+export const BOOSTED_COOLDOWN_MS = 600;
 
 // --- Character sheet (M12, all sourced — ms-v62-mechanics.md §1–4) ---
 export const AP_PER_LEVEL = 5;
