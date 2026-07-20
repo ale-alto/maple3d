@@ -21,7 +21,13 @@ import {
 import { damageMob } from './mobs.js';
 import { applyDeathPenalty } from './progression.js';
 import { weaponAttack, soak } from './items.js';
-import { luckySevenParams } from './skills.js';
+import {
+  luckySevenParams,
+  disorderParams,
+  darkSightParams,
+  nimbleBodyBonus,
+  starRangeOf,
+} from './skills.js';
 import { basicRange, l7Range, thiefAccuracy, hitChance } from './stats.js';
 import { BASE_WA, BASE_MASTERY, MOB_TYPES } from '../core/constants.js';
 import { mulberry32 } from './rng.js';
@@ -59,32 +65,38 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
   // Lucky Seven (M11): Shift with the skill + MP + 2 stars = a 2-star
   // volley; otherwise the press falls back to a basic throw.
   const l7 = input.skill ? luckySevenParams(player, inventory) : null;
-  if ((input.attack || input.skill) && combat.cooldownMs === 0 && !player.climbing && hasAmmo) {
-    // Classic MS: lock the nearest mob inside the forward attack box at
-    // press time. The box is centered on the player's BODY (rises with a
-    // jump) and is ~one character tall, so a mob straight above is out of
-    // reach but a jump-attack to a mob's level connects. Star homes to the
-    // lock; no lock = whiff visual.
+
+  // Classic MS target lock: nearest mob inside the forward attack box,
+  // centered on the player's BODY. Range extends with Keen Eyes (M13).
+  function selectTarget() {
     const dir = player.facing === 'right' ? 1 : -1;
-    const throwY = player.y + STAR_THROW_HEIGHT;
     const playerCenter = player.y + PLAYER_HEIGHT / 2;
+    const range = starRangeOf(player);
     let target = null;
     let bestDx = Infinity;
     for (const mob of mobsState.mobs) {
       const dx = (mob.x - player.x) * dir;
       const dy = mob.y + MOB_HEIGHT / 2 - playerCenter;
-      if (dx <= 0 || dx > STAR_RANGE) continue;
+      if (dx <= 0 || dx > range) continue;
       if (Math.abs(dy) > STAR_SELECT_HALF_HEIGHT) continue;
       if (dx < bestDx) {
         bestDx = dx;
         target = mob;
       }
     }
+    return target;
+  }
+
+  const hidden = (player.hiddenMs ?? 0) > 0; // Dark Sight: can't attack
+  if ((input.attack || input.skill) && combat.cooldownMs === 0 && !player.climbing && hasAmmo && !hidden) {
+    const dir = player.facing === 'right' ? 1 : -1;
+    const throwY = player.y + STAR_THROW_HEIGHT;
+    const target = selectTarget();
     // Damage + hit resolve at press time (classic): each star rolls its
     // own damage in the documented range, and its own hit check against
-    // the target's avoid.
+    // the target's avoid. Nimble Body feeds accuracy.
     const wa = totalWa(player);
-    const acc = thiefAccuracy(player.stats);
+    const acc = thiefAccuracy(player.stats) + nimbleBodyBonus(player);
     const volley = l7 ? 2 : 1;
     for (let i = 0; i < volley; i++) {
       let damage = 0;
@@ -124,6 +136,34 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
     // stay free (that's the kite).
     if (player.grounded) player.attackLockMs = ATTACK_LOCK_MS;
     events?.emit('player:attacked', { facing: player.facing, stars: inventory ? inventory.stars : null });
+  }
+
+  // --- Dark Sight (V, M13): hide in shadow — untouchable, no attacking,
+  // documented speed penalty; refused while already hidden. ---
+  if (input.darkSight && !hidden && !player.climbing) {
+    const ds = darkSightParams(player);
+    if (ds) {
+      player.hiddenMs = ds.durationMs;
+      player.hiddenSpeedMult = ds.speedMult;
+      player.mp -= ds.mpCost;
+      events?.emit('skill:darksight', { durationMs: ds.durationMs });
+    }
+  }
+
+  // --- Disorder (D, M13): debuff the locked mob's attack/def for the
+  // duration; cannot reapply while already disordered. ---
+  if (input.disorder && !hidden && !player.climbing) {
+    const dis = disorderParams(player);
+    if (dis) {
+      const target = selectTarget();
+      if (target && !(target.disorderMs > 0)) {
+        target.disorderMs = dis.durationMs;
+        target.disorderAtk = dis.atk;
+        player.mp -= dis.mpCost;
+        events?.emit('skill:disorder', { mobId: target.id });
+        if (net) net.sendDisorder(target.id, dis.atk, dis.durationMs);
+      }
+    }
   }
 
   // --- Fly + hit (locked stars home and land on arrival; whiffs never
@@ -184,11 +224,16 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
     }
   }
 
-  if (player.invulnMs === 0) {
+  // Dark Sight: the enemy won't attack — no contact, no shots.
+  if (player.invulnMs === 0 && player.hiddenMs === 0) {
     const touching = mobsState.mobs.find((m) =>
       overlaps(player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT, m.x, m.y, MOB_WIDTH, MOB_HEIGHT),
     );
-    if (touching) hurtPlayer(touching.contactDamage ?? MOB_CONTACT_DAMAGE, touching.x);
+    if (touching) {
+      // Disorder: weapon attack −level while the debuff runs.
+      const debuff = touching.disorderMs > 0 ? touching.disorderAtk : 0;
+      hurtPlayer(Math.max(1, (touching.contactDamage ?? MOB_CONTACT_DAMAGE) - debuff), touching.x);
+    }
   }
 
   // --- Spitter shots vs the local player (collision only — motion lives
@@ -196,6 +241,7 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
   mobsState.projectiles = (mobsState.projectiles ?? []).filter((shot) => {
     if (
       player.invulnMs === 0 &&
+      player.hiddenMs === 0 &&
       overlaps(shot.x, shot.y - 0.2, 0.4, 0.4, player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT)
     ) {
       hurtPlayer(shot.damage, shot.x);

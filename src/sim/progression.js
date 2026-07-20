@@ -24,16 +24,16 @@ export function grantXp(p, amount, events) {
   while (p.level < LEVEL_CAP && p.xp >= xpToNext(p.level)) {
     p.xp -= xpToNext(p.level);
     p.level += 1;
-    // Beginner gains below 10; thief-tier from 10 up (Rogue tier — the
-    // formal job advancement is M13).
-    const tier = p.level >= 10 ? 'thief' : 'beginner';
+    // Pool tier follows the JOB (M13): unadvanced characters keep
+    // beginner gains no matter the level — advance at 10, like the game.
+    const tier = p.job === 'rogue' ? 'thief' : 'beginner';
     const gains = levelUpGains(gainRand, tier, p.stats?.int ?? 4);
     p.maxHp += gains.hp;
     p.maxMp += gains.mp;
     p.hp = p.maxHp; // classic level-up full restore
     p.mp = p.maxMp;
     p.ap = (p.ap ?? 0) + AP_PER_LEVEL;
-    p.sp = (p.sp ?? 0) + SP_PER_LEVEL;
+    if (p.job === 'rogue') p.sp = (p.sp ?? 0) + SP_PER_LEVEL; // beginners earn none
     events?.emit('player:levelup', { level: p.level });
   }
   if (p.level >= LEVEL_CAP) p.xp = 0;

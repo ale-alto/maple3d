@@ -49,9 +49,12 @@ export function stepMobs(state, players, map, dt, events) {
   for (const mob of state.mobs) {
     const sp = map.mobSpawns[mob.spawn];
     const def = MOB_TYPES[mob.type];
+    // Disorder debuff countdown (M13).
+    if (mob.disorderMs > 0) mob.disorderMs = Math.max(0, mob.disorderMs - ms);
     let player = null;
     let best = Infinity;
     for (const cand of players) {
+      if (cand.hidden) continue; // Dark Sight: the enemy won't attack
       const d = Math.abs(cand.x - mob.x);
       if (d < best) {
         best = d;

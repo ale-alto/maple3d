@@ -9,7 +9,8 @@ const KEY = 'maple3d-save';
 // v3 (M10): + player.equipment {weapon, armor}, inventory.bag []
 // v4 (M11): + player.mp/sp/skills (retroactive SP for pre-skill saves)
 // v5 (M12): + player.stats/ap/maxHp/maxMp (pools are path-dependent now)
-import { SP_PER_LEVEL, AP_PER_LEVEL, STAT_ROLL_SEED } from './constants.js';
+// v6 (M13): + player.job; flash jump refunded, SP recomputed job-gated
+import { SP_PER_LEVEL, AP_PER_LEVEL, STAT_ROLL_SEED, JOB_ADV_LEVEL } from './constants.js';
 import { rollNewStats, expectedPools } from '../sim/stats.js';
 import { mulberry32 } from '../sim/rng.js';
 
@@ -58,7 +59,34 @@ export function loadSave() {
         },
       };
     }
-    if (data.v !== 5) return null;
+    if (data.v === 5) {
+      // Jobs migration: level ≥ 10 characters advanced retroactively;
+      // Flash Jump left the early game — refund its points into the
+      // job-gated SP ledger (earned = 1 + 3·(level−10), minus kept spends).
+      const level = data.player.level ?? 1;
+      const job = level >= JOB_ADV_LEVEL ? 'rogue' : 'beginner';
+      const old = data.player.skills ?? {};
+      const skills = {
+        nimbleBody: 0,
+        keenEyes: 0,
+        disorder: 0,
+        darkSight: 0,
+        luckySeven: old.luckySeven ?? 0,
+      };
+      const spent = skills.luckySeven;
+      const earned = job === 'rogue' ? 1 + SP_PER_LEVEL * (level - JOB_ADV_LEVEL) : 0;
+      data = {
+        ...data,
+        v: 6,
+        player: {
+          ...data.player,
+          job,
+          skills,
+          sp: Math.max(0, earned - spent),
+        },
+      };
+    }
+    if (data.v !== 6) return null;
     return data;
   } catch {
     return null;
@@ -71,7 +99,7 @@ export function persist(gameState) {
     localStorage.setItem(
       KEY,
       JSON.stringify({
-        v: 5,
+        v: 6,
         mapId: gameState.mapId,
         player: {
           level: p.level,
@@ -88,6 +116,7 @@ export function persist(gameState) {
           skills: p.skills,
           stats: p.stats,
           ap: p.ap,
+          job: p.job,
         },
         inventory: gameState.inventory,
       }),

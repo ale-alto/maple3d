@@ -68,6 +68,7 @@ export function createHud(eventBus) {
 
   const el = {
     level: root.querySelector('#hud-lv-num'),
+    job: root.querySelector('#hud-job'),
     name: root.querySelector('#hud-name'),
     hpFill: root.querySelector('#hud-hp-fill'),
     hpText: root.querySelector('#hud-hp-text'),
@@ -95,6 +96,7 @@ export function createHud(eventBus) {
     update(gameState, xpToNext) {
       const p = gameState.player;
       el.level.textContent = p.level;
+      el.job.textContent = p.job === 'rogue' ? 'Rogue' : 'Beginner';
       const range = attackRange(p);
       el.att.textContent = `ATT ${range.min}~${range.max}`;
       el.hpFill.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`;

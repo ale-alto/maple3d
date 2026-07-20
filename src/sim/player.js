@@ -18,7 +18,6 @@ import {
   PLAYER_START_MP,
   STAT_ROLL_SEED,
 } from '../core/constants.js';
-import { flashJumpParams } from './skills.js';
 import { rollNewStats } from './stats.js';
 import { mulberry32 } from './rng.js';
 
@@ -49,7 +48,10 @@ export function createPlayer(map) {
     maxMp: PLAYER_START_MP,
     mpRegenMs: 0, // 10s regen tick accumulator
     sp: 0,
-    skills: { luckySeven: 0, flashJump: 0 },
+    job: 'beginner', // M13: advance to rogue at the trainer (10, DEX 25)
+    skills: { nimbleBody: 0, keenEyes: 0, disorder: 0, darkSight: 0, luckySeven: 0 },
+    hiddenMs: 0, // Dark Sight remaining
+    hiddenSpeedMult: 1,
   };
 }
 
@@ -159,13 +161,16 @@ export function stepPlayer(p, map, input, dt, events) {
   const move = (input.right ? 1 : 0) - (input.left ? 1 : 0);
   if (move !== 0) p.facing = move > 0 ? 'right' : 'left';
   p.attackLockMs = Math.max(0, p.attackLockMs - dt * 1000);
+  // Dark Sight countdown + its documented speed penalty (M13).
+  p.hiddenMs = Math.max(0, (p.hiddenMs ?? 0) - dt * 1000);
+  const runSpeed = p.hiddenMs > 0 ? RUN_SPEED * p.hiddenSpeedMult : RUN_SPEED;
   if (p.grounded) {
     if (input.down) {
       // MSW ActionCrouch: crouch/prone stops instantly and blocks the run.
       p.vx = 0;
     } else if (move !== 0 && p.attackLockMs === 0) {
       p.vx += move * RUN_ACCEL * dt;
-      p.vx = Math.max(-RUN_SPEED, Math.min(RUN_SPEED, p.vx));
+      p.vx = Math.max(-runSpeed, Math.min(runSpeed, p.vx));
     } else {
       // No input — or stand-and-throw (MSW ATTACK state locks the run
       // while grounded). Maple-style slight slide: friction, not a stop.
@@ -198,19 +203,8 @@ export function stepPlayer(p, map, input, dt, events) {
     }
   }
 
-  // --- Flash Jump (M11): Alt mid-air with the skill learned + MP — a
-  // horizontal burst, NOT a second jump (MAX_JUMPS stays 1). ---
-  if (!jumpConsumed && input.jump && !p.grounded && !p.climbing) {
-    jumpConsumed = true;
-    const fj = flashJumpParams(p);
-    if (fj) {
-      const dir = p.facing === 'right' ? 1 : -1;
-      p.vx = dir * fj.vx;
-      p.vy = Math.max(p.vy, fj.vy);
-      p.mp -= fj.mpCost;
-      events?.emit('skill:flashjump', { mp: p.mp });
-    }
-  }
+  // (Flash Jump left the early game in M13 — mid-air Alt does nothing
+  // until the skill returns at Hermit. Single jump is the rule.)
 
   // --- Jump (single only; no double jump) ---
   if (!jumpConsumed && input.jump && p.grounded && p.jumpsLeft > 0) {

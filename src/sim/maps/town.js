@@ -10,5 +10,8 @@ export const town = {
   ladders: [],
   mobSpawns: [],
   portals: [{ id: 'toField1', x: 12, y: 0, targetMap: 'field1', targetPortal: 'toTown' }],
-  npcs: [{ id: 'shopkeeper', x: -4, y: 0, name: 'Shopkeeper Nara' }],
+  npcs: [
+    { id: 'shopkeeper', x: -4, y: 0, name: 'Shopkeeper Nara' },
+    { id: 'trainer', x: 5, y: 0, name: 'Instructor Vey' }, // job advancement (M13)
+  ],
 };

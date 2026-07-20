@@ -150,6 +150,9 @@ export function createNetwork(eventBus) {
     sendHit(mobId, damage) {
       if (net.connected) net.socket?.send(JSON.stringify({ t: 'hit', mobId, damage }));
     },
+    sendDisorder(mobId, atk, durationMs) {
+      if (net.connected) net.socket?.send(JSON.stringify({ t: 'disorder', mobId, atk, durationMs }));
+    },
     sendThrow(star) {
       if (net.connected)
         net.socket?.send(

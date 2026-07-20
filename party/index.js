@@ -15,7 +15,7 @@ import { mulberry32 } from '../src/sim/rng.js';
 
 const TICK_MS = 50; // 20 Hz sim
 const SNAPSHOT_EVERY = 2; // mobs snapshot at 10 Hz
-const MAX_DAMAGE = 40; // loose validation: > any legit star hit
+const MAX_DAMAGE = 400; // loose validation: > any legit L7 star hit (M12 formulas)
 const MAX_CHAT = 120;
 const MAX_MSG_BYTES = 2048;
 
@@ -130,6 +130,7 @@ export class Main extends Server {
       peer.facing = msg.p.facing === 'left' ? 'left' : 'right';
       peer.state = String(msg.p.state ?? 'idle').slice(0, 16);
       peer.level = Number(msg.p.level) || 1;
+      peer.hidden = !!msg.p.hidden; // Dark Sight: mobs skip hidden players
       this.send({ t: 'peer', p: peer }, [sender.id]);
     } else if (msg.t === 'hit' && this.mobs) {
       const mob = this.mobs.mobs.find((m) => m.id === msg.mobId);
@@ -138,6 +139,13 @@ export class Main extends Server {
         this.attacker = sender.id;
         damageMob(this.mobs, mob, damage, this.bus);
         this.attacker = null;
+      }
+    } else if (msg.t === 'disorder' && this.mobs) {
+      // Disorder debuff (M13): loosely validated, applied to the shared mob.
+      const mob = this.mobs.mobs.find((m) => m.id === msg.mobId);
+      if (mob && !(mob.disorderMs > 0)) {
+        mob.disorderAtk = Math.min(20, Math.max(1, Number(msg.atk) || 0));
+        mob.disorderMs = Math.min(60000, Math.max(0, Number(msg.durationMs) || 0));
       }
     } else if (msg.t === 'chat') {
       const text = String(msg.text ?? '').slice(0, MAX_CHAT);

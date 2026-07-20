@@ -23,7 +23,8 @@ import { createCombatState, stepCombat, stepCosmeticStars, attackRange } from '.
 import { grantXp, usePotion, xpToNext } from './sim/progression.js';
 import { createLootState, spawnDrops, spawnDropsFromItems, stepLoot } from './sim/loot.js';
 import { makeGear, armorDefense } from './sim/items.js';
-import { stepMp } from './sim/skills.js';
+import { stepMp, tryAdvanceJob, starRangeOf, nimbleBodyBonus } from './sim/skills.js';
+import { mulberry32 } from './sim/rng.js';
 import { expectedPools, thiefAccuracy } from './sim/stats.js';
 import { createNetwork } from './net/networkManager.js';
 import { createAudioEngine } from './audio/engine.js';
@@ -42,6 +43,7 @@ import { createShopPanel } from './ui/shopPanel.js';
 import { createInventoryPanel } from './ui/inventoryPanel.js';
 import { createSkillPanel } from './ui/skillPanel.js';
 import { createStatPanel } from './ui/statPanel.js';
+import { createJobPanel } from './ui/jobPanel.js';
 import { createChatInput } from './ui/chat.js';
 
 const canvas = document.querySelector('#game');
@@ -75,9 +77,10 @@ if (saved) {
   p.maxMp = saved.player.maxMp ?? expectedPools(p.level).mp;
   p.mp = saved.player.mp == null ? p.maxMp : Math.min(saved.player.mp, p.maxMp);
   p.sp = saved.player.sp ?? 0;
-  p.skills = { luckySeven: 0, flashJump: 0, ...saved.player.skills };
+  p.skills = { nimbleBody: 0, keenEyes: 0, disorder: 0, darkSight: 0, luckySeven: 0, ...saved.player.skills };
   if (saved.player.stats) p.stats = saved.player.stats; // v5 sheet
   p.ap = saved.player.ap ?? 0;
+  p.job = saved.player.job ?? 'beginner'; // v6 jobs
   // Merge saved inventory; ensure `stars` exists for pre-ammo (v1/early-v2) saves.
   gameState.inventory = { ...gameState.inventory, ...saved.inventory };
   if (typeof gameState.inventory.stars !== 'number') gameState.inventory.stars = STARTING_STARS;
@@ -111,6 +114,7 @@ const shopPanel = createShopPanel(gameState, eventBus);
 createInventoryPanel(gameState, eventBus);
 createSkillPanel(gameState, eventBus);
 createStatPanel(gameState, eventBus);
+const jobPanel = createJobPanel(gameState, eventBus);
 initKeyboard(window);
 
 // === Audio (M07) ===
@@ -215,7 +219,7 @@ eventBus.on('player:died', () => {
   pendingDeathRespawn = true;
 });
 // Saves: fire on every progression-relevant event + on leaving.
-for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned', 'shop:bought', 'gear:equipped', 'skill:assigned', 'stat:assigned']) {
+for (const ev of ['player:xp', 'player:levelup', 'loot:picked', 'potion:used', 'player:respawned', 'shop:bought', 'gear:equipped', 'skill:assigned', 'stat:assigned', 'job:advanced']) {
   eventBus.on(ev, () => persist(gameState));
 }
 window.addEventListener('beforeunload', () => persist(gameState));
@@ -233,10 +237,11 @@ function step() {
       return; // fresh map: skip the rest of this tick
     }
     const npc = gameState.map.npcs?.find((n) => Math.abs(n.x - p.x) <= NPC_RANGE);
-    if (npc) shopPanel.open();
+    if (npc) (npc.id === 'trainer' ? jobPanel : shopPanel).open();
   }
   // Walking away (any movement input) closes the shop, Maple-style.
   if (gameState.shopOpen && (input.left || input.right || input.jump)) shopPanel.close();
+  if (input.left || input.right || input.jump) jobPanel.close();
 
   stepPlayer(gameState.player, gameState.map, input, dt, eventBus);
   stepMp(gameState.player, dt); // slow MP regen (M11)
@@ -277,7 +282,7 @@ function step() {
   presenceStep += 1;
   if (net.connected && presenceStep % 6 === 0) {
     const p = gameState.player;
-    net.sendState({ x: +p.x.toFixed(2), y: +p.y.toFixed(2), facing: p.facing, state: p.state, level: p.level });
+    net.sendState({ x: +p.x.toFixed(2), y: +p.y.toFixed(2), facing: p.facing, state: p.state, level: p.level, hidden: p.hiddenMs > 0 });
   }
   if (input.potion) usePotion(gameState.player, gameState.inventory, eventBus);
   if (input.mute) {
@@ -378,7 +383,10 @@ window.render_game_to_text = () => {
       xpToNext: xpToNext(p.level),
       clip: playerView.currentClip,
       damageRange: attackRange(p),
-      accuracy: +thiefAccuracy(p.stats).toFixed(2),
+      accuracy: +(thiefAccuracy(p.stats) + nimbleBodyBonus(p)).toFixed(2),
+      starRange: +starRangeOf(p).toFixed(4),
+      job: p.job,
+      hidden: p.hiddenMs > 0,
       stats: { ...p.stats },
       ap: p.ap,
       defense: armorDefense(p.equipment),
@@ -411,6 +419,7 @@ window.render_game_to_text = () => {
       state: mob.state,
       facing: mob.facing,
       clip: mobsView.clipOf(mob.id),
+      disordered: mob.disorderMs > 0,
     })),
     mobProjectiles: (gameState.mobs.projectiles ?? []).map((s) => ({
       x: round3(s.x),
@@ -485,7 +494,9 @@ window.__test = {
     p.hp = p.maxHp;
     p.maxMp = pools.mp;
     p.mp = p.maxMp;
-    p.sp = SP_PER_LEVEL * (level - 1); // retroactive, like save migrations
+    // SP is job-gated (M13): beginners have none; rogues get the same
+    // ledger the trainer/migration math uses.
+    p.sp = p.job === 'rogue' ? Math.max(0, 1 + SP_PER_LEVEL * (level - 10)) : 0;
     p.ap = AP_PER_LEVEL * (level - 1);
     eventBus.emit('player:xp', { amount: 0 }); // triggers a save
   },
@@ -495,6 +506,10 @@ window.__test = {
   },
   setStats(str, dex, int, luk) {
     gameState.player.stats = { str, dex, int, luk };
+  },
+  advanceJob() {
+    // Mirrors the trainer button (same pure sim call).
+    return tryAdvanceJob(gameState.player, mulberry32(5151), eventBus);
   },
   gotoMap(mapId) {
     changeMap(mapId, 'spawn');

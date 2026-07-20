@@ -177,7 +177,37 @@ export const STARTER_CLAW_PRICE = 80; // Nara's mesos sink (tier-1, no roll)
 // master 20, per-star % of the LUK×5 basis. Flash Jump keeps interim
 // values until M13 moves it to its authentic Hermit slot.
 export const SP_PER_LEVEL = 3;
+// M13: the real Rogue kit (reference §5/§7). Flash Jump left the early
+// game — it returns as the Hermit skill it always was (M15+).
 export const SKILLS = {
+  nimbleBody: {
+    name: 'Nimble Body',
+    maxLevel: 20,
+    passive: true,
+    desc: 'Passive: accuracy and avoid +level',
+  },
+  keenEyes: {
+    name: 'Keen Eyes',
+    maxLevel: 8,
+    passive: true,
+    prereq: ['nimbleBody', 3],
+    desc: 'Passive: throwing range +level',
+  },
+  disorder: {
+    name: 'Disorder',
+    maxLevel: 20,
+    mpCost: [5, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10],
+    durationSec: [7, 9, 11, 13, 15, 20, 22, 24, 29, 31, 33, 38, 40, 42, 47, 49, 51, 56, 58, 60],
+    desc: 'Weaken a mob: attack/def −level (D)',
+  },
+  darkSight: {
+    name: 'Dark Sight',
+    maxLevel: 20,
+    prereq: ['disorder', 3],
+    // MP = 25 − level; duration = 10·level s; speed −30…0 per the table.
+    speedPenalty: [30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+    desc: 'Hide in shadow: untouchable, no attacking (V)',
+  },
   luckySeven: {
     name: 'Lucky Seven',
     maxLevel: 20,
@@ -185,15 +215,17 @@ export const SKILLS = {
     pct: [58, 62, 66, 70, 76, 80, 84, 90, 94, 100, 104, 110, 114, 120, 124, 130, 134, 140, 144, 150],
     desc: 'Throw 2 stars at the locked target (Shift)',
   },
-  flashJump: {
-    name: 'Flash Jump',
-    maxLevel: 5,
-    mpCost: [13, 12, 11, 10, 9],
-    vx: 9,
-    vy: 4,
-    desc: 'Alt mid-air: burst forward',
-  },
 };
+// Keen Eyes px→world-unit conversion: base range 7u ≡ ~400 px classic
+// throw range → +25 px/level = +0.4375 u/level (presentation mapping).
+export const KEEN_EYES_UNIT_PER_LEVEL = 0.4375;
+
+// Job advancement (reference §7): Rogue at 10 with DEX 25; one-time
+// pool roll + 1 SP (+3/level catch-up if advancing late).
+export const JOB_ADV_LEVEL = 10;
+export const JOB_ADV_DEX = 25;
+export const JOB_ADV_HP = [100, 150];
+export const JOB_ADV_MP = [25, 50];
 
 // --- Character sheet (M12, all sourced — ms-v62-mechanics.md §1–4) ---
 export const AP_PER_LEVEL = 5;

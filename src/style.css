@@ -419,6 +419,66 @@ body {
   color: #55648c;
 }
 
+/* --- Job advancement panel (M13) --- */
+#job-panel {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  width: 250px;
+  padding: 0 0 12px;
+  background: linear-gradient(#eef1f8, #d7dce9);
+  border: 1px solid #7a86a5;
+  border-radius: 8px;
+  box-shadow: 0 6px 22px rgba(10, 16, 40, 0.45);
+  font-family: Tahoma, Verdana, sans-serif;
+  font-size: 11px;
+  color: #223055;
+  user-select: none;
+  z-index: 21;
+}
+.job-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: linear-gradient(#5a6da8, #33427a);
+  border-radius: 7px 7px 0 0;
+  color: #ffffff;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+#job-close {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #7a1206;
+  border-radius: 4px;
+  background: linear-gradient(#ff7a5c, #b01c0e);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+#job-text {
+  padding: 10px 12px;
+  min-height: 30px;
+}
+#job-advance {
+  display: block;
+  margin: 0 12px;
+  width: calc(100% - 24px);
+  padding: 8px 0;
+  border: 1px solid #145c1e;
+  border-radius: 6px;
+  background: linear-gradient(#7ede8e, #35b34a 50%, #1e8630);
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 /* --- Stat panel (M12) — classic ability window --- */
 #stat-panel {
   position: fixed;

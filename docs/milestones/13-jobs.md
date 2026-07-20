@@ -2,7 +2,7 @@
 
 ## Status
 
-planned (parity ladder step 2 — reference doc §7 has every table)
+implemented 2026-07-20 — all 7 automated AC green (suite 88/88), live-verified; awaiting user playtest
 
 ## Objective
 
@@ -39,14 +39,14 @@ Flash Jump leaves the early game (it returns at Hermit, M15+).
 
 ## Acceptance criteria
 
-- [ ] Beginners: no SP, skill panel locked until advancement — test: `tests/e2e/jobs.spec.js::beginner has no skills`
-- [ ] Advancement at the trainer: requirements enforced, pool roll + 1 SP granted, job persists — test: `::rogue advancement`
-- [ ] Prereq gating (Keen Eyes ← NB3, Dark Sight ← Disorder 3) — test: `::skill prereqs`
-- [ ] Nimble Body raises accuracy; Keen Eyes extends throw range — test: `::passive effects`
-- [ ] Dark Sight: hidden = no aggro/damage, no attacking, speed penalty; expires — test: `::dark sight`
-- [ ] Disorder: debuffed mob deals reduced contact damage for the duration — test: `::disorder`
-- [ ] Save v6 migration: FJ refunded, SP recomputed, job assigned by level — test: `::v5 migration`
-- [ ] Feel check — user playtest
+- [x] Beginners: no SP, skill panel locked until advancement — `tests/e2e/jobs.spec.js::beginner has no skills`
+- [x] Advancement at the trainer (Instructor Vey): requirements enforced, +100–150/+25–50 roll, +1 SP (+3/level catch-up when late), persists — `::rogue advancement`
+- [x] Prereq gating (Keen Eyes ← NB3, Dark Sight ← Disorder 3) — `::skill prereqs`
+- [x] Nimble Body feeds accuracy; Keen Eyes extends throw range — `::passive effects`
+- [x] Dark Sight: no aggro/damage, no attacking, −30 speed at L1, 10s/level — `::dark sight`
+- [x] Disorder: attack −level for the duration; no reapply while active — `::disorder`
+- [x] Save v6 migration: FJ refunded, SP recomputed, job by level — `::v5 migration refunds flash jump and recomputes SP`
+- [ ] Feel check — user playtest (D = Disorder, V = Dark Sight)
 
 ## Exit condition
 
