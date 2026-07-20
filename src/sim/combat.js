@@ -29,16 +29,17 @@ import {
   starRangeOf,
 } from './skills.js';
 import { basicRange, l7Range, thiefAccuracy, hitChance } from './stats.js';
-import { BASE_WA, BASE_MASTERY, MOB_TYPES } from '../core/constants.js';
+import { BASE_MASTERY, MOB_TYPES, STAR_TYPES } from '../core/constants.js';
 import { mulberry32 } from './rng.js';
 
-// M12: total weapon attack — interim base loadout + equipped claw
-// (M14 brings the real per-item WA tables).
-export const totalWa = (player) => BASE_WA + weaponAttack(player.equipment);
+// M14: total weapon attack the documented way — claw WA + equipped star
+// type's WA; no claw (beginners) = star WA only.
+export const totalWa = (player, inventory) =>
+  weaponAttack(player.equipment) + (STAR_TYPES[inventory?.starType] ?? STAR_TYPES.steel).wa;
 
 // Basic-attack damage range for the character sheet / HUD / payload.
-export function attackRange(player) {
-  const r = basicRange(player.stats, totalWa(player), BASE_MASTERY);
+export function attackRange(player, inventory) {
+  const r = basicRange(player.stats, totalWa(player, inventory), BASE_MASTERY);
   return { min: Math.round(r.min), max: Math.round(r.max) };
 }
 
@@ -95,7 +96,7 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
     // Damage + hit resolve at press time (classic): each star rolls its
     // own damage in the documented range, and its own hit check against
     // the target's avoid. Nimble Body feeds accuracy.
-    const wa = totalWa(player);
+    const wa = totalWa(player, inventory);
     const acc = thiefAccuracy(player.stats) + nimbleBodyBonus(player);
     const volley = l7 ? 2 : 1;
     for (let i = 0; i < volley; i++) {

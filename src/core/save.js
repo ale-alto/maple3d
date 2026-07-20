@@ -10,7 +10,15 @@ const KEY = 'maple3d-save';
 // v4 (M11): + player.mp/sp/skills (retroactive SP for pre-skill saves)
 // v5 (M12): + player.stats/ap/maxHp/maxMp (pools are path-dependent now)
 // v6 (M13): + player.job; flash jump refunded, SP recomputed job-gated
-import { SP_PER_LEVEL, AP_PER_LEVEL, STAT_ROLL_SEED, JOB_ADV_LEVEL } from './constants.js';
+// v7 (M14): + inventory.starType/bluePotions; claws carry wa/levelReq
+import {
+  SP_PER_LEVEL,
+  AP_PER_LEVEL,
+  STAT_ROLL_SEED,
+  JOB_ADV_LEVEL,
+  STAR_TYPES,
+  GEAR_TIERS,
+} from './constants.js';
 import { rollNewStats, expectedPools } from '../sim/stats.js';
 import { mulberry32 } from '../sim/rng.js';
 
@@ -86,7 +94,39 @@ export function loadSave() {
         },
       };
     }
-    if (data.v !== 6) return null;
+    if (data.v === 6) {
+      // Items migration: typed stars (count clamped to the basic cap);
+      // old claws (flat `attack`) become real-ladder pieces at their
+      // tier's base WA.
+      const migrateClaw = (g) =>
+        g && g.slot === 'weapon'
+          ? {
+              ...g,
+              wa: GEAR_TIERS.weapon[g.tier - 1]?.wa ?? 10,
+              levelReq: GEAR_TIERS.weapon[g.tier - 1]?.levelReq ?? 10,
+              attack: undefined,
+            }
+          : g;
+      data = {
+        ...data,
+        v: 7,
+        player: {
+          ...data.player,
+          equipment: {
+            weapon: migrateClaw(data.player.equipment?.weapon ?? null),
+            armor: data.player.equipment?.armor ?? null,
+          },
+        },
+        inventory: {
+          ...data.inventory,
+          starType: 'steel',
+          stars: Math.min(STAR_TYPES.steel.cap, data.inventory.stars ?? 0),
+          bluePotions: 0,
+          bag: (data.inventory.bag ?? []).map(migrateClaw),
+        },
+      };
+    }
+    if (data.v !== 7) return null;
     return data;
   } catch {
     return null;
@@ -99,7 +139,7 @@ export function persist(gameState) {
     localStorage.setItem(
       KEY,
       JSON.stringify({
-        v: 6,
+        v: 7,
         mapId: gameState.mapId,
         player: {
           level: p.level,

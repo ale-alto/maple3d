@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/game-test.js';
-import { SKILLS, SP_PER_LEVEL, RUN_SPEED, BASE_WA } from '../../src/core/constants.js';
+import { SKILLS, SP_PER_LEVEL, RUN_SPEED, STAR_TYPES } from '../../src/core/constants.js';
 import { l7Range } from '../../src/sim/stats.js';
 
 // M11 skills, rewritten for M13 job gating: SP only exists once advanced
@@ -101,7 +101,8 @@ test.describe('M11 skills', () => {
     expect(result.starsBefore - result.starsAfter).toBe(2);
     expect(result.mpBefore - result.mpAfter).toBeGreaterThanOrEqual(SKILLS.luckySeven.mpCost[0] - 2);
     // Both stars rolled inside L7's own LUK×5/×2.5 basis at 58%.
-    const r = l7Range(result.stats, BASE_WA, SKILLS.luckySeven.pct[0] / 100);
+    // Rogue with no claw: WA = the basic star type's WA (M14).
+    const r = l7Range(result.stats, STAR_TYPES.steel.wa, SKILLS.luckySeven.pct[0] / 100);
     expect(result.hpDelta).toBeGreaterThanOrEqual(2 * Math.max(1, Math.floor(r.min)));
     expect(result.hpDelta).toBeLessThanOrEqual(2 * Math.ceil(r.max));
     const basicMid = (result.basicRange.min + result.basicRange.max) / 2;

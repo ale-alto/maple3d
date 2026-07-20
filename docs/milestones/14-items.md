@@ -2,7 +2,7 @@
 
 ## Status
 
-planned (parity ladder step 3 — reference doc §9 has the tables)
+implemented 2026-07-20 — all 5 automated AC green (suite 93/93), live-verified; awaiting user playtest
 
 ## Objective
 
@@ -38,11 +38,11 @@ heal-amount/price shelf (Red HP + Blue MP for v1).
 
 ## Acceptance criteria
 
-- [ ] Damage uses claw+star WA (no claw = star WA only) — test: `tests/e2e/items.spec.js::wa from equipment`
-- [ ] Claw equip enforces level requirement — `::claw level req`
-- [ ] Star recharge: fills to cap, charges per missing star — `::star recharge`
-- [ ] Red heals 50 (C), Blue restores 100 MP (X), real prices — `::potions`
-- [ ] Save v7 round-trips star type + potion counts; v6 migrates — `::save v7`
+- [x] Damage uses claw+star WA (no claw = star WA only) — `tests/e2e/items.spec.js::wa from equipment`
+- [x] Claw equip enforces job + level requirement — `::claw level req`
+- [x] Star recharge fills to cap at per-star price — `::star recharge`
+- [x] Red heals 50 (C), Blue restores 100 MP (X), real prices — `::potions`
+- [x] Save v7 round-trips; v6 migrates (typed stars, claws re-based) — `::save v7`
 - [ ] Feel check — user playtest
 
 ## Exit condition

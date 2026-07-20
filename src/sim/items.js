@@ -1,17 +1,18 @@
-// Headless item/gear sim (M10). Pure logic on plain objects.
-// Gear items: {kind:'gear', gearId, slot, name, tier, attack|defense} —
-// the stat rolls once at drop time (base + [0..roll], integer).
+// Headless item/gear sim (M10; M14 real ladder). Pure logic on plain
+// objects. Weapons: {kind:'gear', gearId, slot:'weapon', name, tier, wa,
+// levelReq} — wa rolls once at drop inside the tier's documented range.
+// Armor: {…, slot:'armor', defense} (our-design values until the
+// defense-formula pass).
 
 import { GEAR_TIERS } from '../core/constants.js';
 
 let nextGearId = 1;
 
 // Build a concrete piece from a tier def. rollFrac in [0,1) picks the
-// bonus (pass 1 - epsilon for max-roll dev/test gear, 0 for base).
+// roll (pass ~1 for max-roll dev/test gear, 0 for base).
 export function makeGear(slot, tier, rollFrac = 0) {
   const def = GEAR_TIERS[slot]?.[tier - 1];
   if (!def) return null;
-  const bonus = Math.floor(rollFrac * (def.roll + 1));
   const item = {
     kind: 'gear',
     gearId: `g${nextGearId++}`,
@@ -19,8 +20,13 @@ export function makeGear(slot, tier, rollFrac = 0) {
     name: def.name,
     tier: def.tier,
   };
-  if (slot === 'weapon') item.attack = def.attack + bonus;
-  else item.defense = def.defense + bonus;
+  if (slot === 'weapon') {
+    const [lo, hi] = def.roll;
+    item.wa = lo + Math.floor(rollFrac * (hi - lo + 1));
+    item.levelReq = def.levelReq;
+  } else {
+    item.defense = def.defense + Math.floor(rollFrac * (def.roll + 1));
+  }
   return item;
 }
 
@@ -36,17 +42,21 @@ export function rollGear(rand, typeDef) {
 }
 
 // Derived stats: gear layers on top of the level curve.
-export const weaponAttack = (equipment) => equipment?.weapon?.attack ?? 0;
+export const weaponAttack = (equipment) => equipment?.weapon?.wa ?? 0;
 export const armorDefense = (equipment) => equipment?.armor?.defense ?? 0;
 
 // Defense soak: never below 1 damage (classic MS never fully no-sells).
 export const soak = (amount, equipment) => Math.max(1, amount - armorDefense(equipment));
 
 // Equip the bag item at idx; whatever occupied its slot swaps back into
-// the bag. Returns true on success.
+// the bag. Claws are thief gear with level requirements (M14).
 export function equipFromBag(player, inventory, idx, events) {
   const item = inventory.bag[idx];
   if (!item || item.kind !== 'gear') return false;
+  if (item.slot === 'weapon') {
+    if (player.job !== 'rogue') return false;
+    if (player.level < (item.levelReq ?? 0)) return false;
+  }
   inventory.bag.splice(idx, 1);
   const prev = player.equipment[item.slot];
   player.equipment[item.slot] = item;

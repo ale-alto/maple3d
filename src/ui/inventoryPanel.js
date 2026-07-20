@@ -5,7 +5,7 @@
 import { BAG_MAX } from '../core/constants.js';
 import { equipFromBag, unequip } from '../sim/items.js';
 
-const statOf = (g) => (g.slot === 'weapon' ? `ATT +${g.attack}` : `DEF +${g.defense}`);
+const statOf = (g) => (g.slot === 'weapon' ? `WA ${g.wa} · Lv ${g.levelReq}` : `DEF +${g.defense}`);
 
 export function createInventoryPanel(gameState, eventBus) {
   const panel = document.createElement('div');
@@ -37,8 +37,8 @@ export function createInventoryPanel(gameState, eventBus) {
       cell.dataset.idx = idx;
       // Compare tooltip vs what's equipped in that slot.
       const cur = eq[g.slot];
-      const curStat = cur ? (g.slot === 'weapon' ? cur.attack : cur.defense) : 0;
-      const stat = g.slot === 'weapon' ? g.attack : g.defense;
+      const curStat = cur ? (g.slot === 'weapon' ? cur.wa : cur.defense) : 0;
+      const stat = g.slot === 'weapon' ? g.wa : g.defense;
       const delta = stat - curStat;
       cell.title = `${g.name} — ${statOf(g)} (${delta >= 0 ? '+' : ''}${delta} vs equipped)`;
       cell.innerHTML = `<span class="inv-cell-name">${g.name}</span><span class="inv-cell-stat">${statOf(g)}</span>`;

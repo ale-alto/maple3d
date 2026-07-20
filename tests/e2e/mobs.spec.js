@@ -41,10 +41,11 @@ test.describe('M02 mobs', () => {
     await teleport(gamePage, spawn0.patrolX1 - 0.5, spawn0.y);
     await holdKey(gamePage, 'ArrowRight', 30);
 
-    // Hold attack until the mob dies.
+    // Hold attack until the mob dies. Fresh characters on real formulas
+    // (bare star WA, M14) need ~9 hits for a blob — budget generously.
     await gamePage.keyboard.down('Control');
     let alive = total;
-    for (let i = 0; i < 10 && alive === total; i++) {
+    for (let i = 0; i < 30 && alive === total; i++) {
       await advance(gamePage, 500);
       alive = (await state(gamePage)).mobs.length;
     }

@@ -97,7 +97,7 @@ export function createHud(eventBus) {
       const p = gameState.player;
       el.level.textContent = p.level;
       el.job.textContent = p.job === 'rogue' ? 'Rogue' : 'Beginner';
-      const range = attackRange(p);
+      const range = attackRange(p, gameState.inventory);
       el.att.textContent = `ATT ${range.min}~${range.max}`;
       el.hpFill.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`;
       el.hpText.textContent = `[${p.hp}/${p.maxHp}]`;

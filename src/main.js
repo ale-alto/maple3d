@@ -20,7 +20,7 @@ import { maps, DEFAULT_MAP } from './sim/maps/index.js';
 import { createPlayer, stepPlayer } from './sim/player.js';
 import { createMobsState, stepMobs, stepMobProjectiles } from './sim/mobs.js';
 import { createCombatState, stepCombat, stepCosmeticStars, attackRange } from './sim/combat.js';
-import { grantXp, usePotion, xpToNext } from './sim/progression.js';
+import { grantXp, usePotion, useBluePotion, xpToNext } from './sim/progression.js';
 import { createLootState, spawnDrops, spawnDropsFromItems, stepLoot } from './sim/loot.js';
 import { makeGear, armorDefense } from './sim/items.js';
 import { stepMp, tryAdvanceJob, starRangeOf, nimbleBodyBonus } from './sim/skills.js';
@@ -55,7 +55,14 @@ gameState.player = createPlayer(gameState.map);
 gameState.mobs = createMobsState(gameState.map);
 gameState.combat = createCombatState();
 gameState.loot = createLootState();
-gameState.inventory = { mesos: 0, potions: STARTING_POTIONS, stars: STARTING_STARS, bag: [] };
+gameState.inventory = {
+  mesos: 0,
+  potions: STARTING_POTIONS, // Red Potions (M14)
+  bluePotions: 0,
+  stars: STARTING_STARS,
+  starType: 'steel',
+  bag: [],
+};
 gameState.shopOpen = false;
 
 // Restore the character before anything renders.
@@ -85,6 +92,8 @@ if (saved) {
   gameState.inventory = { ...gameState.inventory, ...saved.inventory };
   if (typeof gameState.inventory.stars !== 'number') gameState.inventory.stars = STARTING_STARS;
   if (!Array.isArray(gameState.inventory.bag)) gameState.inventory.bag = [];
+  if (!gameState.inventory.starType) gameState.inventory.starType = 'steel'; // v7
+  if (typeof gameState.inventory.bluePotions !== 'number') gameState.inventory.bluePotions = 0;
   delete gameState.inventory.starPacks; // legacy field
 }
 
@@ -285,6 +294,7 @@ function step() {
     net.sendState({ x: +p.x.toFixed(2), y: +p.y.toFixed(2), facing: p.facing, state: p.state, level: p.level, hidden: p.hiddenMs > 0 });
   }
   if (input.potion) usePotion(gameState.player, gameState.inventory, eventBus);
+  if (input.bluePotion) useBluePotion(gameState.player, gameState.inventory, eventBus);
   if (input.mute) {
     audio.toggleMute();
     audioSettings.refresh(); // keep the speaker icon in sync with M
@@ -382,7 +392,7 @@ window.render_game_to_text = () => {
       xp: p.xp,
       xpToNext: xpToNext(p.level),
       clip: playerView.currentClip,
-      damageRange: attackRange(p),
+      damageRange: attackRange(p, gameState.inventory),
       accuracy: +(thiefAccuracy(p.stats) + nimbleBodyBonus(p)).toFixed(2),
       starRange: +starRangeOf(p).toFixed(4),
       job: p.job,

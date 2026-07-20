@@ -42,7 +42,7 @@ export function createStatPanel(gameState, eventBus) {
       panel.querySelector(`.stat-value[data-stat="${id}"]`).textContent = p.stats[id];
       panel.querySelector(`.stat-add[data-stat="${id}"]`).disabled = p.ap <= 0;
     }
-    const r = attackRange(p);
+    const r = attackRange(p, gameState.inventory);
     panel.querySelector('#stat-range').textContent = `${r.min} ~ ${r.max}`;
     panel.querySelector('#stat-acc').textContent = thiefAccuracy(p.stats).toFixed(1);
     panel.querySelector('#stat-avoid').textContent = thiefAvoid(p.stats).toFixed(1);

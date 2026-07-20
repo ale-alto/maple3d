@@ -2,7 +2,6 @@ import { test, expect } from '../fixtures/game-test.js';
 import {
   AP_PER_LEVEL,
   BASE_MASTERY,
-  BASE_WA,
   MP_REGEN_AMOUNT,
   MP_REGEN_INTERVAL_MS,
 } from '../../src/core/constants.js';

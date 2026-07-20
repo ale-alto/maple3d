@@ -67,8 +67,7 @@ export const ATTACK_COOLDOWN_MS = 720; // authentic Fast (4) claw cast time (Map
 // Throwing stars are consumable ammo (core assassin mechanic): each attack
 // spends one; refill via star-pack drops and the shop; empty = can't throw.
 export const STARTING_STARS = 100;
-export const STARPACK_SIZE = 50; // stars per pack (drop or purchase)
-export const STAR_MAX = 800; // equipped stack cap (Ilbi-tier)
+export const STARPACK_SIZE = 50; // stars per loot-drop bundle (M14: refills toward the type cap)
 export const MOB_MAX_HP = 40; // M03 rebalance: 5 base hits (was 60/8-hit, playtest "tanky")
 export const MOB_SPEED = 1.2;
 export const MOB_AGGRO_SPEED = 2.2;
@@ -91,7 +90,7 @@ export const LEVEL_CAP = 15;
 export const DEATH_XP_PENALTY = 0.05; // fraction of xpToNext lost on death
 export const HP_PER_LEVEL = 5;
 export const DAMAGE_PER_LEVEL = 1; // star damage bonus per level above 1
-export const POTION_HEAL = 20;
+// (POTION_HEAL retired in M14 — Red Potion heals RED_POTION_HEAL.)
 export const POTION_KEY = 'c';
 export const STARTING_POTIONS = 3; // new-character kit
 
@@ -154,14 +153,15 @@ export const MOB_TYPES = {
   },
 };
 
-// --- Gear (M10) --- Maple-honest rare drops; stats roll at drop time as
-// base + [0..roll]. Tier index = tier - 1. Level 15 cap: max star hit =
-// STAR_DAMAGE + 14 + claw3 max 14 = 36, inside the server clamp (40).
+// --- Gear (M10; M14 real ladder — reference §9) --- Our names, the
+// documented numbers: claw WA rolls inside the real ranges, level reqs
+// and prices from the ladder. Armor stays our-design (real armor tables
+// arrive with the defense-formula pass).
 export const GEAR_TIERS = {
   weapon: [
-    { id: 'claw1', name: 'Bronze Claw', tier: 1, attack: 3, roll: 2 },
-    { id: 'claw2', name: 'Steel Claw', tier: 2, attack: 6, roll: 3 },
-    { id: 'claw3', name: 'Dark Claw', tier: 3, attack: 10, roll: 4 },
+    { id: 'claw1', name: 'Bronze Claw', tier: 1, wa: 10, roll: [8, 12], levelReq: 10, price: 3000 },
+    { id: 'claw2', name: 'Steel Claw', tier: 2, wa: 12, roll: [12, 15], levelReq: 15, price: 20000 },
+    { id: 'claw3', name: 'Dark Claw', tier: 3, wa: 14, roll: [13, 16], levelReq: 20, price: 30000 },
   ],
   armor: [
     { id: 'garb1', name: 'Cloth Garb', tier: 1, defense: 2, roll: 2 },
@@ -169,8 +169,23 @@ export const GEAR_TIERS = {
     { id: 'garb3', name: 'Shadow Garb', tier: 3, defense: 7, roll: 4 },
   ],
 };
+
+// --- Throwing stars (M14, reference §9): typed, rechargeable equipment.
+// Total WA = claw WA + star WA; no claw = star WA only (beginners).
+// Basic-tier slot cap 500 is classic lore, UNVERIFIED (top tier's 800
+// and both recharge prices are documented).
+export const STAR_TYPES = {
+  steel: { name: 'Steel Star', wa: 15, cap: 500, rechargePerStar: 0.3 },
+  moon: { name: 'Moon Star', wa: 27, cap: 800, rechargePerStar: 0.9 },
+};
+
+// --- Potions (M14, reference §9): the real shelf, v1 slice.
+export const RED_POTION_HEAL = 50;
+export const RED_POTION_PRICE = 50;
+export const BLUE_POTION_MP = 100;
+export const BLUE_POTION_PRICE = 200;
 export const BAG_MAX = 24;
-export const STARTER_CLAW_PRICE = 80; // Nara's mesos sink (tier-1, no roll)
+// (STARTER_CLAW_PRICE retired in M14 — claw prices live on GEAR_TIERS.)
 
 // --- Skills (M11, M12: real pre-BB tables — ms-v62-mechanics.md §5) ---
 // +3 SP per level-up, 1 SP per skill level. Lucky Seven: bbb table,
@@ -230,10 +245,7 @@ export const JOB_ADV_MP = [25, 50];
 // --- Character sheet (M12, all sourced — ms-v62-mechanics.md §1–4) ---
 export const AP_PER_LEVEL = 5;
 export const BASE_MASTERY = 0.1; // unskilled mastery (Claw Mastery is M15)
-// Interim total weapon attack until M14's real item tables: a typical
-// early-rogue loadout (claw 15 WA + stars 15 WA). Equipped claw `attack`
-// adds on top for now.
-export const BASE_WA = 30;
+// (BASE_WA retired in M14 — WA comes from claw + star equipment, §9.)
 export const PLAYER_START_HP = 50; // level-1 beginner pools
 export const PLAYER_START_MP = 5;
 export const MP_REGEN_AMOUNT = 3; // base recovery: 3 MP per 10 s standing
@@ -293,8 +305,7 @@ export const PORTAL_RANGE = 0.9; // Up within this of a portal transitions
 export const NPC_RANGE = 1.1; // Up within this of an NPC interacts
 export const CAMERA_SWING_MS = 500; // eased settle on map entry
 export const CAMERA_SWING_ZOOM = 6; // extra camera Z at swing start
-export const POTION_PRICE = 30;
-export const STARPACK_PRICE = 50;
+// (POTION_PRICE/STARPACK_PRICE retired in M14 — real shelf in §9 block.)
 export const PORTAL_COLOR = 0x66c6ff;
 export const NPC_COLOR = 0xc98a4b;
 

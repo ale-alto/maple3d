@@ -28,10 +28,16 @@ test.describe('M10 gear', () => {
       expect(item.tier).toBeLessThanOrEqual(2);
       const def = GEAR_TIERS[item.slot][item.tier - 1];
       expect(item.name).toBe(def.name);
-      const stat = item.slot === 'weapon' ? item.attack : item.defense;
-      const base = item.slot === 'weapon' ? def.attack : def.defense;
-      expect(stat).toBeGreaterThanOrEqual(base);
-      expect(stat).toBeLessThanOrEqual(base + def.roll);
+      // M14: weapons roll wa inside the documented [lo, hi]; armor keeps
+      // the base + [0..roll] shape.
+      if (item.slot === 'weapon') {
+        expect(item.wa).toBeGreaterThanOrEqual(def.roll[0]);
+        expect(item.wa).toBeLessThanOrEqual(def.roll[1]);
+        expect(item.levelReq).toBe(def.levelReq);
+      } else {
+        expect(item.defense).toBeGreaterThanOrEqual(def.defense);
+        expect(item.defense).toBeLessThanOrEqual(def.defense + def.roll);
+      }
       slots.add(item.slot);
     }
     expect(slots.size).toBe(2); // both slots occur
@@ -44,6 +50,11 @@ test.describe('M10 gear', () => {
       const read = () => JSON.parse(window.render_game_to_text());
       const key = (t, k, code) =>
         window.dispatchEvent(new KeyboardEvent(t, { key: k, code, bubbles: true }));
+      // Claws are rogue gear (M14) — advance first.
+      window.__test.setXp(14, 0);
+      window.__test.setStats(4, 25, 4, 30);
+      window.__test.advanceJob();
+      window.advanceTime(50);
       window.__test.gotoMap('field1');
       window.advanceTime(100);
       window.__test.setStars(50);
@@ -141,6 +152,11 @@ test.describe('M10 gear', () => {
         return !!el && el.style.display !== 'none';
       };
       const closedAtBoot = !visible();
+      // Claws are rogue gear with level reqs (M14) — qualify for tier 2.
+      window.__test.setXp(16, 0);
+      window.__test.setStats(4, 25, 4, 30);
+      window.__test.advanceJob();
+      window.advanceTime(50);
       key('keydown', 'i', 'KeyI');
       key('keyup', 'i', 'KeyI');
       const openAfterI = visible();
@@ -186,6 +202,11 @@ test.describe('M10 gear', () => {
     await gamePage.evaluate(() => {
       const key = (t, k, code) =>
         window.dispatchEvent(new KeyboardEvent(t, { key: k, code, bubbles: true }));
+      // Claws are rogue gear with level reqs (M14).
+      window.__test.setXp(16, 0);
+      window.__test.setStats(4, 25, 4, 30);
+      window.__test.advanceJob();
+      window.advanceTime(50);
       window.__test.grantGear('weapon', 2);
       window.__test.grantGear('armor', 1);
       key('keydown', 'i', 'KeyI');
@@ -208,8 +229,8 @@ test.describe('M10 gear', () => {
       await gamePage.evaluate(() => window.render_game_to_text()),
     );
     expect(after.player.equipment.weapon?.gearId).toBe(before.player.equipment.weapon.gearId);
-    expect(after.player.equipment.weapon?.attack).toBe(before.player.equipment.weapon.attack);
+    expect(after.player.equipment.weapon?.wa).toBe(before.player.equipment.weapon.wa);
     expect(after.player.equipment.armor?.gearId).toBe(before.player.equipment.armor.gearId);
-    expect(after.player.attack).toBe(before.player.attack);
+    expect(after.player.damageRange).toEqual(before.player.damageRange);
   });
 });

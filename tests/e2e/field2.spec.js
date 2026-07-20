@@ -62,7 +62,10 @@ test.describe('M05 field2', () => {
       window.advanceTime(200);
       // Level 3 first: on the exact pre-BB curve level 1 needs only 15 xp,
       // so a 16-xp bruiser kill would level up and wrap the counter.
+      // Stats boost: bare star WA (M14) kills too slowly for the loop
+      // budget on fresh dice.
       window.__test.setXp(3, 0);
+      window.__test.setStats(4, 25, 4, 30);
       // Kill a ground bruiser: stand outside its patrol edge, lock on.
       // (Index and object from ONE read — JSON payloads never share refs.)
       const spawns = read().map.mobSpawns;

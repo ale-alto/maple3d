@@ -1,5 +1,5 @@
 import { test, expect, state, advance, teleport, holdKey } from '../fixtures/game-test.js';
-import { STAR_RANGE, PLAYER_MAX_HP, STARPACK_SIZE, STAR_MAX } from '../../src/core/constants.js';
+import { STAR_RANGE, PLAYER_MAX_HP } from '../../src/core/constants.js';
 
 // M02 contract additions:
 //   player.hp / player.maxHp / player.invulnMs

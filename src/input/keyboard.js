@@ -15,6 +15,7 @@ let skillHeld = false; // Shift: Lucky Seven (M11), held = auto-volley
 let skillQueue = 0;
 let disorderQueue = 0; // D: Disorder (M13)
 let darkSightQueue = 0; // V: Dark Sight (M13)
+let bluePotionQueue = 0; // X: Blue Potion (M14)
 
 const KEYS = {
   ArrowLeft: 'left',
@@ -63,6 +64,9 @@ export function initKeyboard(target) {
     } else if (e.key === 'v' || e.key === 'V') {
       if (!e.repeat) darkSightQueue += 1;
       e.preventDefault();
+    } else if (e.key === 'x' || e.key === 'X') {
+      if (!e.repeat) bluePotionQueue += 1;
+      e.preventDefault();
     }
   });
 
@@ -100,6 +104,7 @@ export function initKeyboard(target) {
     skillQueue = 0;
     disorderQueue = 0;
     darkSightQueue = 0;
+    bluePotionQueue = 0;
   });
 }
 
@@ -124,5 +129,7 @@ export function readInput() {
   if (disorder) disorderQueue -= 1;
   const darkSight = darkSightQueue > 0;
   if (darkSight) darkSightQueue -= 1;
-  return { ...held, jump, attack, loot, potion, mute, upPressed, skill, disorder, darkSight };
+  const bluePotion = bluePotionQueue > 0;
+  if (bluePotion) bluePotionQueue -= 1;
+  return { ...held, jump, attack, loot, potion, mute, upPressed, skill, disorder, darkSight, bluePotion };
 }

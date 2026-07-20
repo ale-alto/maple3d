@@ -10,7 +10,7 @@ import {
   POTION_DROP_CHANCE,
   STARPACK_DROP_CHANCE,
   STARPACK_SIZE,
-  STAR_MAX,
+  STAR_TYPES,
   LOOT_SEED,
   BAG_MAX,
 } from '../core/constants.js';
@@ -113,7 +113,11 @@ export function stepLoot(state, map, player, inventory, input, dt, events, myId 
       state.drops = state.drops.filter((d) => d !== best);
       if (best.kind === 'mesos') inventory.mesos += best.amount;
       else if (best.kind === 'potion') inventory.potions += 1;
-      else if (best.kind === 'starPack') inventory.stars = Math.min(STAR_MAX, inventory.stars + STARPACK_SIZE);
+      else if (best.kind === 'starPack')
+        inventory.stars = Math.min(
+          (STAR_TYPES[inventory.starType] ?? STAR_TYPES.steel).cap,
+          inventory.stars + STARPACK_SIZE,
+        );
       else if (best.kind === 'gear')
         inventory.bag.push({ kind: 'gear', gearId: best.gearId, slot: best.slot, name: best.name, tier: best.tier, ...(best.attack !== undefined ? { attack: best.attack } : {}), ...(best.defense !== undefined ? { defense: best.defense } : {}) });
       events?.emit('loot:picked', {

@@ -5,7 +5,8 @@
 import {
   LEVEL_CAP,
   DEATH_XP_PENALTY,
-  POTION_HEAL,
+  RED_POTION_HEAL,
+  BLUE_POTION_MP,
   SP_PER_LEVEL,
   AP_PER_LEVEL,
 } from '../core/constants.js';
@@ -52,7 +53,15 @@ export function applyDeathPenalty(p, events) {
 export function usePotion(p, inventory, events) {
   if (inventory.potions <= 0 || p.hp >= p.maxHp) return false;
   inventory.potions -= 1;
-  p.hp = Math.min(p.maxHp, p.hp + POTION_HEAL);
+  p.hp = Math.min(p.maxHp, p.hp + RED_POTION_HEAL); // Red Potion (M14)
   events?.emit('potion:used', { hp: p.hp, potions: inventory.potions });
+  return true;
+}
+
+export function useBluePotion(p, inventory, events) {
+  if ((inventory.bluePotions ?? 0) <= 0 || p.mp >= p.maxMp) return false;
+  inventory.bluePotions -= 1;
+  p.mp = Math.min(p.maxMp, p.mp + BLUE_POTION_MP);
+  events?.emit('potion:used', { mp: p.mp, bluePotions: inventory.bluePotions });
   return true;
 }
