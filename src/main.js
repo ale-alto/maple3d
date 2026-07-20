@@ -97,6 +97,7 @@ if (saved) {
   p.skills = {
     nimbleBody: 0, keenEyes: 0, disorder: 0, darkSight: 0, luckySeven: 0,
     clawMastery: 0, criticalThrow: 0, endure: 0, clawBooster: 0, haste: 0, drain: 0,
+    avenger: 0, flashJump: 0, shadowPartner: 0, alchemist: 0,
     ...saved.player.skills,
   };
   if (saved.player.stats) p.stats = saved.player.stats; // v5 sheet
@@ -415,6 +416,7 @@ window.render_game_to_text = () => {
       hidden: p.hiddenMs > 0,
       boosterMs: Math.round(p.boosterMs ?? 0),
       hasteMs: Math.round(p.hasteMs ?? 0),
+      shadowMs: Math.round(p.shadowMs ?? 0),
       attackCooldownMs: p.boosterMs > 0 ? BOOSTED_COOLDOWN_MS : ATTACK_COOLDOWN_MS,
       stats: { ...p.stats },
       ap: p.ap,

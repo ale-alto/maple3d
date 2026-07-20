@@ -29,7 +29,7 @@ export function createSkillPanel(gameState, eventBus) {
 
   function render() {
     const p = gameState.player;
-    const rank = { beginner: 0, rogue: 1, assassin: 2 }[p.job] ?? 0;
+    const rank = { beginner: 0, rogue: 1, assassin: 2, hermit: 3 }[p.job] ?? 0;
     panel.querySelector('#skill-sp').textContent =
       rank === 0 ? 'advance to Rogue first' : p.sp;
     for (const [id, def] of Object.entries(SKILLS)) {
@@ -37,7 +37,7 @@ export function createSkillPanel(gameState, eventBus) {
         `${p.skills[id] ?? 0}/${def.maxLevel}`;
       const btn = panel.querySelector(`.skill-add[data-skill="${id}"]`);
       const prereqMet = !def.prereq || (p.skills[def.prereq[0]] ?? 0) >= def.prereq[1];
-      const rankMet = rank >= (def.job === 'assassin' ? 2 : 1);
+      const rankMet = rank >= (def.job === 'hermit' ? 3 : def.job === 'assassin' ? 2 : 1);
       btn.disabled = !rankMet || p.sp <= 0 || !prereqMet || (p.skills[id] ?? 0) >= def.maxLevel;
       btn.title = !rankMet
         ? 'Requires the next job advancement'

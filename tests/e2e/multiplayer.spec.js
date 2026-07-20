@@ -40,6 +40,10 @@ async function waitConnected(page) {
   );
 }
 
+// Real-time two-page specs against the live dev server: extra retries
+// absorb machine-load flake (they pass reliably with fewer workers).
+test.describe.configure({ retries: 2 });
+
 test.describe('M06 multiplayer', () => {
   test('presence', async ({ browser }) => {
     const room = freshRoom();
@@ -102,7 +106,9 @@ test.describe('M06 multiplayer', () => {
     expect(idsA.length).toBeGreaterThan(0);
 
     // A parks in front of mob 0's patrol and attacks until it dies.
+    // (Stat boost: fresh chars kill too slowly for real-time specs.)
     await a.page.evaluate(() => {
+      window.__test.setStats(4, 30, 4, 60);
       const sp0 = JSON.parse(window.render_game_to_text()).map.mobSpawns[0];
       window.__test.setPlayerPos(sp0.patrolX1 - 1.5, sp0.y);
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));

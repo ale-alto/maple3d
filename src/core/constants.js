@@ -274,7 +274,40 @@ export const SKILLS = {
     prereq: ['endure', 3],
     desc: 'A vampiric star: absorb damage as HP (A)',
   },
+  // --- Hermit 3rd job (M16, reference §11) ---
+  avenger: {
+    name: 'Avenger',
+    maxLevel: 30,
+    job: 'hermit',
+    // Verified through 14; tail follows the +4 pattern (flagged in §11).
+    pct: [65, 70, 75, 80, 85, 90, 90, 100, 105, 110, 114, 118, 122, 126, 130, 134, 138, 142, 146, 150, 154, 158, 162, 166, 170, 174, 178, 182, 186, 190],
+    desc: 'A huge star that pierces the line (Q, 3 stars)',
+  },
+  flashJump: {
+    name: 'Flash Jump',
+    maxLevel: 20,
+    job: 'hermit',
+    prereq: ['avenger', 5],
+    mpCost: [60, 57, 54, 51, 48, 45, 42, 39, 36, 33, 31, 29, 27, 25, 23, 21, 19, 17, 15, 13],
+    vx: 9, // burst speed is presentation ("jumps a certain distance")
+    vy: 4,
+    desc: 'Alt mid-air: the assassin takes flight',
+  },
+  shadowPartner: {
+    name: 'Shadow Partner',
+    maxLevel: 30,
+    job: 'hermit',
+    desc: 'A shadow echoes your every star (W)',
+  },
+  alchemist: {
+    name: 'Alchemist',
+    maxLevel: 20,
+    passive: true,
+    job: 'hermit',
+    desc: 'Passive: potions recover more',
+  },
 };
+export const JOB3_ADV_LEVEL = 70; // Hermit — +1 SP, no pool roll (§11)
 // Keen Eyes px→world-unit conversion: base range 7u ≡ ~400 px classic
 // throw range → +25 px/level = +0.4375 u/level (presentation mapping).
 export const KEEN_EYES_UNIT_PER_LEVEL = 0.4375;

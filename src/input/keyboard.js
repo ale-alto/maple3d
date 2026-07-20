@@ -19,6 +19,8 @@ let bluePotionQueue = 0; // X: Blue Potion (M14)
 let boosterQueue = 0; // B: Claw Booster (M15)
 let hasteQueue = 0; // H: Haste
 let drainQueue = 0; // A: Drain
+let avengerQueue = 0; // Q: Avenger (M16)
+let shadowQueue = 0; // W: Shadow Partner
 
 const KEYS = {
   ArrowLeft: 'left',
@@ -79,6 +81,12 @@ export function initKeyboard(target) {
     } else if (e.key === 'a' || e.key === 'A') {
       if (!e.repeat) drainQueue += 1;
       e.preventDefault();
+    } else if (e.key === 'q' || e.key === 'Q') {
+      if (!e.repeat) avengerQueue += 1;
+      e.preventDefault();
+    } else if (e.key === 'w' || e.key === 'W') {
+      if (!e.repeat) shadowQueue += 1;
+      e.preventDefault();
     }
   });
 
@@ -120,6 +128,8 @@ export function initKeyboard(target) {
     boosterQueue = 0;
     hasteQueue = 0;
     drainQueue = 0;
+    avengerQueue = 0;
+    shadowQueue = 0;
   });
 }
 
@@ -152,8 +162,13 @@ export function readInput() {
   if (haste) hasteQueue -= 1;
   const drainAttack = drainQueue > 0;
   if (drainAttack) drainQueue -= 1;
+  const avenger = avengerQueue > 0;
+  if (avenger) avengerQueue -= 1;
+  const shadowPartner = shadowQueue > 0;
+  if (shadowPartner) shadowQueue -= 1;
   return {
     ...held, jump, attack, loot, potion, mute, upPressed, skill,
     disorder, darkSight, bluePotion, booster, haste, drainAttack,
+    avenger, shadowPartner,
   };
 }

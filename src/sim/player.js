@@ -19,6 +19,7 @@ import {
   STAT_ROLL_SEED,
 } from '../core/constants.js';
 import { rollNewStats } from './stats.js';
+import { flashJumpParams } from './skills.js';
 import { mulberry32 } from './rng.js';
 
 export function createPlayer(map) {
@@ -61,6 +62,10 @@ export function createPlayer(map) {
       clawBooster: 0,
       haste: 0,
       drain: 0,
+      avenger: 0,
+      flashJump: 0,
+      shadowPartner: 0,
+      alchemist: 0,
     },
     hiddenMs: 0, // Dark Sight remaining
     hiddenSpeedMult: 1,
@@ -69,6 +74,8 @@ export function createPlayer(map) {
     hasteSpeedMult: 1,
     hasteJumpMult: 1,
     endureMs: 0,
+    shadowMs: 0, // Shadow Partner remaining (M16)
+    shadowPct: 0,
   };
 }
 
@@ -182,6 +189,7 @@ export function stepPlayer(p, map, input, dt, events) {
   p.hiddenMs = Math.max(0, (p.hiddenMs ?? 0) - dt * 1000);
   p.boosterMs = Math.max(0, (p.boosterMs ?? 0) - dt * 1000);
   p.hasteMs = Math.max(0, (p.hasteMs ?? 0) - dt * 1000);
+  p.shadowMs = Math.max(0, (p.shadowMs ?? 0) - dt * 1000);
   let runSpeed = RUN_SPEED;
   if (p.hiddenMs > 0) runSpeed *= p.hiddenSpeedMult;
   if (p.hasteMs > 0) runSpeed *= p.hasteSpeedMult;
@@ -224,8 +232,20 @@ export function stepPlayer(p, map, input, dt, events) {
     }
   }
 
-  // (Flash Jump left the early game in M13 — mid-air Alt does nothing
-  // until the skill returns at Hermit. Single jump is the rule.)
+  // --- Flash Jump (M16): home at last as the Hermit skill it always
+  // was — Alt mid-air, real MP table, a horizontal burst (NOT a second
+  // jump; MAX_JUMPS stays 1). ---
+  if (!jumpConsumed && input.jump && !p.grounded && !p.climbing) {
+    jumpConsumed = true;
+    const fj = flashJumpParams(p);
+    if (fj) {
+      const dir = p.facing === 'right' ? 1 : -1;
+      p.vx = dir * fj.vx;
+      p.vy = Math.max(p.vy, fj.vy);
+      p.mp -= fj.mpCost;
+      events?.emit('skill:flashjump', { mp: p.mp });
+    }
+  }
 
   // --- Jump (single only; no double jump) ---
   if (!jumpConsumed && input.jump && p.grounded && p.jumpsLeft > 0) {

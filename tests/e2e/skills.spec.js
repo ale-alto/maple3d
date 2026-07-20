@@ -166,10 +166,11 @@ test.describe('M11 skills', () => {
       const read = () => JSON.parse(window.render_game_to_text());
       const kb = (t, k, code) =>
         window.dispatchEvent(new KeyboardEvent(t, { key: k, code, bubbles: true }));
-      // Not in the skill panel (it's a Hermit skill — M15+).
+      // Visible in the panel but LOCKED for rogues (Hermit skill, M16).
       kb('keydown', 'k', 'KeyK');
       kb('keyup', 'k', 'KeyK');
-      const fjButton = !!document.querySelector('.skill-add[data-skill="flashJump"]');
+      const fjBtn = document.querySelector('.skill-add[data-skill="flashJump"]');
+      const fjButton = !!fjBtn && !fjBtn.disabled;
       kb('keydown', 'k', 'KeyK');
       kb('keyup', 'k', 'KeyK');
       // Mid-air Alt: still nothing (M02 single-jump rule).

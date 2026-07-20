@@ -33,6 +33,8 @@ import {
   clawBoosterParams,
   hasteParams,
   drainParams,
+  avengerParams,
+  shadowPartnerParams,
 } from './skills.js';
 import { basicRange, l7Range, thiefAccuracy, hitChance } from './stats.js';
 import { BASE_MASTERY, MOB_TYPES, STAR_TYPES, BOOSTED_COOLDOWN_MS } from '../core/constants.js';
@@ -76,24 +78,24 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
 
   // Classic MS target lock: nearest mob inside the forward attack box,
   // centered on the player's BODY. Range extends with Keen Eyes (M13).
-  function selectTarget() {
+  // All lock candidates in the forward box, nearest first (Avenger
+  // pierces down this list; basic attacks take index 0).
+  function selectTargets() {
     const dir = player.facing === 'right' ? 1 : -1;
     const playerCenter = player.y + PLAYER_HEIGHT / 2;
     const range = starRangeOf(player);
-    let target = null;
-    let bestDx = Infinity;
+    const list = [];
     for (const mob of mobsState.mobs) {
       const dx = (mob.x - player.x) * dir;
       const dy = mob.y + MOB_HEIGHT / 2 - playerCenter;
       if (dx <= 0 || dx > range) continue;
       if (Math.abs(dy) > STAR_SELECT_HALF_HEIGHT) continue;
-      if (dx < bestDx) {
-        bestDx = dx;
-        target = mob;
-      }
+      list.push({ mob, dx });
     }
-    return target;
+    list.sort((a, b) => a.dx - b.dx);
+    return list.map((e) => e.mob);
   }
+  const selectTarget = () => selectTargets()[0] ?? null;
 
   const hidden = (player.hiddenMs ?? 0) > 0; // Dark Sight: can't attack
   const drain = input.drainAttack ? drainParams(player) : null;
@@ -174,6 +176,60 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
     }
   }
 
+  // --- Avenger (Q, M16): one huge star pierces the lane — up to
+  // maxTargets mobs, 3 stars, per-target damage = basic range × pct. ---
+  const av = input.avenger ? avengerParams(player, inventory) : null;
+  if (av && combat.cooldownMs === 0 && !player.climbing && !hidden) {
+    const dir = player.facing === 'right' ? 1 : -1;
+    const throwY = player.y + STAR_THROW_HEIGHT;
+    const targets = selectTargets().slice(0, av.maxTargets);
+    const wa = totalWa(player, inventory);
+    const acc = thiefAccuracy(player.stats) + nimbleBodyBonus(player) + masteryAccBonus(player);
+    const crit = critParams(player);
+    for (const t of targets) {
+      const def = MOB_TYPES[t.type] ?? {};
+      const chance = hitChance(acc, def.avoid ?? 1, (def.level ?? 1) - player.level);
+      const miss = combat.rand() >= chance;
+      let damage = 0;
+      if (!miss) {
+        damage = Math.round(rollIn(combat.rand, basicRange(player.stats, wa, masteryOf(player))) * av.pct);
+        if (crit && combat.rand() < crit.chance) damage = Math.round(damage * crit.mult);
+      }
+      const star = {
+        id: combat.nextStarId++,
+        x: player.x,
+        y: throwY,
+        vx: dir * STAR_SPEED,
+        vy: 0,
+        targetId: t.id,
+        traveled: 0,
+        damage,
+        miss,
+        drainAbsorb: 0,
+      };
+      combat.stars.push(star);
+      if (net) net.sendThrow(star);
+    }
+    if (targets.length > 0) {
+      if (inventory) inventory.stars -= 3; // Avenger consumes 3
+      player.mp -= av.mpCost;
+      combat.cooldownMs = player.boosterMs > 0 ? BOOSTED_COOLDOWN_MS : ATTACK_COOLDOWN_MS;
+      if (player.grounded) player.attackLockMs = ATTACK_LOCK_MS;
+      events?.emit('skill:avenger', { targets: targets.length });
+    }
+  }
+
+  // --- Shadow Partner (W, M16): a shadow echoes every star. ---
+  if (input.shadowPartner && !(player.shadowMs > 0)) {
+    const spp = shadowPartnerParams(player);
+    if (spp) {
+      player.shadowMs = spp.durationMs;
+      player.shadowPct = spp.pct;
+      player.mp -= spp.mpCost;
+      events?.emit('skill:shadowpartner', { durationMs: spp.durationMs });
+    }
+  }
+
   // --- Claw Booster (B, M15): pay HP+MP for faster cadence. ---
   if (input.booster && !hidden && !(player.boosterMs > 0)) {
     const cb = clawBoosterParams(player);
@@ -229,6 +285,12 @@ export function stepCombat(combat, player, mobsState, map, input, dt, events, in
         } else {
           if (net) net.sendHit(target.id, star.damage);
           else damageMob(mobsState, target, star.damage, events);
+          // Shadow Partner (M16): the shadow lands its echo right after.
+          if (player.shadowMs > 0 && mobsState.mobs.includes(target)) {
+            const echo = Math.max(1, Math.round(star.damage * (player.shadowPct ?? 0.2)));
+            if (net) net.sendHit(target.id, echo);
+            else damageMob(mobsState, target, echo, events);
+          }
           // Drain (M15): absorb a slice of the damage as HP, capped at
           // maxHp/2 per hit and the target's own maxHp.
           if (star.drainAbsorb > 0) {

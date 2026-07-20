@@ -11,6 +11,7 @@ import {
   AP_PER_LEVEL,
 } from '../core/constants.js';
 import { expToNext, levelUpGains } from './stats.js';
+import { alchemistMult } from './skills.js';
 import { mulberry32 } from './rng.js';
 
 export const xpToNext = expToNext; // exact piecewise table (§4)
@@ -53,7 +54,8 @@ export function applyDeathPenalty(p, events) {
 export function usePotion(p, inventory, events) {
   if (inventory.potions <= 0 || p.hp >= p.maxHp) return false;
   inventory.potions -= 1;
-  p.hp = Math.min(p.maxHp, p.hp + RED_POTION_HEAL); // Red Potion (M14)
+  // Red Potion (M14); Alchemist boosts fixed-amount recovery (M16).
+  p.hp = Math.min(p.maxHp, p.hp + Math.floor(RED_POTION_HEAL * alchemistMult(p)));
   events?.emit('potion:used', { hp: p.hp, potions: inventory.potions });
   return true;
 }
@@ -61,7 +63,7 @@ export function usePotion(p, inventory, events) {
 export function useBluePotion(p, inventory, events) {
   if ((inventory.bluePotions ?? 0) <= 0 || p.mp >= p.maxMp) return false;
   inventory.bluePotions -= 1;
-  p.mp = Math.min(p.maxMp, p.mp + BLUE_POTION_MP);
+  p.mp = Math.min(p.maxMp, p.mp + Math.floor(BLUE_POTION_MP * alchemistMult(p)));
   events?.emit('potion:used', { mp: p.mp, bluePotions: inventory.bluePotions });
   return true;
 }

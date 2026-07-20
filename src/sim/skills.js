@@ -14,6 +14,7 @@ import {
   JOB2_ADV_LEVEL,
   JOB2_ADV_HP,
   JOB2_ADV_MP,
+  JOB3_ADV_LEVEL,
   STAR_RANGE,
   STAR_TYPES,
   BASE_MASTERY,
@@ -21,12 +22,13 @@ import {
 
 // Spend 1 SP for +1 skill level. Job-gated (beginners have no skill set;
 // assassin skills need the 2nd advancement) and prereq-gated.
-const JOB_RANK = { beginner: 0, rogue: 1, assassin: 2 };
+const JOB_RANK = { beginner: 0, rogue: 1, assassin: 2, hermit: 3 };
+const SKILL_RANK = { assassin: 2, hermit: 3 };
 
 export function assignSkillPoint(player, skillId, events) {
   const def = SKILLS[skillId];
   if (!def || player.sp <= 0) return false;
-  const needRank = def.job === 'assassin' ? 2 : 1;
+  const needRank = SKILL_RANK[def.job] ?? 1;
   if ((JOB_RANK[player.job] ?? 0) < needRank) return false;
   if ((player.skills[skillId] ?? 0) >= def.maxLevel) return false;
   if (def.prereq && (player.skills[def.prereq[0]] ?? 0) < def.prereq[1]) return false;
@@ -53,6 +55,10 @@ export function tryAdvanceJob(player, rand, events) {
     player.job = 'assassin';
     player.maxHp += randIn(JOB2_ADV_HP[0], JOB2_ADV_HP[1]);
     player.maxMp += randIn(JOB2_ADV_MP[0], JOB2_ADV_MP[1]);
+    player.sp += 1;
+  } else if (player.job === 'assassin') {
+    if (player.level < JOB3_ADV_LEVEL) return false;
+    player.job = 'hermit'; // no pool roll at 3rd (§11)
     player.sp += 1;
   } else {
     return false;
@@ -161,6 +167,54 @@ export function drainParams(player) {
   if (lv <= 0) return null;
   if (player.mp < SKILLS.drain.mpCost) return null;
   return { mpCost: SKILLS.drain.mpCost, pct: (100 + 2 * lv) / 100, absorb: (15 + lv) / 100 };
+}
+
+// --- Hermit (M16, reference §11) ---
+
+// Flash Jump: Alt mid-air burst; real MP table, prereq Avenger 5.
+export function flashJumpParams(player) {
+  const lv = player.skills?.flashJump ?? 0;
+  if (lv <= 0) return null;
+  const mpCost = SKILLS.flashJump.mpCost[lv - 1];
+  if (player.mp < mpCost) return null;
+  return { mpCost, vx: SKILLS.flashJump.vx, vy: SKILLS.flashJump.vy };
+}
+
+// Avenger: MP 16 (≤10) / 23 (11–20) / 30 (21+); 3 stars; pierces up to
+// 4 / 5 / 6 targets; per-target damage = basic range × pct.
+export function avengerParams(player, inventory) {
+  const lv = player.skills?.avenger ?? 0;
+  if (lv <= 0) return null;
+  const mpCost = lv <= 10 ? 16 : lv <= 20 ? 23 : 30;
+  if (player.mp < mpCost) return null;
+  if ((inventory?.stars ?? 0) < 3) return null;
+  const maxTargets = lv <= 10 ? 4 : lv <= 20 ? 5 : 6;
+  return { mpCost, pct: SKILLS.avenger.pct[lv - 1] / 100, maxTargets };
+}
+
+// Shadow Partner: echo each star at the level's pct; MP 200−5·lv;
+// duration 60 s (≤10), 120 s (11–20), 180 s (21–30).
+export function shadowPartnerParams(player) {
+  const lv = player.skills?.shadowPartner ?? 0;
+  if (lv <= 0) return null;
+  const mpCost = 200 - 5 * (lv - 1);
+  if (player.mp < mpCost) return null;
+  // Normal-attack echo pct per §11: 20..49 (1–10), 52..70 (11–20), 71..80.
+  const pct =
+    lv <= 10
+      ? [20, 24, 28, 31, 34, 37, 40, 43, 46, 49][lv - 1]
+      : lv <= 20
+        ? 52 + 2 * (lv - 11)
+        : 70 + (lv - 20);
+  const durationMs = (lv <= 10 ? 60 : lv <= 20 ? 120 : 180) * 1000;
+  return { mpCost, pct: pct / 100, durationMs };
+}
+
+// Alchemist: fixed-amount potion recovery multiplier.
+export function alchemistMult(player) {
+  const lv = player.skills?.alchemist ?? 0;
+  if (lv <= 0) return 1;
+  return (lv <= 10 ? 100 + 3 * lv : 130 + 2 * (lv - 10)) / 100;
 }
 
 // Dark Sight: MP 25−lv, duration 10·lv s, speed penalty per table.
