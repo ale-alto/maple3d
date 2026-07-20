@@ -172,9 +172,9 @@ documented values our tiers map onto.
 
 ## 11. Hermit 3rd-job kit (bbb class page, read 2026-07-20)
 
-- **Advancement**: level 70 (the two-part El Nath quest chain is omitted —
-  deviation; trainer advances directly). Pool roll: VERIFY 3rd-job thief
-  case in emulator changeJob before implementing.
+- **Advancement**: level 70 (the El Nath quest chain is omitted —
+  deviation; trainer advances directly). Pool roll: NONE — the emulator's
+  changeJob switch has no 3rd-job case (411 absent = +0); just the +1 SP.
 - **Flash Jump**: table already in §6 (master 20, MP 60→13, prereq
   Avenger 5) — this is where it RETURNS to our game.
 - **Avenger** (active, master 30): MP 16 (lv ≤10) / 23 (11–20; 21+
