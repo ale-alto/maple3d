@@ -170,6 +170,32 @@ documented values our tiers map onto.
   (100+2·lv)% damage, absorbing (15+lv)% of damage dealt as HP,
   capped at maxHp/2 per hit and the target's maxHp.
 
+## 11. Hermit 3rd-job kit (bbb class page, read 2026-07-20)
+
+- **Advancement**: level 70 (the two-part El Nath quest chain is omitted —
+  deviation; trainer advances directly). Pool roll: VERIFY 3rd-job thief
+  case in emulator changeJob before implementing.
+- **Flash Jump**: table already in §6 (master 20, MP 60→13, prereq
+  Avenger 5) — this is where it RETURNS to our game.
+- **Avenger** (active, master 30): MP 16 (lv ≤10) / 23 (11–20; 21+
+  VERIFY, likely 30); consumes 3 stars; one huge star that pierces —
+  hits up to 4 enemies (≤10), 5 (11–20); basic attack % by level:
+  65,70,75,80,85,90,90,100,105,110 then +4/level (114,118,122,126 …
+  verified through 14; 15–30 follow the +4 pattern — VERIFY tail).
+- **Alchemist** (passive, master 20): potion recovery ×(100+3·lv)% up to
+  10, then +2/lv to 150% at 20 (fixed-amount potions only).
+- **Meso UP** (supportive, master 20): party meso drop rate +3·lv% (≤10)
+  then +2/lv to +50%; MP 45/50/55/60 by five-level band; duration
+  20+5·lv s.
+- **Shadow Partner** (supportive, master 30): a shadow echoes each
+  attack at 20–80% (normal) / 21–50% (skill) damage; MP 200−5·lv
+  (roughly); duration 60 s (≤10), 120 s (11–20), 180 s (21–30);
+  requires a summoning item in the real game (deviation: skip item).
+- **Shadow Web** (supportive, master 20): roots up to 6 enemies,
+  (40+2·lv)% success, 5–8 s by five-level band; MP 10/14/18/22.
+- **Shadow Meso** (active, master 30, prereq Meso UP 5): throws mesos as
+  damage — skip for now (our economy is too small; deviation noted).
+
 ## Sources
 
 - bbb.hidden-street.net (BeforeBigBang library) — L7 + FJ tables read 2026-07-19 (browser pane; 403s server fetches)
